@@ -1,6 +1,5 @@
-// dùng để lưu các enum được định nghĩa bởi service
 export enum UserVerifyStatus {
-  Unverified, // chưa xác thực email, mặc định = 0
+  Unverified, // chưa xác thực email
   Verified, // đã xác thực email
   Banned // bị khóa
 }
@@ -16,4 +15,10 @@ export enum TokenType {
   RefreshToken, // 1
   ForgotPasswordToken, // 2
   EmailVerificationToken // 3
+}
+
+// status role
+export enum RoleStatus {
+  ACTIVE, // hoạt động
+  INACTIVE // không hoạt động
 }
