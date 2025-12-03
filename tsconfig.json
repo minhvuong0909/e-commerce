@@ -16,5 +16,5 @@
     "require": ["tsconfig-paths/register"]
   },
   "files": ["src/type.d.ts"], // Các file dùng để định nghĩa kiểu dữ liệu(type) cho dự án
-  "include": ["src/**/*"] // Đường dẫn đến file cần build cho dự án
+  "include": ["src/**/*", "node_modules/prisma"] // Đường dẫn đến file cần build cho dự án
 }

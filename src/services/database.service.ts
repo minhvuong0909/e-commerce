@@ -1,13 +1,32 @@
+import { Db, MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
-import { env } from 'process'
 
-const { Sequelize } = require('sequelize')
+dotenv.config()
 
-const sequelize = new Sequelize('ecommerce', process.env.DB_USERNAME, process.env.DB_PASSWORD, {
-  host: 'localhost',
-  port: 3306,
-  dialect: 'mysql',
-  logging: false
-})
+const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard.0zguu.mongodb.net/?retryWrites=true&w=majority&appName=ShoppingCard`
 
-module.exports = sequelize
+class DatabaseService {
+  private client: MongoClient
+  public db: Db
+
+  constructor() {
+    this.client = new MongoClient(uri)
+    this.db = this.client.db(process.env.DB_NAME)
+  }
+
+  async connect() {
+    try {
+      await this.client.connect()
+
+      await this.db.command({ ping: 1 })
+
+      console.log('MongoDB connected successfully!')
+    } catch (err) {
+      console.error('MongoDB connection error:', err)
+      throw err
+    }
+  }
+}
+
+const databaseService = new DatabaseService()
+export default databaseService

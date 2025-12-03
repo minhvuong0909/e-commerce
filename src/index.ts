@@ -1,29 +1,27 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import { swaggerSpec, swaggerUi } from './config/swagger.ui'
+import databaseService from './services/database.service'
 import router from './routes/users.routers'
 dotenv.config()
 
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT //server sẽ chạy trên cổng port 3000
-const sequelize = require('../src/services/database.service')
 const userRoutes = router
 
-app.get('/', (req, res) => {
-  res.send('hello world')
-})
-
-app.listen(port, () => {
-  console.log(`Project này đang chạy trên post ${port}`)
-})
-;(async () => {
+// listen dùng để mở server ổ port 3000
+async function startServer() {
   try {
-    await sequelize.authenticate()
-    console.log('MySQL connected successfully!')
-  } catch (error) {
-    console.error('Unable to connect:', error)
-  }
-})()
+    await databaseService.connect()
+    console.log('MongoDB connected successfully')
 
-// swagger route
-app.use('/', userRoutes)
+    app.listen(port, () => {
+      console.log(`SERVER BE đang chạy trên PORT ${port}`)
+    })
+  } catch (error) {
+    console.error('Unable to connect to MongoDB:', error)
+    process.exit(1) // dừng server nếu DB fail
+  }
+}
+
+startServer()
