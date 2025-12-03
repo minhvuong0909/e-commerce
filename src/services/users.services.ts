@@ -7,8 +7,8 @@ class UserServices {
     // signToken là bất đồng bộ nên khi nào sử dụng hàm này thì mới xử lý await
     return signToken({
       payload: { user_id, token_type: TokenType.AccessToken },
-      privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
-      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
+      privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+      //   options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
     })
   }
 }
