@@ -5,7 +5,7 @@ import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 // định nghịa User
 interface UserType {
   _id?: ObjectId
-  role_id?: string
+  role_id?: ObjectId
   name: string
   email: string
   date_of_birth: Date
@@ -26,7 +26,7 @@ interface UserType {
 
 export default class User {
   _id?: ObjectId
-  role_id?: string
+  role_id?: ObjectId
   name: string
   email: string
   date_of_birth: Date
@@ -46,7 +46,8 @@ export default class User {
   constructor(user: UserType) {
     const date = new Date()
     this._id = user._id || new ObjectId()
-    this.name = user.name || '' // nếu người dùng tạo mà k truyền ta sẽ để rỗng
+    this.role_id = user.role_id || new ObjectId()
+    this.name = user.name || ''
     this.email = user.email
     this.date_of_birth = user.date_of_birth || date
     this.password = user.password

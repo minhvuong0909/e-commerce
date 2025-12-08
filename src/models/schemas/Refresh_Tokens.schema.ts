@@ -3,21 +3,26 @@ import { ObjectId } from 'mongodb'
 
 interface RefreshTokenType {
   _id?: ObjectId
-  user_id?: string
-  token?: string
-  expiryDate?: Date
+  token: string
+  created_at?: Date
+  user_id: ObjectId
+  iat: number
+  exp: number
 }
 
 export default class RefreshToken {
-  _id: ObjectId
-  user_id: string
+  _id?: ObjectId
   token: string
-  expiryDate: Date
-
-  constructor(data: RefreshTokenType = {}) {
-    this._id = data._id ?? new ObjectId()
-    this.user_id = data.user_id ?? randomUUID()
-    this.token = data.token ?? ''
-    this.expiryDate = data.expiryDate ?? new Date()
+  created_at: Date
+  user_id: ObjectId
+  iat: Date
+  exp: Date
+  constructor({ _id, token, created_at, user_id, iat, exp }: RefreshTokenType) {
+    this._id = _id
+    this.token = token
+    this.created_at = created_at || new Date()
+    this.user_id = user_id
+    this.iat = new Date(iat * 1000) // iat mà mình nhận được là epoch time
+    this.exp = new Date(iat * 1000) // iat mà mình nhận được là epoch time
   }
 }

@@ -1,5 +1,7 @@
-import { Db, MongoClient } from 'mongodb'
+import { Collection, Db, MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
+import User from '~/models/schemas/Users.schema'
+import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 
 dotenv.config()
 
@@ -25,6 +27,17 @@ class DatabaseService {
       console.error('MongoDB connection error:', err)
       throw err
     }
+  }
+
+  // lấy instance của users
+  // collection chứa nhiều user
+  get users(): Collection<User> {
+    return this.db.collection(process.env.DB_USERS_COLLECTION as string)
+  }
+
+  // instance của refresh_tokens
+  get refreshTokens(): Collection<RefreshToken> {
+    return this.db.collection(process.env.DB_REFRESHTOKENS_COLLECTION as string)
   }
 }
 
