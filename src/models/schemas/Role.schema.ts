@@ -1,9 +1,10 @@
 import { randomUUID } from 'crypto'
 import { RoleStatus, USER_ROLE } from '~/constants/enums'
+import { ObjectId } from 'mongodb'
 
 // định nghĩa role
 interface RoleType {
-  _id?: string
+  _id?: ObjectId
   role: USER_ROLE
   description?: string
   status: RoleStatus
@@ -13,7 +14,7 @@ interface RoleType {
 
 // table role
 export default class Role {
-  _id?: string
+  _id?: ObjectId
   role: USER_ROLE
   description?: string
   status: RoleStatus
@@ -21,7 +22,7 @@ export default class Role {
   updated_at?: Date
   constructor(data: RoleType) {
     const date = new Date()
-    this._id = data._id ?? randomUUID()
+    this._id = data._id ?? new ObjectId()
     this.role = data.role
     this.description = data.description ?? ''
     this.status = data.status

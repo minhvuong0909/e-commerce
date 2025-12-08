@@ -1,9 +1,10 @@
-import { randomUUID, UUID } from 'crypto'
+import { ObjectId } from 'mongodb'
+
 import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 
 // định nghịa User
 interface UserType {
-  _id?: string
+  _id?: ObjectId
   role_id?: string
   name: string
   email: string
@@ -24,7 +25,7 @@ interface UserType {
 }
 
 export default class User {
-  _id?: string
+  _id?: ObjectId
   role_id?: string
   name: string
   email: string
@@ -36,15 +37,15 @@ export default class User {
   forgot_password_token?: string
   verify_status?: UserVerifyStatus
 
-  bio?: string
-  location?: string
-  website?: string
-  username?: string
-  avatar?: string
-  cover_photo?: string
+  bio: string
+  location: string
+  website: string
+  username: string
+  avatar: string
+  cover_photo: string
   constructor(user: UserType) {
     const date = new Date()
-    this._id = user._id || randomUUID()
+    this._id = user._id || new ObjectId()
     this.name = user.name || '' // nếu người dùng tạo mà k truyền ta sẽ để rỗng
     this.email = user.email
     this.date_of_birth = user.date_of_birth || date
