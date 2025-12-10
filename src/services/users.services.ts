@@ -1,4 +1,4 @@
-import { TokenType } from '~/constants/enums'
+import { RoleStatus, TokenType, USER_ROLE } from '~/constants/enums'
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseService from './database.service'
 import { ObjectId } from 'mongodb'
@@ -8,6 +8,9 @@ import { USERS_MESSAGES } from '~/constants/messages'
 import { comparePassword, hashPassword } from '~/utils/crypto'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import { compareSync } from 'bcrypt'
+import Role from '~/models/schemas/Role.schema'
+import User from '~/models/schemas/Users.schema'
+import { RegisterRequestBody } from '~/models/requests/Users.requests'
 
 class UserServices {
   // kí access_token bằng jwt
@@ -16,26 +19,25 @@ class UserServices {
     return signToken({
       payload: { user_id, token_type: TokenType.AccessToken },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
-      options: { expiresIn: parseInt(process.env.ACCESS_TOKEN_EXPIRE_IN as string) }
+      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
     })
   }
 
   // hàm kí refresh token
-  private signRefreshToken(user_id: string, exp?: Number) {
-    // check nếu tồn tại thời gian của token thì khỏi cần truyền thời gian hết hạn
-    if (exp) {
+  private signRefreshToken(user_id: string, exp?: number) {
+    if (exp !== undefined) {
+      // tự set exp cho refresh token (timestamp kiểu số giây)
       return signToken({
         payload: { user_id, token_type: TokenType.RefreshToken, exp },
         privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
       })
-    } else {
-      // nếu kh có thời gian thì lấy thời gian mặc định trong env
-      return signToken({
-        payload: { user_id, token_type: TokenType.RefreshToken, exp },
-        privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
-        options: { expiresIn: parseInt(process.env.REFRESH_TOKEN_EXPIRE_IN as string) }
-      })
     }
+
+    return signToken({
+      payload: { user_id, token_type: TokenType.RefreshToken },
+      privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
+      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN }
+    })
   }
 
   // decode refresh_token để xác thưc token
@@ -70,28 +72,58 @@ class UserServices {
     }
     return user
   }
+
+  async createAdmin() {
+    let role = await databaseService.roles.findOne({ role: USER_ROLE.Admin })
+    let roleId: ObjectId
+    if (!role) {
+      const result = await databaseService.roles.insertOne(
+        new Role({
+          role: USER_ROLE.Admin,
+          status: RoleStatus.ACTIVE,
+          description: 'An admin manages the ecommerce system'
+        })
+      )
+      roleId = result.insertedId
+    } else {
+      roleId = role._id
+    }
+
+    // check account admin
+    const isAdmin = await this.checkEmailExist('admin123@gmail.com')
+    if (!isAdmin) {
+      await databaseService.users.insertOne(
+        new User({
+          email: 'admin123@gmail.com',
+          password: hashPassword('admin123'),
+          name: 'Admin',
+          date_of_birth: new Date('1990-01-01'),
+          role_id: roleId
+        })
+      )
+    }
+  }
   // hàm login
   async login({ email, password }: { email: string; password: string }) {
     const user = await databaseService.users.findOne({ email })
+    // nếu email error
     if (!user) {
       throw new ErrorWithStatus({
-        status: HTTP_STATUS.UNPROCESSABLE_ENTITY, // 422
-        message: USERS_MESSAGES.EMAIL_IS_INCORRECT
+        message: USERS_MESSAGES.EMAIL_IS_INCORRECT,
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY // 422
       })
     }
+    // password error
     if (!comparePassword(password, user.password)) {
       throw new ErrorWithStatus({
         status: HTTP_STATUS.UNPROCESSABLE_ENTITY, // 422
         message: USERS_MESSAGES.Password_IS_INCORRECT
       })
     }
-    // xóa refresh
-
     // nếu có user thì tạo access_token và refresh_token
     const user_id = user._id.toString()
     // gọi hàm kí 2 token
     const tokens = await this.signAccessAndRefreshTokens(user_id)
-
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
     // lưu vào refresh_token lại
     await databaseService.refreshTokens.insertOne(
@@ -104,6 +136,9 @@ class UserServices {
     )
     return { tokens }
   }
+
+  // hàm register
+  async register(payload: RegisterRequestBody) {}
 }
 
 let usersService = new UserServices()

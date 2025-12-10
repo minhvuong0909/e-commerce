@@ -1,19 +1,21 @@
-import { Router } from 'express'
-const router = Router()
+import express, { Router } from 'express'
+import { loginController } from '~/controllers/users.controllers'
+import { loginValidator } from '~/middlewares/users.middlewares'
+import { wrapAsync } from '~/utils/handlers'
 
-/**
- * @openapi
- * /users:
- *   get:
- *     summary: Get all users
- *     tags:
- *       - Users
- *     responses:
- *       200:
- *         description: List of users
- */
-router.get('/users', async (req, res) => {
-  res.json([{ id: 1, name: 'John Doe' }])
-})
+// chia dự án thành nhìu router
+const userRouter = express.Router()
 
-export default router
+/*
+  description: login
+  path: users/login
+  method: POST
+  body: {
+    email: string,
+    password: string
+  }
+
+*/
+userRouter.post('/login', loginValidator, wrapAsync(loginController))
+
+export default userRouter

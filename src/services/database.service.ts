@@ -1,7 +1,9 @@
-import { Collection, Db, MongoClient } from 'mongodb'
+import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
 import dotenv from 'dotenv'
 import User from '~/models/schemas/Users.schema'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
+import Role from '~/models/schemas/Role.schema'
+import { RoleStatus, USER_ROLE } from '~/constants/enums'
 
 dotenv.config()
 
@@ -19,16 +21,13 @@ class DatabaseService {
   async connect() {
     try {
       await this.client.connect()
-
       await this.db.command({ ping: 1 })
-
       console.log('MongoDB connected successfully!')
     } catch (err) {
       console.error('MongoDB connection error:', err)
       throw err
     }
   }
-
   // lấy instance của users
   // collection chứa nhiều user
   get users(): Collection<User> {
@@ -38,6 +37,11 @@ class DatabaseService {
   // instance của refresh_tokens
   get refreshTokens(): Collection<RefreshToken> {
     return this.db.collection(process.env.DB_REFRESHTOKENS_COLLECTION as string)
+  }
+
+  // instance của roles
+  get roles(): Collection<Role> {
+    return this.db.collection(process.env.DB_ROLES_COLLECTION as string)
   }
 }
 
