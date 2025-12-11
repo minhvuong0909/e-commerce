@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import {
   EmailVerifyReqQuery,
   LoginRequestBody,
+  LogoutRequestBody,
   RegisterRequestBody,
   TokenPayload
 } from '~/models/requests/Users.requests'
@@ -70,4 +71,30 @@ export const verifyEmailController = async (
       result
     })
   }
+}
+
+// logout
+export const logoutController = async (
+  req: Request<ParamsDictionary, any, LogoutRequestBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { refresh_token } = req.body
+  // lấy ra 2 token mình kí và đã lưu vào file định nghĩa
+  const { user_id: user_id_at } = req.decode_authorization as TokenPayload
+  const { user_id: user_id_rf } = req.decode_refresh_token as TokenPayload
+  // check nếu nó gửi 2 token này với có cùng 1 user ?
+  if (user_id_at !== user_id_rf) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID
+    })
+  }
+  // check refresh_token và user_id có tồn tại ?
+  await usersService.checkRefreshToken({ user_id: user_id_at, refresh_token })
+  // nếu có thì logout và xóa rf
+  await usersService.logout(refresh_token)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.LOGOUT_SUCCESS
+  })
 }

@@ -130,6 +130,21 @@ class UserServices {
     return user
   }
 
+  // check refresh token có tồn tại trong db và cùng user_id không
+  async checkRefreshToken({ user_id, refresh_token }: { user_id: string; refresh_token: string }) {
+    const refreshToken = await databaseService.refreshTokens.findOne({
+      user_id: new ObjectId(user_id),
+      token: refresh_token
+    })
+    if (!refreshToken) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.REFRESH_TOKEN_IS_INVALID
+      })
+    }
+    return refreshToken
+  }
+
   // hàm verify email ( check email token đúng mã, user ), cập nhật status account
   async verifyEmail(user_id: string) {
     await databaseService.users.updateOne(
@@ -179,6 +194,11 @@ class UserServices {
       })
     )
     return { tokens }
+  }
+
+  // hàm logout
+  async logout(refresh_token: string) {
+    await databaseService.refreshTokens.deleteOne({ token: refresh_token })
   }
 }
 

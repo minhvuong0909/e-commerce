@@ -29,3 +29,8 @@ export interface RegisterRequestBody {
 export interface EmailVerifyReqQuery extends ParsedQs {
   email_verify_token: string
 }
+
+// logout
+export interface LogoutRequestBody {
+  refresh_token: string
+}

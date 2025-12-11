@@ -1,8 +1,11 @@
 import { Request } from 'express'
 import { checkSchema, ParamSchema } from 'express-validator'
+import { JsonWebTokenError } from 'jsonwebtoken'
+import { capitalize } from 'lodash'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
+import { TokenPayload } from '~/models/requests/Users.requests'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validations'
 
@@ -164,6 +167,74 @@ export const emailVerifyTokenValidator = validate(
             throw new ErrorWithStatus({
               status: HTTP_STATUS.UNAUTHORIZED,
               message: USERS_MESSAGES.EMAIL_IS_INVALID
+            })
+          }
+          return true
+        }
+      }
+    }
+  })
+)
+// validator access_token trong header
+export const accessTokenValidator = validate(
+  checkSchema(
+    {
+      Authorization: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string, { req }) => {
+            // value là dạng Bear <at>
+            const access_token = value.split(' ')[1] // chỉ lấy access_token
+            if (!access_token) {
+              throw new ErrorWithStatus({
+                message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED,
+                status: HTTP_STATUS.UNAUTHORIZED
+              })
+            }
+
+            // nếu có at thì verify
+            try {
+              const decode_authorization = await verifyToken({
+                token: access_token,
+                privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string
+              })
+              ;(req as Request).decode_authorization = decode_authorization // nhét vào file định nghĩa
+            } catch (error) {
+              throw new ErrorWithStatus({
+                status: HTTP_STATUS.UNAUTHORIZED,
+                message: capitalize((error as JsonWebTokenError).message)
+              })
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['headers']
+  )
+)
+
+// hàm validator refresh_token
+export const refreshTokenValidator = validate(
+  checkSchema({
+    refresh_token: {
+      notEmpty: {
+        errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
+      },
+      custom: {
+        options: async (value: string, { req }) => {
+          try {
+            const decode_refresh_token = await verifyToken({
+              token: value,
+              privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+            })
+            ;(req as Request).decode_refresh_token = decode_refresh_token as TokenPayload
+          } catch (error) {
+            throw new ErrorWithStatus({
+              status: HTTP_STATUS.UNAUTHORIZED,
+              message: (error as JsonWebTokenError).message
             })
           }
           return true

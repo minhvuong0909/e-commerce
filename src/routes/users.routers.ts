@@ -1,6 +1,17 @@
 import express, { Router } from 'express'
-import { loginController, registerController, verifyEmailController } from '~/controllers/users.controllers'
-import { emailVerifyTokenValidator, loginValidator, registerValidator } from '~/middlewares/users.middlewares'
+import {
+  loginController,
+  logoutController,
+  registerController,
+  verifyEmailController
+} from '~/controllers/users.controllers'
+import {
+  accessTokenValidator,
+  emailVerifyTokenValidator,
+  loginValidator,
+  refreshTokenValidator,
+  registerValidator
+} from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 // chia dự án thành nhìu router
@@ -40,5 +51,17 @@ mình sẽ verify và lưu payload vào decode_email_verify_token
   path: users/verify-email/?email_verify_token=string
   method: GET
 */
-userRouter.post('/verify-email', emailVerifyTokenValidator, wrapAsync(verifyEmailController))
+userRouter.get('/verify-email', emailVerifyTokenValidator, wrapAsync(verifyEmailController))
+
+/*
+  desc: logout => người dùng bấm logout thì kiểm tra at và rf có trùng user kh 
+      nếu trùng thì xóa rf 
+    path: users/logout
+  method: post
+  header: {Authorization: Bearer </access_token>} ==> 
+  body: {
+    refreshToken: string
+  }
+*/
+userRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController))
 export default userRouter
