@@ -1,5 +1,6 @@
 import { JwtPayload } from 'jsonwebtoken'
 import { TokenType } from '~/constants/enums'
+import { ParsedQs } from 'qs'
 
 // define user request
 export interface LoginRequestBody {
@@ -22,4 +23,9 @@ export interface RegisterRequestBody {
   password: string
   confirm_password: string
   date_of_birth: string
+}
+
+// verify email
+export interface EmailVerifyReqQuery extends ParsedQs {
+  email_verify_token: string
 }

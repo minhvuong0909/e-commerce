@@ -1,4 +1,4 @@
-import { RoleStatus, TokenType, USER_ROLE } from '~/constants/enums'
+import { RoleStatus, TokenType, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseService from './database.service'
 import { ObjectId } from 'mongodb'
@@ -7,8 +7,6 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { comparePassword, hashPassword } from '~/utils/crypto'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
-import { compareSync } from 'bcrypt'
-import Role from '~/models/schemas/Role.schema'
 import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody } from '~/models/requests/Users.requests'
 
@@ -72,37 +70,6 @@ class UserServices {
     }
     return user
   }
-
-  async createAdmin() {
-    let role = await databaseService.roles.findOne({ role: USER_ROLE.Admin })
-    let roleId: ObjectId
-    if (!role) {
-      const result = await databaseService.roles.insertOne(
-        new Role({
-          role: USER_ROLE.Admin,
-          status: RoleStatus.ACTIVE,
-          description: 'An admin manages the ecommerce system'
-        })
-      )
-      roleId = result.insertedId
-    } else {
-      roleId = role._id
-    }
-
-    // check account admin
-    const isAdmin = await this.checkEmailExist('admin123@gmail.com')
-    if (!isAdmin) {
-      await databaseService.users.insertOne(
-        new User({
-          email: 'admin123@gmail.com',
-          password: hashPassword('admin123'),
-          name: 'Admin',
-          date_of_birth: new Date('1990-01-01'),
-          role_id: roleId
-        })
-      )
-    }
-  }
   // hàm login
   async login({ email, password }: { email: string; password: string }) {
     const user = await databaseService.users.findOne({ email })
@@ -137,8 +104,82 @@ class UserServices {
     return { tokens }
   }
 
+  // hàm sign email verify token
+  private signEmailVerifyToken(user_id: string) {
+    return signToken({
+      payload: { user_id, token_type: TokenType.EmailVerificationToken },
+      privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string,
+      options: {
+        expiresIn: process.env.EMAIL_VERIFY_TOKEN_EXPIRE_IN
+      }
+    })
+  }
+  // check email verify token, kiểm tra user có sở hữu 2 thông tin này không
+  async checkEmailVerifyToken({ user_id, email_verify_token }: { user_id: string; email_verify_token: string }) {
+    const user = await databaseService.users.findOne({
+      _id: new ObjectId(user_id),
+      email_verify_token
+    })
+    // nếu kh có thì token này đã bị thay thế
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+        message: USERS_MESSAGES.EMAIL_VERIFY_TOKEN_IS_INVALID
+      })
+    }
+    return user
+  }
+
+  // hàm verify email ( check email token đúng mã, user ), cập nhật status account
+  async verifyEmail(user_id: string) {
+    await databaseService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      },
+      [
+        {
+          $set: {
+            verify_status: UserVerifyStatus.Verified,
+            email_verify_token: '',
+            updated_at: '$$NOW'
+          }
+        }
+      ]
+    )
+  }
   // hàm register
-  async register(payload: RegisterRequestBody) {}
+  async register(payload: RegisterRequestBody) {
+    let user_id = new ObjectId() // lấy id sau khi success
+    const email_verify_token = await this.signEmailVerifyToken(user_id.toString())
+    const result = await databaseService.users.insertOne(
+      new User({
+        _id: user_id,
+        username: `user${user_id.toString()}`, // dùng mã để tạo ra username mặc định
+        email_verify_token,
+        ...payload,
+        password: hashPassword(payload.password),
+        date_of_birth: new Date(payload.date_of_birth)
+      })
+    )
+    // sau khi insert vào db thì sign token cho nó
+    const tokens = await this.signAccessAndRefreshTokens(user_id.toString())
+    // check có đúng email verify token gửi lên không
+    console.log(`Gửi mail link xác thực sau: 
+        http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}
+      `)
+    const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
+
+    // lưu refresh_token
+    await databaseService.refreshTokens.insertOne(
+      new RefreshToken({
+        user_id: new ObjectId(user_id),
+        token: tokens.refresh_token,
+        iat,
+        exp
+      })
+    )
+    return { tokens }
+  }
 }
 
 let usersService = new UserServices()

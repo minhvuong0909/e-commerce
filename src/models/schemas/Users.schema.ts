@@ -10,6 +10,7 @@ interface UserType {
   email: string
   date_of_birth: Date
   password: string
+  role?: USER_ROLE
   created_at?: Date
   updated_at?: Date
   email_verify_token?: string
@@ -26,11 +27,11 @@ interface UserType {
 
 export default class User {
   _id?: ObjectId
-  role_id?: ObjectId
   name: string
   email: string
   date_of_birth: Date
   password: string
+  role?: USER_ROLE
   created_at?: Date
   updated_at?: Date
   email_verify_token?: string
@@ -46,11 +47,11 @@ export default class User {
   constructor(user: UserType) {
     const date = new Date()
     this._id = user._id || new ObjectId()
-    this.role_id = user.role_id || new ObjectId()
     this.name = user.name || ''
     this.email = user.email
     this.date_of_birth = user.date_of_birth || date
     this.password = user.password
+    this.role = user.role ?? USER_ROLE.User
     this.created_at = user.created_at || date
     this.updated_at = user.updated_at || date
     this.email_verify_token = user.email_verify_token || ''

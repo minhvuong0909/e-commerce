@@ -1,5 +1,9 @@
+import { Request } from 'express'
 import { checkSchema, ParamSchema } from 'express-validator'
+import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
+import { ErrorWithStatus } from '~/models/Errors'
+import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validations'
 
 // middleware sẽ vào kiểm tra và đi qua tất các middlewares để kiểm tra request, khi chạm vào next() thì ném ra
@@ -117,4 +121,54 @@ export const loginValidator = validate(
     },
     ['body'] // chỉ check trong body
   )
+)
+
+// validate register
+export const registerValidator = validate(
+  checkSchema({
+    name: nameSchema,
+    email: {
+      notEmpty: {
+        errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
+      },
+      isEmail: {
+        errorMessage: USERS_MESSAGES.EMAIL_IS_INVALID
+      },
+      trim: true
+    },
+    password: passwordSchema,
+    confirm_password: confirmPasswordSchema,
+    date_of_birth: dataOfBirthSchema
+  })
+)
+
+// validate email verify token
+export const emailVerifyTokenValidator = validate(
+  checkSchema({
+    email_verify_token: {
+      trim: true,
+      notEmpty: {
+        errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
+      },
+      custom: {
+        options: async (value: string, { req }) => {
+          // value là email_verify_token
+          try {
+            const decode_email_verify_token = await verifyToken({
+              token: value,
+              privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string
+            })
+            // decode_email_verify_token là payload của email_verify_token
+            ;(req as Request).decode_email_verify_token = decode_email_verify_token // lưu vào trong request
+          } catch (error) {
+            throw new ErrorWithStatus({
+              status: HTTP_STATUS.UNAUTHORIZED,
+              message: USERS_MESSAGES.EMAIL_IS_INVALID
+            })
+          }
+          return true
+        }
+      }
+    }
+  })
 )
