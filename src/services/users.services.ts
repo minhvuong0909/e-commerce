@@ -9,6 +9,7 @@ import { comparePassword, hashPassword } from '~/utils/crypto'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody } from '~/models/requests/Users.requests'
+import { update } from 'lodash'
 
 class UserServices {
   // kí access_token bằng jwt
@@ -199,6 +200,30 @@ class UserServices {
   // hàm logout
   async logout(refresh_token: string) {
     await databaseService.refreshTokens.deleteOne({ token: refresh_token })
+  }
+
+  // hàm resend-verify-email
+  async resendEmailVerify(user_id: string) {
+    // cho nó kí lại email verify token
+    const email_verify_token = await this.signEmailVerifyToken(user_id)
+    console.log(`Gửi mail link xác thực sau: 
+      http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}
+    `)
+
+    // lưu vào db
+    await databaseService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      },
+      [
+        {
+          $set: {
+            email_verify_token,
+            updated_at: '$$NOW'
+          }
+        }
+      ]
+    )
   }
 }
 

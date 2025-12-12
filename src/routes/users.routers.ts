@@ -3,6 +3,7 @@ import {
   loginController,
   logoutController,
   registerController,
+  resendEmailVerifyController,
   verifyEmailController
 } from '~/controllers/users.controllers'
 import {
@@ -64,4 +65,14 @@ userRouter.get('/verify-email', emailVerifyTokenValidator, wrapAsync(verifyEmail
   }
 */
 userRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController))
+
+/*
+  desc: gửi lại link verify email khi người dùng muốn nhấn vào nút gửi lại email
+  path: users/resend-verify-email
+  method: POTST
+  header: {
+    Authorization: 'Bearer <access_token>'
+  }
+*/
+userRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
 export default userRouter

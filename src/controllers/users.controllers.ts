@@ -13,6 +13,7 @@ import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import databaseService from '~/services/database.service'
 import { UserVerifyStatus } from '~/constants/enums'
+import { json } from 'sequelize'
 
 export const loginController = async (
   req: Request<ParamsDictionary, any, LoginRequestBody>,
@@ -97,4 +98,33 @@ export const logoutController = async (
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGOUT_SUCCESS
   })
+}
+
+// resendEmailVerifyToken
+export const resendEmailVerifyController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  // lấy user từ access token đã lưu
+  const { user_id } = req.decode_authorization as TokenPayload
+  // tìm user từ user id
+  const user = await usersService.findUserById(user_id)
+  // check user đã verify chưa
+  if (user.verify_status === UserVerifyStatus.Verified) {
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_VERIFY
+    })
+  } else if (user.verify_status === UserVerifyStatus.Banned) {
+    ;(res.status(HTTP_STATUS.OK),
+      json({
+        message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED
+      }))
+  } else {
+    // chưa verify
+    await usersService.resendEmailVerify(user_id)
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.EMAIL_VERIFY_SUCCESS
+    })
+  }
 }
