@@ -34,7 +34,7 @@ export const USERS_MESSAGES = {
   REFRESH_TOKEN_IS_INVALID: 'refresh_token is invalid',
   LOGOUT_SUCCESS: 'logout is successfully',
   EMAIL_VERIFY_TOKEN_IS_REQUIRED: 'Email verify token is required',
-  EMAIL_VERIFY_TOKEN_IS_INVALID: 'Email verify token is invalid0',
+  EMAIL_VERIFY_TOKEN_IS_INVALID: 'Email verify token is invalid',
   EMAIL_VERIFY_SUCCESS: 'Email verify',
   USER_NOT_FOUND: 'User not found',
   EMAIL_HAS_BEEN_VERIFY: 'Email has been verify',

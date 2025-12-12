@@ -101,11 +101,11 @@ const dataOfBirthSchema: ParamSchema = {
   }
 }
 
-// const forgotPasswordSchema: ParamSchema = {
-//     notEmpty: {
-//         errorMessage: USERS_MESSAGES.FOR
-//     }
-// }
+const forgotPasswordSchema: ParamSchema = {
+  notEmpty: {
+    errorMessage: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_IS_REQUIRED
+  }
+}
 
 // validate login
 export const loginValidator = validate(
@@ -242,4 +242,41 @@ export const refreshTokenValidator = validate(
       }
     }
   })
+)
+
+export const forgotPasswordValidator = validate(
+  checkSchema(
+    {
+      email: {
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
+        },
+        isEmail: {
+          errorMessage: USERS_MESSAGES.EMAIL_IS_INVALID
+        },
+        trim: true
+      }
+    },
+    ['body']
+  )
+)
+
+export const forgotPasswordTokenValidator = validate(
+  checkSchema(
+    {
+      forgot_password_token: forgotPasswordSchema
+    },
+    ['body']
+  )
+)
+
+// hàm reset password validator
+export const resetPasswordValidator = validate(
+  checkSchema(
+    {
+      password: passwordSchema,
+      confirm_password: confirmPasswordSchema
+    },
+    ['body']
+  )
 )

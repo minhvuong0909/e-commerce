@@ -34,3 +34,20 @@ export interface EmailVerifyReqQuery extends ParsedQs {
 export interface LogoutRequestBody {
   refresh_token: string
 }
+
+// forgot passoword
+export interface ForgotPasswordRequestBody {
+  email: string
+}
+
+// verify forgot password token
+export interface VerifyForgotPasswordRequestBody {
+  forgot_password_token: string
+}
+
+// reset password
+export interface ResetPasswordReqBody {
+  password: string
+  confirm_password: string
+  forgot_password_token: string
+}

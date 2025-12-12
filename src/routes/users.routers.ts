@@ -1,17 +1,23 @@
 import express, { Router } from 'express'
 import {
+  forgotPasswordController,
   loginController,
   logoutController,
   registerController,
   resendEmailVerifyController,
-  verifyEmailController
+  resetPasswordController,
+  verifyEmailController,
+  verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  forgotPasswordTokenValidator,
+  forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
-  registerValidator
+  registerValidator,
+  resetPasswordValidator
 } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
@@ -75,4 +81,41 @@ userRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsyn
   }
 */
 userRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
+
+/* desc: thông báo bị quên mật khẩu, yêu cầu lấy lại
+server kiểm tra email có tồn tại trong hệ thống k 
+gửi link khôi phục account qua email cho người dùng
+gửi lên email
+  path: users/forgot-password
+  body: {email: string}
+  method: POST
+*/
+userRouter.post('/forgot-password', forgotPasswordValidator, wrapAsync(forgotPasswordController))
+
+/*
+  desc: Verify link in email to reset password
+  path: /verify-forgot-password-token
+  method: POST
+  body: {
+    verify_forgot_password_token
+  }
+*/
+userRouter.post(
+  '/verify-forgot-password-token',
+  forgotPasswordTokenValidator,
+  wrapAsync(verifyForgotPasswordTokenController)
+)
+
+/*
+  desc: Reset password khi gửi đã verify forgot password token đã gửi qua mail
+  path: rest-password
+  method: POST
+  body: {
+    password: string,
+    confirm_password: string,
+    forgot_password_token: string
+  }
+*/
+userRouter.post('/reset-password', resetPasswordValidator, wrapAsync(resetPasswordController))
+
 export default userRouter
