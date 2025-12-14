@@ -94,17 +94,13 @@ userRouter.post('/forgot-password', forgotPasswordValidator, wrapAsync(forgotPas
 
 /*
   desc: Verify link in email to reset password
-  path: /verify-forgot-password-token
+  path: /verify-forgot-password
   method: POST
   body: {
     verify_forgot_password_token
   }
 */
-userRouter.post(
-  '/verify-forgot-password-token',
-  forgotPasswordTokenValidator,
-  wrapAsync(verifyForgotPasswordTokenController)
-)
+userRouter.post('/verify-forgot-password', forgotPasswordTokenValidator, wrapAsync(verifyForgotPasswordTokenController))
 
 /*
   desc: Reset password khi gửi đã verify forgot password token đã gửi qua mail
@@ -116,6 +112,11 @@ userRouter.post(
     forgot_password_token: string
   }
 */
-userRouter.post('/reset-password', resetPasswordValidator, wrapAsync(resetPasswordController))
+userRouter.post(
+  '/reset-password',
+  resetPasswordValidator,
+  forgotPasswordTokenValidator,
+  wrapAsync(resetPasswordController)
+)
 
 export default userRouter

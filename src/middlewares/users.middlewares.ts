@@ -104,6 +104,25 @@ const dataOfBirthSchema: ParamSchema = {
 const forgotPasswordSchema: ParamSchema = {
   notEmpty: {
     errorMessage: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_IS_REQUIRED
+  },
+  custom: {
+    options: async (value: string, { req }) => {
+      //value lúc này forgot_password_token
+      try {
+        const decode_forgot_password_token = await verifyToken({
+          token: value,
+          privateKey: process.env.JWT_SECRET_FORGOT_PASWORD_TOKEN as string
+        })
+        ;(req as Request).decode_forgot_password_token = decode_forgot_password_token
+      } catch (error) {
+        throw new ErrorWithStatus({
+          status: HTTP_STATUS.UNAUTHORIZED, // 401
+          message: (error as JsonWebTokenError).message
+        })
+      }
+      //
+      return true
+    }
   }
 }
 
@@ -147,33 +166,36 @@ export const registerValidator = validate(
 
 // validate email verify token
 export const emailVerifyTokenValidator = validate(
-  checkSchema({
-    email_verify_token: {
-      trim: true,
-      notEmpty: {
-        errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
-      },
-      custom: {
-        options: async (value: string, { req }) => {
-          // value là email_verify_token
-          try {
-            const decode_email_verify_token = await verifyToken({
-              token: value,
-              privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string
-            })
-            // decode_email_verify_token là payload của email_verify_token
-            ;(req as Request).decode_email_verify_token = decode_email_verify_token // lưu vào trong request
-          } catch (error) {
-            throw new ErrorWithStatus({
-              status: HTTP_STATUS.UNAUTHORIZED,
-              message: USERS_MESSAGES.EMAIL_IS_INVALID
-            })
+  checkSchema(
+    {
+      email_verify_token: {
+        trim: true,
+        notEmpty: {
+          errorMessage: USERS_MESSAGES.EMAIL_IS_REQUIRED
+        },
+        custom: {
+          options: async (value: string, { req }) => {
+            // value là email_verify_token
+            try {
+              const decode_email_verify_token = await verifyToken({
+                token: value,
+                privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string
+              })
+              // decode_email_verify_token là payload của email_verify_token
+              ;(req as Request).decode_email_verify_token = decode_email_verify_token // lưu vào trong request
+            } catch (error) {
+              throw new ErrorWithStatus({
+                status: HTTP_STATUS.UNAUTHORIZED,
+                message: USERS_MESSAGES.EMAIL_IS_INVALID
+              })
+            }
+            return true
           }
-          return true
         }
       }
-    }
-  })
+    },
+    ['query']
+  )
 )
 // validator access_token trong header
 export const accessTokenValidator = validate(
@@ -261,6 +283,7 @@ export const forgotPasswordValidator = validate(
   )
 )
 
+// forgot password token validator
 export const forgotPasswordTokenValidator = validate(
   checkSchema(
     {

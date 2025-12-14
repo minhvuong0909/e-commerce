@@ -1,8 +1,9 @@
 import bcrypt from 'bcrypt'
 
-export function hashPassword(password: string) {
-  return bcrypt.hashSync(password, 10) // 10 là cost factor
+export const hashPassword = async (password: string) => {
+  return await bcrypt.hash(password, 10)
 }
-export function comparePassword(password: string, hashed: string) {
-  return bcrypt.compareSync(password, hashed)
+export const comparePassword = async (password: string, hashPassword: string) => {
+  if (!password || !hashPassword) return false
+  return await bcrypt.compare(password, hashPassword)
 }

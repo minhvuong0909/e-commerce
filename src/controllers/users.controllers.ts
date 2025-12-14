@@ -14,11 +14,8 @@ import usersService from '~/services/users.services'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
-import databaseService from '~/services/database.service'
 import { UserVerifyStatus } from '~/constants/enums'
 import { json } from 'sequelize'
-import { has } from 'lodash'
-import { Resend } from 'resend'
 
 export const loginController = async (
   req: Request<ParamsDictionary, any, LoginRequestBody>,
@@ -26,7 +23,9 @@ export const loginController = async (
   next: NextFunction
 ) => {
   const { email, password } = req.body
+
   const result = await usersService.login({ email, password })
+
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,
     result
@@ -65,6 +64,7 @@ export const verifyEmailController = async (
   const { user_id } = req.decode_email_verify_token as TokenPayload
   // check user có gửi lên kh
   const user = await usersService.checkEmailVerifyToken({ user_id, email_verify_token })
+
   if (user.verify_status === UserVerifyStatus.Banned) {
     res.status(HTTP_STATUS.ACCEPTED).json({
       message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED
@@ -150,9 +150,11 @@ export const forgotPasswordController = async (
     })
   } else {
     // nếu tồn tại gửi link cho nó
-    await usersService.forgotPassword(email)
+    const forgot_password_token = await usersService.forgotPassword(email)
+
     res.status(HTTP_STATUS.OK).json({
-      message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD
+      message: USERS_MESSAGES.CHECK_EMAIL_TO_RESET_PASSWORD,
+      result: forgot_password_token
     })
   }
 }
@@ -163,6 +165,11 @@ export const verifyForgotPasswordTokenController = async (
   res: Response,
   next: NextFunction
 ) => {
+  if (!req.decode_forgot_password_token) {
+    return res.status(401).json({
+      message: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_IS_REQUIRED
+    })
+  }
   // kiểm tra token có trùng hợp
   const { forgot_password_token } = req.body
   const { user_id } = req.decode_forgot_password_token as TokenPayload
@@ -193,7 +200,9 @@ export const resetPasswordController = async (
   next: NextFunction
 ) => {
   const { forgot_password_token, password } = req.body
-  const { user_id } = req.decode_authorization as TokenPayload
+  const { user_id } = req.decode_forgot_password_token as TokenPayload
+  console.log('User: ', user_id)
+
   // tìm user
   const user = await usersService.findUserById(user_id)
   if (!user) {

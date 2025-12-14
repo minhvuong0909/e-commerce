@@ -111,8 +111,9 @@ class UserServices {
         status: HTTP_STATUS.UNPROCESSABLE_ENTITY // 422
       })
     }
+
     // password error
-    if (!comparePassword(password, user.password)) {
+    if (!(await comparePassword(password, user.password))) {
       throw new ErrorWithStatus({
         status: HTTP_STATUS.UNPROCESSABLE_ENTITY, // 422
         message: USERS_MESSAGES.Password_IS_INCORRECT
@@ -197,6 +198,7 @@ class UserServices {
   // hàm register
   async register(payload: RegisterRequestBody) {
     let user_id = new ObjectId() // lấy id sau khi success
+    const passwordHashed = await hashPassword(payload.password)
     const email_verify_token = await this.signEmailVerifyToken(user_id.toString())
     const result = await databaseService.users.insertOne(
       new User({
@@ -204,7 +206,7 @@ class UserServices {
         username: `user${user_id.toString()}`, // dùng mã để tạo ra username mặc định
         email_verify_token,
         ...payload,
-        password: hashPassword(payload.password),
+        password: passwordHashed,
         date_of_birth: new Date(payload.date_of_birth)
       })
     )
@@ -313,7 +315,7 @@ class UserServices {
           }
         ]
       )
-      const uri = `http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}`
+      const uri = `http://localhost:3000/users/verify-forgot-password/?forgot_password_token=${forgot_password_token}`
       await this.sendEmail(
         user.email,
         'Verify your account',
@@ -324,26 +326,30 @@ class UserServices {
         `
       )
       // gửi email cái link cho người dùng
+      // console.log(`Gửi mail link xác thực sau:
+      //   http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}
+      // `)
       console.log(`Gửi mail link xác thực sau: 
-        http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}
+        http://localhost:3000/reset-password/?forgot_password_token=${forgot_password_token}
       `)
     }
   }
   // reset password khi gửi mail forgot password
   async resetPassword({ user_id, password }: { user_id: string; password: string }) {
+    // hash password trước khi luu vì db không thể luu trực tiếp
+    const passwordHashed = await hashPassword(password)
     await databaseService.users.updateOne(
       {
         _id: new ObjectId(user_id)
       },
-      [
-        {
-          $set: {
-            password: hashPassword(password),
-            forgot_password_token: '',
-            updated_at: '$$NOW'
-          }
+
+      {
+        $set: {
+          password: passwordHashed,
+          forgot_password_token: '',
+          updated_at: new Date()
         }
-      ]
+      }
     )
   }
 }
