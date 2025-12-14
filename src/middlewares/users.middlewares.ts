@@ -91,13 +91,28 @@ const nameSchema: ParamSchema = {
   }
 }
 
-const dataOfBirthSchema: ParamSchema = {
+const dateOfBirthSchema: ParamSchema = {
   isISO8601: {
     options: {
       strict: true,
       strictSeparator: true
     },
     errorMessage: USERS_MESSAGES.DATE_OF_BIRTH_BE_ISO8601
+  }
+}
+// hàm check iamge của profile
+const imageSchema: ParamSchema = {
+  optional: true,
+  isString: {
+    errorMessage: USERS_MESSAGES.IMAGE_URL_MUST_BE_A_STRING
+  },
+  trim: true,
+  isLength: {
+    options: {
+      min: 1,
+      max: 400
+    },
+    errorMessage: USERS_MESSAGES.IMAGE_URL_LENGTH_MUST_BE_LESS_THAN_400
   }
 }
 
@@ -160,7 +175,7 @@ export const registerValidator = validate(
     },
     password: passwordSchema,
     confirm_password: confirmPasswordSchema,
-    date_of_birth: dataOfBirthSchema
+    date_of_birth: dateOfBirthSchema
   })
 )
 
@@ -299,6 +314,84 @@ export const resetPasswordValidator = validate(
     {
       password: passwordSchema,
       confirm_password: confirmPasswordSchema
+    },
+    ['body']
+  )
+)
+
+// validate update profile
+export const updateMeValidator = validate(
+  checkSchema(
+    {
+      name: {
+        optional: true,
+        ...nameSchema,
+        notEmpty: undefined
+      },
+      date_of_birth: {
+        optional: true,
+        ...dateOfBirthSchema,
+        notEmpty: undefined
+      },
+      bio: {
+        optional: true,
+        isString: {
+          errorMessage: USERS_MESSAGES.BIO_MUST_BE_A_STRING
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: USERS_MESSAGES.BIO_LENGTH_MUST_BE_LESS_THAN_200
+        }
+      },
+      location: {
+        optional: true,
+        isString: {
+          errorMessage: USERS_MESSAGES.LOCATION_MUST_BE_A_STRING
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: USERS_MESSAGES.LOCATION_LENGTH_MUST_BE_LESS_THAN_200
+        }
+      },
+      website: {
+        optional: true,
+        isString: {
+          errorMessage: USERS_MESSAGES.WEBSITE_MUST_BE_A_STRING
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+
+          errorMessage: USERS_MESSAGES.WEBSITE_LENGTH_MUST_BE_LESS_THAN_200
+        }
+      },
+      username: {
+        optional: true,
+        isString: {
+          errorMessage: USERS_MESSAGES.USERNAME_MUST_BE_A_STRING
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 50
+          },
+          errorMessage: USERS_MESSAGES.USERNAME_LENGTH_MUST_BE_LESS_THAN_50
+        }
+      },
+      avatar: imageSchema,
+      cover_photo: imageSchema
     },
     ['body']
   )

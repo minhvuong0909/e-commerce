@@ -7,6 +7,7 @@ import {
   RegisterRequestBody,
   ResetPasswordReqBody,
   TokenPayload,
+  UpdateProfileRequestBody,
   VerifyForgotPasswordRequestBody
 } from '~/models/requests/Users.requests'
 import { ParamsDictionary } from 'express-serve-static-core'
@@ -224,3 +225,24 @@ export const resetPasswordController = async (
     message: USERS_MESSAGES.RESEND_EMAIL_SUCCESS
   })
 }
+
+// hàm getMeController
+export const getProfileController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.getProfile(user_id)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    result: user
+  })
+}
+
+// hàm update profile controller
+export const updateProfileController = async (
+  req: Request<ParamsDictionary, any, UpdateProfileRequestBody>,
+  res: Response,
+  next: NextFunction
+) => {}

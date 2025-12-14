@@ -51,3 +51,15 @@ export interface ResetPasswordReqBody {
   confirm_password: string
   forgot_password_token: string
 }
+
+// update profile request
+export interface UpdateProfileRequestBody {
+  name?: string
+  date_of_birth?: string //vì ngta truyền lên string dạng ISO8601, k phải date
+  bio?: string
+  location?: string
+  website?: string
+  username?: string
+  avatar?: string
+  cover_photo?: string
+}

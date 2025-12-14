@@ -352,6 +352,28 @@ class UserServices {
       }
     )
   }
+
+  // get profile
+  async getProfile(user_id: string) {
+    const user = await databaseService.users.findOne(
+      { _id: new ObjectId(user_id) },
+      {
+        // che giấu field kh show
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0
+        }
+      }
+    )
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.NOT_FOUND,
+        message: USERS_MESSAGES.USER_NOT_FOUND
+      })
+    }
+    return user
+  }
 }
 
 let usersService = new UserServices()
