@@ -70,3 +70,8 @@ export interface ChangePasswordReqBody {
   password: string
   confirm_password: string
 }
+
+// refresh token
+export interface RefreshTokenReqBody {
+  refresh_token: string
+}

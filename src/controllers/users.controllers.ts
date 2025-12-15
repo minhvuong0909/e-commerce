@@ -5,6 +5,7 @@ import {
   ForgotPasswordRequestBody,
   LoginRequestBody,
   LogoutRequestBody,
+  RefreshTokenReqBody,
   RegisterRequestBody,
   ResetPasswordReqBody,
   TokenPayload,
@@ -276,5 +277,22 @@ export const changePasswordController = async (
   await usersService.changePassword({ user_id, old_password, password })
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
+  })
+}
+
+// hàm refresh token
+export const refreshTokenController = async (
+  req: Request<ParamsDictionary, any, RefreshTokenReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { refresh_token } = req.body
+  const { user_id, exp } = req.decode_refresh_token as TokenPayload
+  // check trong db có refresh token hay khong
+  await usersService.checkRefreshToken({ user_id, refresh_token })
+  const result = await usersService.refreshToken({ user_id, refresh_token, exp })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
+    result
   })
 }

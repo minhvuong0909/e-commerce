@@ -470,6 +470,28 @@ class UserServices {
     )
     return user
   }
+
+  // hàm refresh token
+  async refreshToken({ user_id, refresh_token, exp }: { user_id: string; refresh_token: string; exp: number }) {
+    // kì access và refresh
+    const tokens = await this.signAccessAndRefreshTokens(user_id)
+    const { iat } = await this.decodeRefreshToken(refresh_token)
+    // lưu refresh token mới
+    await databaseService.refreshTokens.insertOne(
+      new RefreshToken({
+        token: tokens.refresh_token,
+        user_id: new ObjectId(user_id),
+        iat,
+        exp
+      })
+    )
+    // invoke token cũ
+    await databaseService.refreshTokens.deleteOne({ token: refresh_token })
+    // trả refresh token mới
+    return {
+      tokens
+    }
+  }
 }
 
 let usersService = new UserServices()
