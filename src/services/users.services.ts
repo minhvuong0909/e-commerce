@@ -419,6 +419,56 @@ class UserServices {
         }
       }
     )
+    return user
+  }
+
+  async changePassword({
+    user_id,
+    old_password,
+    password
+  }: {
+    user_id: string
+    old_password: string
+    password: string
+  }) {
+    console.log('vào chưa')
+
+    const user = await databaseService.users.findOne({
+      _id: new ObjectId(user_id)
+    })
+
+    // check user
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.USER_NOT_FOUND
+      })
+    }
+
+    // check password user
+    const isMatch = await comparePassword(old_password, user.password)
+
+    if (!isMatch) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.Password_IS_INCORRECT
+      })
+    }
+
+    // nếu exist
+    const newPasswordHashed = await hashPassword(password)
+    await databaseService.users.updateOne(
+      {
+        _id: new ObjectId(user_id)
+      },
+      {
+        $set: {
+          password: newPasswordHashed,
+          updated_at: new Date()
+        }
+      }
+    )
+    return user
   }
 }
 

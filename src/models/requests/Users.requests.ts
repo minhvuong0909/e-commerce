@@ -63,3 +63,10 @@ export interface UpdateProfileRequestBody {
   avatar?: string
   cover_photo?: string
 }
+
+// change password
+export interface ChangePasswordReqBody {
+  old_password: string
+  password: string
+  confirm_password: string
+}

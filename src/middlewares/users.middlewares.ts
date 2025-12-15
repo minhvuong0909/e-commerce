@@ -396,3 +396,11 @@ export const updateProfileValidator = validate(
     ['body']
   )
 )
+
+export const changePasswordValidator = validate(
+  checkSchema({
+    old_password: passwordSchema,
+    password: passwordSchema,
+    confirm_password: confirmPasswordSchema
+  })
+)

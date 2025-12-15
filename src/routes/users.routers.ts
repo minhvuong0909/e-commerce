@@ -1,5 +1,6 @@
 import express, { Router } from 'express'
 import {
+  changePasswordController,
   forgotPasswordController,
   getProfileController,
   loginController,
@@ -14,6 +15,7 @@ import {
 import { filterMiddleware } from '~/middlewares/common.middlewares'
 import {
   accessTokenValidator,
+  changePasswordValidator,
   emailVerifyTokenValidator,
   forgotPasswordTokenValidator,
   forgotPasswordValidator,
@@ -134,7 +136,19 @@ userRouter.post(
 userRouter.post('/me', accessTokenValidator, wrapAsync(getProfileController))
 
 /*
-
+des: update profile của user
+path: '/me'
+method: patch
+Header: {Authorization: Bearer <access_token>}
+body: {
+  name?: string
+  date_of_birth?: Date
+  bio?: string // optional
+  location?: string // optional
+  website?: string // optional
+  username?: string // optional
+  avatar?: string // optional
+  cover_photo?: string // optional}
 */
 userRouter.patch(
   '/me',
@@ -152,4 +166,17 @@ userRouter.patch(
   updateProfileValidator,
   wrapAsync(updateProfileController)
 )
+
+/*
+  desc: change password
+  path: users/change-password
+  method: PUT
+  headers: {Authorization: 'Bear <access_token>'}
+  body: {
+    old_password: string,
+    password: string
+    confirm_password: string
+  }
+*/
+userRouter.put('/change-password', accessTokenValidator, changePasswordValidator, wrapAsync(changePasswordController))
 export default userRouter

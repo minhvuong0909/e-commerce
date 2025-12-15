@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import {
+  ChangePasswordReqBody,
   EmailVerifyReqQuery,
   ForgotPasswordRequestBody,
   LoginRequestBody,
@@ -260,5 +261,20 @@ export const updateProfileController = async (
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS,
     result: userInfo
+  })
+}
+
+// hàm change password
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const { old_password, password } = req.body
+  // change
+  await usersService.changePassword({ user_id, old_password, password })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
   })
 }
