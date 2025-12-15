@@ -245,4 +245,20 @@ export const updateProfileController = async (
   req: Request<ParamsDictionary, any, UpdateProfileRequestBody>,
   res: Response,
   next: NextFunction
-) => {}
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  // check status của user
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  // update profile
+  const userInfo = await usersService.updateProfile({ user_id, payload: req.body })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS,
+    result: userInfo
+  })
+}

@@ -320,7 +320,7 @@ export const resetPasswordValidator = validate(
 )
 
 // validate update profile
-export const updateMeValidator = validate(
+export const updateProfileValidator = validate(
   checkSchema(
     {
       name: {

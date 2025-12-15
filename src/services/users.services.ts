@@ -8,9 +8,10 @@ import { USERS_MESSAGES } from '~/constants/messages'
 import { comparePassword, hashPassword } from '~/utils/crypto'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import User from '~/models/schemas/Users.schema'
-import { RegisterRequestBody } from '~/models/requests/Users.requests'
+import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { update } from 'lodash'
 import { Resend } from 'resend'
+import { REGEX_USERNAME } from '~/constants/regex'
 
 class UserServices {
   // kí access_token bằng jwt
@@ -373,6 +374,51 @@ class UserServices {
       })
     }
     return user
+  }
+
+  // hàm update profile
+  async updateProfile({ user_id, payload }: { user_id: string; payload: UpdateProfileRequestBody }) {
+    // config date_of_birth vì request gửi lên dạng string iso8601 còn trong db lưu là date
+    const _payload = payload.date_of_birth ? { ...payload, date_of_birth: new Date(payload.date_of_birth) } : payload
+    // check username
+    if (_payload.username) {
+      // check có giống user name không
+      const user = await databaseService.users.findOne({ username: _payload.username })
+      if (user) {
+        throw new ErrorWithStatus({
+          status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+          message: USERS_MESSAGES.USERNAME_ALREADY_EXISTS
+        })
+      }
+      if (!REGEX_USERNAME.test(_payload.username)) {
+        throw new ErrorWithStatus({
+          status: HTTP_STATUS.UNPROCESSABLE_ENTITY,
+          message: USERS_MESSAGES.USERNAME_IS_INVALID
+        })
+      }
+    }
+    // update profile
+    const user = await databaseService.users.findOneAndUpdate(
+      {
+        _id: new ObjectId(user_id)
+      },
+      [
+        {
+          $set: {
+            ...payload,
+            updated_at: '$$NOW'
+          }
+        }
+      ],
+      {
+        returnDocument: 'after', // trả về document sau khi update
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0
+        }
+      }
+    )
   }
 }
 

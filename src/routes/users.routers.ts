@@ -7,9 +7,11 @@ import {
   registerController,
   resendEmailVerifyController,
   resetPasswordController,
+  updateProfileController,
   verifyEmailController,
   verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
+import { filterMiddleware } from '~/middlewares/common.middlewares'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
@@ -18,8 +20,10 @@ import {
   loginValidator,
   refreshTokenValidator,
   registerValidator,
-  resetPasswordValidator
+  resetPasswordValidator,
+  updateProfileValidator
 } from '~/middlewares/users.middlewares'
+import { UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { wrapAsync } from '~/utils/handlers'
 
 // chia dự án thành nhìu router
@@ -129,4 +133,23 @@ userRouter.post(
 */
 userRouter.post('/me', accessTokenValidator, wrapAsync(getProfileController))
 
+/*
+
+*/
+userRouter.patch(
+  '/me',
+  filterMiddleware<UpdateProfileRequestBody>([
+    'name',
+    'date_of_birth',
+    'bio',
+    'location',
+    'website',
+    'avatar',
+    'username',
+    'cover_photo'
+  ]),
+  accessTokenValidator,
+  updateProfileValidator,
+  wrapAsync(updateProfileController)
+)
 export default userRouter
