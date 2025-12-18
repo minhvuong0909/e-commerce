@@ -1,9 +1,6 @@
-import { ChangePasswordPage } from './pages/auth/ChangePasswordPage'
-import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
-import { LoginPage } from './pages/auth/LoginPage'
-import { SetNewPasswordPage } from './pages/auth/SetNewPasswordPage'
-import { SignUpPage } from './pages/auth/SignUpPage'
+import { RouterProvider } from 'react-router-dom'
+import { router } from './configs/routers'
 
 export default function App() {
-  return <ChangePasswordPage />
+  return <RouterProvider router={router} />
 }

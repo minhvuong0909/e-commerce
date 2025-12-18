@@ -1,7 +1,7 @@
 import { LandingLayout } from '../components/templates/LandingLayout'
 import { HeaderContent } from '../components/molecules/home/Content'
 
-const HomePage: React.FC = () => {
+export const HomePage: React.FC = () => {
   return (
     <LandingLayout>
       {/* Hero sẽ gắn ở đây */}
@@ -10,4 +10,4 @@ const HomePage: React.FC = () => {
   )
 }
 
-export default HomePage
+// export default HomePage

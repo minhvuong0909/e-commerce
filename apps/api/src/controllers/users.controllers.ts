@@ -12,13 +12,13 @@ import {
   UpdateProfileRequestBody,
   VerifyForgotPasswordRequestBody
 } from '~/models/requests/Users.requests'
-import { ParamsDictionary } from 'express-serve-static-core'
 import usersService from '~/services/users.services'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { UserVerifyStatus } from '~/constants/enums'
 import { json } from 'sequelize'
+import { ParamsDictionary } from 'express-serve-static-core'
 
 export const loginController = async (
   req: Request<ParamsDictionary, any, LoginRequestBody>,
