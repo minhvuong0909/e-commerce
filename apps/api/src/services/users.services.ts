@@ -9,9 +9,16 @@ import { comparePassword, hashPassword } from '~/utils/crypto'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests/Users.requests'
-import { update } from 'lodash'
-import { Resend } from 'resend'
 import { REGEX_USERNAME } from '~/constants/regex'
+import nodemailer from 'nodemailer'
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS
+  }
+})
 
 class UserServices {
   // kí access_token bằng jwt
@@ -20,7 +27,7 @@ class UserServices {
     return signToken({
       payload: { user_id, token_type: TokenType.AccessToken },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
-      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN  }
+      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN }
     })
   }
 
@@ -49,18 +56,16 @@ class UserServices {
     })
   }
   // hàm gửi mail xác thức token
-  async sendEmail(to: string, subject: string, html: string) {
-    const resend = new Resend(process.env.RESEND_API_KEY)
+  private async sendEmail(to: string, subject: string, html: string) {
     try {
-      const result = await resend.emails.send({
-        from: process.env.EMAIL_ECOMMERCE as string,
+      return await transporter.sendMail({
+        from: process.env.GMAIL_USER as string,
         to,
         subject,
-        html
+        html: html
       })
-      return result
     } catch (error) {
-      console.error('Email error:', error)
+      console.error('Send email error:', error)
       throw error
     }
   }
@@ -221,7 +226,18 @@ class UserServices {
       `
           <h2>Welcome to My E-commerce</h2>
           <p>Click the link below to verify your account:</p>
-          <a href="${uri}">${uri}</a>
+          <a href="${uri}"
+       style="
+         display: inline-block;
+         padding: 12px 24px;
+         background-color: #2563eb;
+         color: #ffffff;
+         text-decoration: none;
+         border-radius: 6px;
+         font-weight: bold;
+       ">
+      Verify Account
+    </a>
         `
     )
     console.log(`Gửi mail link xác thực sau: 
@@ -323,7 +339,18 @@ class UserServices {
         `
           <h2>Welcome to My E-commerce</h2>
           <p>Click the link below to verify your account:</p>
-          <a href="${uri}">${uri}</a>
+                    <a href="${uri}"
+       style="
+         display: inline-block;
+         padding: 12px 24px;
+         background-color: #2563eb;
+         color: #ffffff;
+         text-decoration: none;
+         border-radius: 6px;
+         font-weight: bold;
+       ">
+      Verify Account
+    </a>
         `
       )
       // gửi email cái link cho người dùng

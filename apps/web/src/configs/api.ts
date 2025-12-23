@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.BASE_URL_API}`
+  baseURL: `${import.meta.env.VITE_BASE_URL_API}`
 })
-
+console.log('API URL:', import.meta.env.VITE_BASE_URL_API)
 // request interceptor
 api.interceptors.request.use(
   (config) => {
@@ -92,3 +92,5 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+export default api

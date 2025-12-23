@@ -1,21 +1,33 @@
-import { Form } from 'antd'
+import { Form, message } from 'antd'
 import { AppInput } from '../../atoms/AppInput'
 import { AppButton } from '../../atoms/AppButton'
-
-interface ForgotPasswordValues {
-  email: string
-}
+import type { ForgotPasswordPayload } from '../../../models/auth/auths.request'
+import { forgotPassword } from '../../../services/auth.service'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export const ForgotPasswordForm = () => {
-  const handleSubmit = (values: ForgotPasswordValues) => {
-    console.log('Reset password for:', values.email)
-    // TODO: call API forgot password
+  const navigate = useNavigate()
+  const [email, setEmail] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(false)
+
+  const handleSubmit = async (values: ForgotPasswordPayload) => {
+    try {
+      setLoading(true)
+      await forgotPassword(values)
+      message.success('Vui lòng kiểm tra email để đặt lại mật khẩu')
+    } catch (error: any) {
+      message.error(error?.response?.data?.message)
+      navigate('/users/reset-password')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <Form layout='vertical' className='space-y-8' onFinish={handleSubmit}>
       <Form.Item name='email'>
-        <AppInput label='Email' />
+        <AppInput label='Email' value={email} onChange={(e) => setEmail(e.target.value)} />
       </Form.Item>
 
       <AppButton

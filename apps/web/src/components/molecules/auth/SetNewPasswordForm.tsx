@@ -1,16 +1,22 @@
 import { Form } from 'antd'
 import { AppInput } from '../../atoms/AppInput'
 import { AppButton } from '../../atoms/AppButton'
-
-interface Values {
-  password: string
-  confirmPassword: string
-}
+import type { ResetPasswordPayload } from '../../../models/auth/auths.request'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import { resetPassword } from '../../../services/auth.service'
 
 export const SetNewPasswordForm = () => {
-  const handleSubmit = (values: Values) => {
-    console.log('New password:', values)
-    // TODO: call API update password
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const handleSubmit = async (values: ResetPasswordPayload) => {
+    try {
+      await resetPassword(values)
+      toast.success('Reset mật khẩu thành công !')
+      navigate('/sign-in')
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Đăng ký thất bại')
+    }
   }
 
   return (

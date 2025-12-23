@@ -4,13 +4,19 @@ import { swaggerSpec, swaggerUi } from './config/swagger.ui'
 import databaseService from './services/database.service'
 import userRouter from './routes/users.routers'
 import { Request, Response, NextFunction } from 'express'
-
 import { defaultErrorHandler } from './middlewares/error.middlewares'
 dotenv.config()
-
+const cors = require('cors')
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
 
+//
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+  })
+)
 // kết nối db
 databaseService.connect()
 app.use(express.json()) // cho server xài middleware biến đổi json khi sử dụng post()

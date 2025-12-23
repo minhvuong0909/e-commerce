@@ -4,6 +4,7 @@ import { HomePage } from '../pages/HomePage'
 import { LoginPage } from '../pages/auth/LoginPage'
 import { SignUpPage } from '../pages/auth/SignUpPage'
 import { ForgotPasswordPage } from '../pages/auth/ForgotPasswordPage'
+import { SetNewPasswordPage } from '../pages/auth/SetNewPasswordPage'
 
 export const router = createBrowserRouter([
   // ==== HOME ====
@@ -28,5 +29,11 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.FORGET_PASSWORD,
     element: <ForgotPasswordPage />
+  },
+
+  // ==== RESET_PASSWORD ====
+  {
+    path: ROUTES.RESET_PASSWORD,
+    element: <SetNewPasswordPage />
   }
 ])

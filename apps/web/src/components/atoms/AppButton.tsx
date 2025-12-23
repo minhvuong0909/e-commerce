@@ -7,9 +7,10 @@ interface Props {
   variant?: 'solid' | 'outline'
   className?: string
   htmlType?: 'button' | 'submit' | 'reset'
+  disable?: boolean
 }
 
-export const AppButton = ({ children, type = 'default', htmlType, variant = 'solid', className }: Props) => {
+export const AppButton = ({ children, type = 'default', htmlType, variant = 'solid', className, disable }: Props) => {
   return (
     <Button
       type={type}
@@ -19,6 +20,7 @@ export const AppButton = ({ children, type = 'default', htmlType, variant = 'sol
         variant === 'outline' && 'bg-transparent border border-white text-white',
         className
       )}
+      disabled={disable}
     >
       {children}
     </Button>
