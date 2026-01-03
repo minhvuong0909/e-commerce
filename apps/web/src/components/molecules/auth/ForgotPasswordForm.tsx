@@ -7,18 +7,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 export const ForgotPasswordForm = () => {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
-
+  const navigate = useNavigate()
   const handleSubmit = async (values: ForgotPasswordPayload) => {
     try {
       setLoading(true)
       await forgotPassword(values)
       message.success('Vui lòng kiểm tra email để đặt lại mật khẩu')
+      navigate('/reset-password')
     } catch (error: any) {
       message.error(error?.response?.data?.message)
-      navigate('/users/reset-password')
     } finally {
       setLoading(false)
     }
@@ -26,8 +24,14 @@ export const ForgotPasswordForm = () => {
 
   return (
     <Form layout='vertical' className='space-y-8' onFinish={handleSubmit}>
-      <Form.Item name='email'>
-        <AppInput label='Email' value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Form.Item
+        name='email'
+        rules={[
+          { required: true, message: 'Email is required' },
+          { type: 'email', message: 'Email không hợp lệ' }
+        ]}
+      >
+        <AppInput label='Email' />
       </Form.Item>
 
       <AppButton

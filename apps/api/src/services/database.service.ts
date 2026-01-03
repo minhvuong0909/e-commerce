@@ -2,6 +2,9 @@ import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
 import dotenv from 'dotenv'
 import User from '~/models/schemas/Users.schema'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
+import Product from '~/models/schemas/Products.schema'
+import Category from '~/models/schemas/Categories.schema'
+import Brand from '~/models/schemas/Brands.schema'
 
 dotenv.config()
 
@@ -35,6 +38,21 @@ class DatabaseService {
   // instance của refresh_tokens
   get refreshTokens(): Collection<RefreshToken> {
     return this.db.collection(process.env.DB_REFRESHTOKENS_COLLECTION as string)
+  }
+
+  // instance của products
+  get products(): Collection<Product> {
+    return this.db.collection(process.env.DB_PRODUCTS_COLLECTION as string)
+  }
+
+  // instance của categories
+  get categories(): Collection<Category> {
+    return this.db.collection(process.env.DB_CATEGORY_COLLECTION as string)
+  }
+
+  // instance của categories
+  get brands(): Collection<Brand> {
+    return this.db.collection(process.env.DB_BRANDS_COLLECTION as string)
   }
 }
 

@@ -1,13 +1,27 @@
-import { Request } from 'express'
+import { NextFunction, Request, Response } from 'express'
+import { ParamsDictionary } from 'express-serve-static-core'
 import { checkSchema, ParamSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { capitalize } from 'lodash'
+import { EnumDataType } from 'sequelize'
+import { USER_ROLE } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Users.requests'
+import User from '~/models/schemas/Users.schema'
+import databaseService from '~/services/database.service'
+import usersService from '~/services/users.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validations'
+
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User
+    }
+  }
+}
 
 // middleware sẽ vào kiểm tra và đi qua tất các middlewares để kiểm tra request, khi chạm vào next() thì ném ra
 const passwordSchema: ParamSchema = {
@@ -331,7 +345,7 @@ export const updateProfileValidator = validate(
       date_of_birth: {
         optional: true,
         ...dateOfBirthSchema,
-        notEmpty: undefined
+        notEmpty: undefined 
       },
       bio: {
         optional: true,
@@ -404,3 +418,20 @@ export const changePasswordValidator = validate(
     confirm_password: confirmPasswordSchema
   })
 )
+
+// check role
+// export const checkPermissions =
+//  (...allowedRoles: USER_ROLE[]) => 
+//   (req: Request, res: Response, next: NextFunction) => {
+//     const user_id = req.decode_authorization?.user_id
+//     const userRole = await usersService.findUserById({user_id})
+//     console.log('Role: ', userRole)
+
+//     if (!userRole || !allowedRoles.includes(userRole)) {
+//       return res.status(HTTP_STATUS.FORBIDDEN).json({
+//         message: USERS_MESSAGES.PERMISSION_DENIED
+//       })
+//     }
+
+//     next()
+//   }

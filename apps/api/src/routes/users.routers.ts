@@ -1,8 +1,10 @@
 import express, { Router } from 'express'
+import { USER_ROLE } from '~/constants/enums'
 import {
   changePasswordController,
   forgotPasswordController,
   getProfileController,
+  getUsers,
   loginController,
   logoutController,
   refreshTokenController,
@@ -191,4 +193,12 @@ userRouter.put('/change-password', accessTokenValidator, changePasswordValidator
   }
 */
 userRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenController))
+
+/*
+  desc: get list users 
+  path: users
+  method: get
+*/
+// userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(getUsers))
+
 export default userRouter

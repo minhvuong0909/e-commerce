@@ -22,3 +22,9 @@ export enum RoleStatus {
   ACTIVE, // hoạt động
   INACTIVE // không hoạt động
 }
+
+// status product
+export enum PRODUCT_STATUS {
+  Active, // còn hàng
+  Stock // hết hàng
+}

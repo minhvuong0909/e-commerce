@@ -16,9 +16,11 @@ import usersService from '~/services/users.services'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
-import { UserVerifyStatus } from '~/constants/enums'
+import { RoleStatus, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { json } from 'sequelize'
 import { ParamsDictionary } from 'express-serve-static-core'
+import User from '~/models/schemas/Users.schema'
+import databaseService from '~/services/database.service'
 
 export const loginController = async (
   req: Request<ParamsDictionary, any, LoginRequestBody>,
@@ -294,5 +296,45 @@ export const refreshTokenController = async (
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
     result
+  })
+}
+
+// hàm getUsers
+export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
+  const page = Number(req.query.body) || 1
+  const limit = Number(req.query.limit) || 10
+  const users = await databaseService.users
+    .find(
+      { role: USER_ROLE.User },
+      {
+        projection: {
+          _id: 1,
+          name: 1,
+          username: 1,
+          location: 1,
+          email: 1,
+          avatar: 1,
+          role: 1,
+          createdAt: 1
+        }
+      }
+    )
+    .sort({ createdAt: -1 }) // sort desc
+    .skip((page - 1) * limit)
+    .limit(limit)
+    .toArray()
+
+  const totalPage = await databaseService.users.countDocuments({
+    role: USER_ROLE.User
+  })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.GET_USERS_SUCCESS,
+    data: users,
+    pagination: {
+      page,
+      limit,
+      totalItems: totalPage,
+      totalPages: Math.ceil(totalPage / limit)
+    }
   })
 }

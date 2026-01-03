@@ -5,6 +5,7 @@ import databaseService from './services/database.service'
 import userRouter from './routes/users.routers'
 import { Request, Response, NextFunction } from 'express'
 import { defaultErrorHandler } from './middlewares/error.middlewares'
+import productRouter from './routes/products.routes'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -23,6 +24,7 @@ app.use(express.json()) // cho server xài middleware biến đổi json khi s�
 // gọi server dùng router để tạo
 app.use('/users', userRouter)
 
+app.use('/products', productRouter)
 // lỗi của controller ressponse
 app.use(defaultErrorHandler)
 

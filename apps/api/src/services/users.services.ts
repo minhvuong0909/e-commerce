@@ -332,7 +332,7 @@ class UserServices {
           }
         ]
       )
-      const uri = `http://localhost:3000/users/verify-forgot-password/?forgot_password_token=${forgot_password_token}`
+      const uri = `http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}`
       await this.sendEmail(
         user.email,
         'Verify your account',
@@ -354,12 +354,12 @@ class UserServices {
         `
       )
       // gửi email cái link cho người dùng
-      // console.log(`Gửi mail link xác thực sau:
-      //   http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}
-      // `)
-      console.log(`Gửi mail link xác thực sau: 
-        http://localhost:3000/reset-password/?forgot_password_token=${forgot_password_token}
+      console.log(`Gửi mail link xác thực sau:
+        http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}
       `)
+      // console.log(`Gửi mail link xác thực sau:
+      //   http://localhost:3000/users/reset-password/?token=${forgot_password_token}
+      // `)
     }
   }
   // reset password khi gửi mail forgot password
@@ -519,6 +519,19 @@ class UserServices {
       tokens
     }
   }
+
+  // admin || staff
+  async checkRole(user_id: string) {
+    const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: USERS_MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return user?.role === USER_ROLE.Admin || user?.role === USER_ROLE.Staff
+  }
+  // admin ban account of
 }
 
 let usersService = new UserServices()

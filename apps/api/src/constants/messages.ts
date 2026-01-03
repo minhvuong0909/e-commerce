@@ -28,6 +28,7 @@ export const USERS_MESSAGES = {
   Password_IS_INCORRECT: 'Password is incorrect',
   EMAIL_OR_PASSWORD_IS_INCORRECT: 'Email or password is incorrect',
   REGISTER_SUCCESS: 'Register successfully',
+  GET_USERS_SUCCESS: 'Get list users successfully',
   LOGIN_SUCCESS: 'Login successfully',
   ACCESS_TOKEN_IS_REQUIRED: 'access_token is required',
   REFRESH_TOKEN_IS_REQUIRED: 'register_token is required',
@@ -64,5 +65,53 @@ export const USERS_MESSAGES = {
   EMAIL_HAS_BEEN_UNVERIFIED: 'Email has been unverified',
   CHANGE_PASSWORD_SUCCESS: 'Change password success',
   REFRESH_TOKEN_SUCCESS: 'Refresh token success',
-  USERS_IS_NOT_ADMIN: 'User is not admin'
+  USERS_IS_NOT_ADMIN: 'User is not admin',
+  PERMISSION_DENIED: 'Permission denied'
 }
+
+export const PRODUCTS_MESSAGES = {
+  VALIDATION_ERROR: 'Validation error',
+  // product
+  NAME_IS_REQUIRED: 'Name of product is required',
+  QUANTITY_IS_REQUIRED: 'Quantity of product is required',
+  QUANTITY_MUST_BE_NON_NEGATIVE: 'Quantity of product must be positive',
+  NAME_MUST_BE_A_STRING: 'Name of product must be a string',
+  PRODUCT_NAME_LENGTH: 'Name of product must be from 1 to 200',
+  PRICE_IS_REQUIRED: 'Price of product is required',
+  PRICE_MUST_BE_NON_NEGATIVE: 'Price of product must be positive',
+  DESCRIPTION_MUST_BE_STRING: 'Description of product must be string',
+  ORIGIN_IS_REQUIRED: 'Origin of product is required',
+  ORIGIN_MUST_BE_STRING: 'Origin of product must be string',
+  VOLUME_IS_REQUIRED: 'Volume of product is required',
+  VOLUME_MUST_BE_NON_NEGATIVE: 'Volume of product must be positive',
+  WEIGHT_IS_REQUIRED: 'Weight of product is required',
+  WEIGHT_MUST_BE_NON_NEGATIVE: 'Weight of product must be positive',
+  WIDTH_IS_REQUIRED: 'Width of product is required',
+  WIDTH_MUST_BE_NON_NEGATIVE: 'Width of product must be positive',
+  HEIGHT_IS_REQUIRED: 'Height of product is required',
+  HEIGHT_MUST_BE_NON_NEGATIVE: 'Height of product must be positive',
+  IMAGES_IS_REQUIRED: 'Height of product is required',
+  CATEGORY_ID_IS_REQUIRED: 'Category of product is required',
+  INVALID_CATEGORY_ID: 'Category of product is invalid',
+  PRODUCT_NOT_FOUND: 'Product is not found',
+  CREATE_PRODUCT_SUCCESS: 'Create product is successfully'
+} as const
+
+export const CATEGORY_MESSAGES = {
+  CATEGORY_NAME_IS_REQUIRED: 'Category name is required',
+  CATEGORY_NAME_MUST_BE_A_STRING: 'Category name must be a string',
+  CREATE_CATEGORY_SUCCESS: 'Create category success',
+  CATEGORY_NAME_LENGTH_MUST_BE_FROM_1_TO_100: 'Category name length must be from 1 to 100',
+  GET_CATEGORIES_SUCCESS: 'Get categories success',
+  GET_CATEGORY_SUCCESS: 'Get category success',
+  UPDATE_CATEGORY_SUCCESS: 'Update category success',
+  DELETE_CATEGORY_SUCCESS: 'Delete category success',
+  CATEGORY_DESC_IS_REQUIRED: 'Category description is required',
+  CATEGORY_DESC_MUST_BE_A_STRING: 'Category description must be a string',
+  CATEGORY_DESC_LENGTH_MUST_BE_FROM_1_TO_300: 'Category description length must be from 1 to 300',
+  CATEGORY_NOT_FOUND: 'Category not found'
+} as const
+
+export const BRAND_MESSAGES = {
+  BRAND_NOT_FOUND: 'Category not found'
+} as const
