@@ -28,3 +28,8 @@ export enum PRODUCT_STATUS {
   Active, // còn hàng
   Stock // hết hàng
 }
+
+export enum MediaType {
+  Image,
+  Video
+}

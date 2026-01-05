@@ -6,6 +6,8 @@ import userRouter from './routes/users.routers'
 import { Request, Response, NextFunction } from 'express'
 import { defaultErrorHandler } from './middlewares/error.middlewares'
 import productRouter from './routes/products.routes'
+import mediasRouter from './routes/medias.routers'
+import staticRouter from './routes/statics.routers'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -25,6 +27,10 @@ app.use(express.json()) // cho server xài middleware biến đổi json khi s�
 app.use('/users', userRouter)
 
 app.use('/products', productRouter)
+
+app.use('/medias', mediasRouter)
+
+app.use('/static', staticRouter)
 // lỗi của controller ressponse
 app.use(defaultErrorHandler)
 

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
 import HTTP_STATUS from '~/constants/httpStatus'
-import { PRODUCTS_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
+import { PRODUCT_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CreateProductBody } from '~/models/requests/Products.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
@@ -23,18 +23,26 @@ export const createProductController = async (
     })
   }
   // create product
-  const result = await productsService.createProduct(req.body)
-  res.status(HTTP_STATUS.CREATED).json({
-    message: PRODUCTS_MESSAGES.CREATE_PRODUCT_SUCCESS,
-    result
-  })
+  // const result = await productsService.createProduct(req.body)
+  // res.status(HTTP_STATUS.CREATED).json({
+  //   message: PRODUCT_MESSAGES.CREATE_PRODUCT_SUCCESS,
+  //   result
+  // })
 }
 
-
 export const updateProductController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, any, CreateProductBody>,
   res: Response,
   next: NextFunction
 ) => {
-  
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  if (!user) {
+    throw new ErrorWithStatus({
+      message: USERS_MESSAGES.PERMISSION_DENIED,
+      status: HTTP_STATUS.FORBIDDEN
+    })
+  }
+  // update
+  // const result = await productsService.updateProduct()
 }

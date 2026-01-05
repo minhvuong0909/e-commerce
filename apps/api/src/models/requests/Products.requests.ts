@@ -14,6 +14,7 @@ export interface CreateProductBody {
   status?: PRODUCT_STATUS
   images: string[]
   thumbnail: string
-  category_id: ObjectId
-  brand_id: ObjectId
+  category_id: string
+  brand_id: string
+  ship_category_id: string
 }
