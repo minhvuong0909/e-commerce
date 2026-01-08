@@ -5,9 +5,11 @@ import databaseService from './services/database.service'
 import userRouter from './routes/users.routers'
 import { Request, Response, NextFunction } from 'express'
 import { defaultErrorHandler } from './middlewares/error.middlewares'
-import productRouter from './routes/products.routes'
+import productRouter from './routes/products.routers'
 import mediasRouter from './routes/medias.routers'
 import staticRouter from './routes/statics.routers'
+import categoryRouter from './routes/categories.routers'
+import brandRouter from './routes/brands.routers'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -18,8 +20,6 @@ app.use(
   cors({
     origin: 'http://localhost:5173',
     credentials: true,
-
-    // origin: '*', // Hoặc domain cụ thể
     exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges']
   })
 )
@@ -34,6 +34,10 @@ app.use('/products', productRouter)
 app.use('/medias', mediasRouter)
 
 app.use('/static', staticRouter)
+
+app.use('/category', categoryRouter)
+
+app.use('/brand', brandRouter)
 // lỗi của controller ressponse
 app.use(defaultErrorHandler)
 

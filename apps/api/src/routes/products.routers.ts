@@ -14,4 +14,6 @@ const productRouter = express.Router()
 */
 productRouter.post('/create', accessTokenValidator, createProductValidator, wrapAsync(createProductController))
 
+// productRouter.
+
 export default productRouter

@@ -130,7 +130,9 @@ export const CATEGORY_MESSAGES = {
   CATEGORY_DESC_IS_REQUIRED: 'Category description is required',
   CATEGORY_DESC_MUST_BE_A_STRING: 'Category description must be a string',
   CATEGORY_DESC_LENGTH_MUST_BE_FROM_1_TO_300: 'Category description length must be from 1 to 300',
-  CATEGORY_NOT_FOUND: 'Category not found'
+  CATEGORY_NOT_FOUND: 'Category not found',
+  CATEGORY_NAME_EXISTED: 'Name of category is existed',
+  CATEGORY_HAS_PRODUCTS: 'Category has products'
 } as const
 
 export const BRAND_MESSAGES = {

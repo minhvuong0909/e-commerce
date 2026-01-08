@@ -4,7 +4,7 @@ interface CategoryType {
   _id?: ObjectId
   name: string
   desc: string
-  slug: string // đánh dấu từng category của url
+  slug?: string // đánh dấu từng category của url
   created_at?: Date
   updated_at?: Date
 }
@@ -13,7 +13,7 @@ export default class Category {
   _id: ObjectId
   name: string
   desc: string
-  slug: string
+  slug?: string
   created_at: Date
   updated_at: Date
   constructor(category: CategoryType) {
