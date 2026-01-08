@@ -107,9 +107,9 @@ export const getCategoriesController = async (
     .limit(limit)
     .toArray()
 
-  const totalPage = await databaseService.users.countDocuments()
+  const totalPage = await databaseService.brands.countDocuments()
   res.status(HTTP_STATUS.OK).json({
-    message: USERS_MESSAGES.GET_USERS_SUCCESS,
+    message: CATEGORY_MESSAGES.GET_CATEGORIES_SUCCESS,
     data: categories,
     pagination: {
       page,

@@ -10,6 +10,7 @@ import mediasRouter from './routes/medias.routers'
 import staticRouter from './routes/statics.routers'
 import categoryRouter from './routes/categories.routers'
 import brandRouter from './routes/brands.routers'
+import brandsRouter from './routes/brands.routers'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -37,7 +38,7 @@ app.use('/static', staticRouter)
 
 app.use('/category', categoryRouter)
 
-app.use('/brand', brandRouter)
+app.use('/brand', brandsRouter)
 // lỗi của controller ressponse
 app.use(defaultErrorHandler)
 

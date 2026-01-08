@@ -135,6 +135,25 @@ export const CATEGORY_MESSAGES = {
   CATEGORY_HAS_PRODUCTS: 'Category has products'
 } as const
 
-export const BRAND_MESSAGES = {
-  BRAND_NOT_FOUND: 'Category not found'
+export const BRANDS_MESSAGES = {
+  BRAND_NAME_IS_REQUIRED: 'Brand name is required',
+  BRAND_NAME_MUST_BE_A_STRING: 'Brand name must be a string',
+  CREATE_BRAND_SUCCESS: 'Create brand success',
+  BRAND_NAME_LENGTH_MUST_BE_FROM_1_TO_100: 'Brand name length must be from 1 to 100',
+  GET_BRANDS_SUCCESS: 'Get brands success',
+  GET_BRAND_SUCCESS: 'Get brand success',
+  UPDATE_BRAND_SUCCESS: 'Update brand success',
+  DELETE_BRAND_SUCCESS: 'Delete brand success',
+  HOTLINE_IS_REQUIRED: 'Hotline is required',
+  HOTLINE_MUST_BE_A_STRING: 'Hotline must be a string',
+  HOTLINE_LENGTH_MUST_BE_FROM_1_TO_10: 'Hotline length must  be from 1 to 10',
+  HOTLINE_IS_INVALID: 'Hotline is invalid',
+  ADDRESS_IS_REQUIRED: 'Address is required',
+  ADDRESS_MUST_BE_A_STRING: 'Address must be a string',
+  ADDRESS_LENGTH_MUST_BE_LESS_THAN_200: 'Address length must be less than 200',
+  BRAND_DESC_IS_REQUIRED: 'Brand description is required',
+  BRAND_DESC_MUST_BE_A_STRING: 'Brand description must be a string',
+  CATEGORY_DESC_LENGTH_MUST_BE_FROM_1_TO_300: 'Brand description length must be from 1 to 300',
+  BRAND_NOT_FOUND: 'Brand is not found',
+  BRAND_HAS_PRODUCTS: 'Brand has products'
 } as const
