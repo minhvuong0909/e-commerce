@@ -1,7 +1,7 @@
 import { Request } from 'express'
 import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
 import fs from 'fs'
-import { getNameFormFullNameFile, handleUploadImage } from '~/utils/file'
+import { getNameFormFullNameFile, handleUploadImage, handleUploadVideo } from '~/utils/file'
 import sharp from 'sharp'
 import { Media } from '~/models/Other'
 import { isProduction } from '~/config/config'
@@ -36,6 +36,23 @@ class MediaServices {
             ? `${process.env.HOST}/static/image/${newFilename}`
             : `http://localhost:${process.env.PORT}/static/image/${newFilename}`,
           type: MediaType.Image
+        }
+        return url
+      })
+    )
+    return result
+  }
+
+  async handleUploadVideo(req: Request) {
+    const files = await handleUploadVideo(req) // lấy file trong req
+    const result = await Promise.all(
+      files.map(async (file) => {
+        // trả ra link
+        const url: Media = {
+          url: isProduction
+            ? `${process.env.HOST}/static/video/${file.newFilename}`
+            : `http://localhost:${process.env.PORT}/static/video/${file.newFilename}`,
+          type: MediaType.Video
         }
         return url
       })

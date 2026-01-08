@@ -50,15 +50,57 @@ export const handleUploadImage = async (req: Request) => {
       if (!files.image) {
         return reject(new Error('Image is empty'))
       }
-      return resolve(files.image)
+      return resolve(files.image as File[])
     })
   })
 }
 
+// hàm upload video
+export const handleUploadVideo = async (req: Request) => {
+  // check form
+  const form = formidable({
+    uploadDir: UPLOAD_VIDEO_DIR,
+    maxFiles: 1, // tối đa 1 file,
+    maxFileSize: 50 * 1024 * 1024, // 50MB
+    // keepExtensions: true, // giữ lại đuôi file
+    filter: ({ name, originalFilename, mimetype }) => {
+      const valid = name === 'video' && Boolean(mimetype?.includes('video'))
+      if (!valid) {
+        form.emit('error' as any, new Error('File Type Invalid') as any)
+      }
+      return valid
+    }
+  })
+  // lọc và parse file bằng sharp
+  return new Promise<File[]>((resolve, reject) => {
+    form.parse(req, (err, fields, files) => {
+      if (err) return reject(err)
+      if (!files.video) {
+        return reject(new Error('Video is empty'))
+      }
+      const videos = files.video as File[]
+      // return resolve(files.video as File[])
+      videos.forEach((video) => {
+        const ext = getExtension(video.originalFilename as string) // lấy ra ext của file
+        // nên kh cần dùng keepExtension
+        fs.renameSync(video.filepath, video.filepath + '.' + ext) // đây là newFilename
+        video.newFilename = video.newFilename + '.' + ext
+      })
+      resolve(files.video as File[])
+    })
+  })
+}
 // hàm lấy tên file
 export const getNameFormFullNameFile = (filename: string) => {
   // abc.png => adc
   const nameArr = filename.split('.')
   nameArr.pop() // xóa cuối
   return nameArr.join('-') // như slug
+}
+
+// hàm lấy extension của video
+export const getExtension = (filename: string) => {
+  // adc.mp4 => mp4
+  const nameArr = filename.split('.')
+  return nameArr[nameArr.length - 1]
 }

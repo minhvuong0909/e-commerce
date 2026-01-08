@@ -17,7 +17,10 @@ const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 300
 app.use(
   cors({
     origin: 'http://localhost:5173',
-    credentials: true
+    credentials: true,
+
+    // origin: '*', // Hoặc domain cụ thể
+    exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges']
   })
 )
 // kết nối db
