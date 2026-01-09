@@ -13,21 +13,23 @@ export const createProductController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  // check admin || staff
-  const user = await usersService.checkRole(user_id)
-  if (!user) {
-    throw new ErrorWithStatus({
-      message: USERS_MESSAGES.PERMISSION_DENIED,
-      status: HTTP_STATUS.FORBIDDEN
-    })
-  }
+  // console.log('vào chưa')
+
+  // const { user_id } = req.decode_authorization as TokenPayload
+  // // check admin || staff
+  // const user = await usersService.checkRole(user_id)
+  // if (!user) {
+  //   throw new ErrorWithStatus({
+  //     message: USERS_MESSAGES.PERMISSION_DENIED,
+  //     status: HTTP_STATUS.FORBIDDEN
+  //   })
+  // }
   // create product
-  // const result = await productsService.createProduct(req.body)
-  // res.status(HTTP_STATUS.CREATED).json({
-  //   message: PRODUCT_MESSAGES.CREATE_PRODUCT_SUCCESS,
-  //   result
-  // })
+  const result = await productsService.createProduct(req.body)
+  res.status(HTTP_STATUS.CREATED).json({
+    message: PRODUCT_MESSAGES.CREATE_PRODUCT_SUCCESS,
+    result
+  })
 }
 
 export const updateProductController = async (
@@ -45,4 +47,26 @@ export const updateProductController = async (
   }
   // update
   // const result = await productsService.updateProduct()
+}
+
+export const getProductByIdController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.checkRole(user_id)
+  // user: admin  |  staff
+  if (!user) {
+    throw new ErrorWithStatus({
+      message: USERS_MESSAGES.PERMISSION_DENIED,
+      status: HTTP_STATUS.FORBIDDEN
+    })
+  }
+  const { id } = req.params
+  const product = await productsService.getProductById(id) //chưa làm
+  return res.status(HTTP_STATUS.OK).json({
+    message: PRODUCT_MESSAGES.GET_PRODUCT_SUCCESS,
+    data: product
+  })
 }

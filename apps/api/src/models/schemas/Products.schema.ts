@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { PRODUCT_STATUS } from '~/constants/enums'
+import { Media } from '../Other'
 
 interface ProductType {
   _id?: ObjectId
@@ -8,17 +9,17 @@ interface ProductType {
   price: number
   description: string
   rating_number?: number
-  brand_id?: ObjectId
+  brand_id: ObjectId
   origin: string // nguồn gốc,
   volume: number // dung tích
   weight: number
   width: number
   height: number
   soldNumber?: number
-  images: string[]
+  medias?: Media[]
   thumbnail: string
   status?: PRODUCT_STATUS
-  category_id?: ObjectId
+  category_id: ObjectId
   ship_category_id?: ObjectId
   created_at?: Date
   updated_at?: Date
@@ -39,7 +40,7 @@ export default class Product {
   height: number
   soldNumber?: number
   thumbnail: string
-  images: string[]
+  medias?: Media[]
   status?: PRODUCT_STATUS
   category_id: ObjectId
   ship_category_id: ObjectId // giao hàng speed
@@ -61,7 +62,7 @@ export default class Product {
     this.width = product.width
     this.height = product.height
     this.thumbnail = product.thumbnail
-    this.images = product.images || []
+    this.medias = product.medias || []
     this.soldNumber = product.soldNumber || 0
     this.category_id = product.category_id || new ObjectId()
     this.ship_category_id = product.ship_category_id || new ObjectId()

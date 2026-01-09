@@ -39,6 +39,6 @@ const descCategorySchema: ParamSchema = {
 export const createCategoryValidator = validate(
   checkSchema({
     name: nameCategorySchema,
-    description: descCategorySchema
+    desc: descCategorySchema
   })
 )

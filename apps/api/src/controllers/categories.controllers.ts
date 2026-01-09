@@ -84,6 +84,15 @@ export const getCategoryController = async (
   res: Response,
   next: NextFunction
 ) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.checkRole(user_id)
+  // user: admin  |  staff
+  if (!user) {
+    throw new ErrorWithStatus({
+      message: USERS_MESSAGES.PERMISSION_DENIED,
+      status: HTTP_STATUS.FORBIDDEN
+    })
+  }
   const { category_id } = req.params
   const category = await categoryServices.getCategoryById(category_id)
   res.status(HTTP_STATUS.OK).json({
@@ -107,7 +116,7 @@ export const getCategoriesController = async (
     .limit(limit)
     .toArray()
 
-  const totalPage = await databaseService.brands.countDocuments()
+  const totalPage = await databaseService.categories.countDocuments()
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.GET_CATEGORIES_SUCCESS,
     data: categories,

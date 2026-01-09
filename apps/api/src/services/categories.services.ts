@@ -23,7 +23,7 @@ class CategoryService {
         status: HTTP_STATUS.CONFLICT
       })
     }
-    const result = await databaseService.categories.insertOne(new Category(category))
+    const result = await databaseService.categories.insertOne(new Category({ ...category, slug }))
     return result
   }
 

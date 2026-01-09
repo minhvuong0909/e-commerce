@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb'
 import { PRODUCT_STATUS } from '~/constants/enums'
+import { Media } from '../Other'
 
 export interface CreateProductBody {
   name: string
@@ -12,7 +13,7 @@ export interface CreateProductBody {
   width: number
   height: number
   status?: PRODUCT_STATUS
-  images: string[]
+  medias: Media[]
   thumbnail: string
   category_id: string
   brand_id: string

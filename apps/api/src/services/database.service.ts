@@ -5,6 +5,7 @@ import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import Product from '~/models/schemas/Products.schema'
 import Category from '~/models/schemas/Categories.schema'
 import Brand from '~/models/schemas/Brands.schema'
+import ProductMedia from '~/models/schemas/ProductImages.schema'
 
 dotenv.config()
 
@@ -53,6 +54,11 @@ class DatabaseService {
   // instance của categories
   get brands(): Collection<Brand> {
     return this.db.collection(process.env.DB_BRANDS_COLLECTION as string)
+  }
+
+  // instance của products
+  get product_media(): Collection<ProductMedia> {
+    return this.db.collection(process.env.DB_PRODUCT_MEDIA_COLLECTION as string)
   }
 }
 

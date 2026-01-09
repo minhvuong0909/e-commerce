@@ -36,7 +36,7 @@ brandsRouter.post('/create', accessTokenValidator, createBrandValidator, wrapAsy
           address: string;
       }
   */
-brandsRouter.post('/update/:brand_id', accessTokenValidator, createBrandValidator, wrapAsync(updateBrandController))
+brandsRouter.patch('/update/:brand_id', accessTokenValidator, createBrandValidator, wrapAsync(updateBrandController))
 
 /*
       Description: Update a brand
@@ -44,7 +44,7 @@ brandsRouter.post('/update/:brand_id', accessTokenValidator, createBrandValidato
       method: DELETE
       Header: {Authorization: Bearer <access_token>}
   */
-brandsRouter.post('/delete/:brand_id', accessTokenValidator, wrapAsync(deleteBrandController))
+brandsRouter.delete('/delete/:brand_id', accessTokenValidator, wrapAsync(deleteBrandController))
 
 /*
     Description: Get Brand by ID

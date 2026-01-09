@@ -7,7 +7,9 @@ import {
   updateCategoryController
 } from '~/controllers/categories.controllers'
 import { createCategoryValidator } from '~/middlewares/categories.middlewares'
+import { filterMiddleware } from '~/middlewares/common.middlewares'
 import { accessTokenValidator } from '~/middlewares/users.middlewares'
+import { CreateCategoryReqBody } from '~/models/requests/Categories.requests'
 import { wrapAsync } from '~/utils/handlers'
 
 const categoryRouter = Router()
@@ -34,8 +36,9 @@ categoryRouter.post('/create', accessTokenValidator, createCategoryValidator, wr
       desc: string
     }
 */
-categoryRouter.put(
+categoryRouter.patch(
   '/update/:category_id',
+  filterMiddleware<CreateCategoryReqBody>(['name', 'desc']),
   accessTokenValidator,
   createCategoryValidator,
   wrapAsync(updateCategoryController)
@@ -55,7 +58,7 @@ categoryRouter.delete('/delete/:category_id', accessTokenValidator, wrapAsync(de
     path: /categories/:id
     method: get
 */
-categoryRouter.get('/:category_id', wrapAsync(getCategoryController))
+categoryRouter.get('/:category_id', accessTokenValidator, wrapAsync(getCategoryController))
 
 /*
     Description: get all category

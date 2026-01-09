@@ -217,3 +217,27 @@ export const createProductValidator = validate(
     ['body']
   )
 )
+
+export const getProductByIdValidator = validate(
+  checkSchema(
+    {
+      id: {
+        notEmpty: {
+          errorMessage: PRODUCT_MESSAGES.PRODUCT_ID_IS_REQUIRED
+        },
+        isString: {
+          errorMessage: PRODUCT_MESSAGES.PRODUCT_ID_MUST_BE_A_STRING
+        },
+        custom: {
+          options: (value: string) => {
+            if (!ObjectId.isValid(value)) {
+              throw new Error(PRODUCT_MESSAGES.PRODUCT_ID_MUST_BE_A_VALID_OBJECT_ID)
+            }
+            return true
+          }
+        }
+      }
+    },
+    ['params']
+  )
+)

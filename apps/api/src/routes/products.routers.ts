@@ -1,7 +1,7 @@
 import express, { Router } from 'express'
 import { cloneDeep } from 'lodash'
-import { createProductController } from '~/controllers/products.controllers'
-import { createProductValidator } from '~/middlewares/products.middlewares'
+import { createProductController, getProductByIdController } from '~/controllers/products.controllers'
+import { createProductValidator, getProductByIdValidator } from '~/middlewares/products.middlewares'
 import { accessTokenValidator } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 const productRouter = express.Router()
@@ -12,8 +12,12 @@ const productRouter = express.Router()
   method: POST
   body: createProductBody
 */
-productRouter.post('/create', accessTokenValidator, createProductValidator, wrapAsync(createProductController))
+productRouter.post('/create', createProductValidator, wrapAsync(createProductController))
 
-// productRouter.
-
+/*
+Description: get a product by id
+    path: /products/:id
+    method: GET
+*/
+productRouter.get('/:id', accessTokenValidator, getProductByIdValidator, wrapAsync(getProductByIdController))
 export default productRouter
