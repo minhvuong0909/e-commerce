@@ -8,6 +8,7 @@ import Cart from '~/models/schemas/Carts.schema'
 import { CreateCartITemReqBody } from '~/models/requests/Carts.requests'
 import { ObjectId } from 'mongodb'
 import CartItems from '~/models/schemas/CartItems.schema'
+import { Request } from 'express'
 
 class CartsService {
   async createCart(user_id: string) {
@@ -82,6 +83,107 @@ class CartsService {
       })
     )
     return cartItem
+  }
+
+  async updateCartItem({
+    cart_item_id,
+    quantity,
+    user_id
+  }: {
+    cart_item_id: string
+    quantity: number
+    user_id: string
+  }) {
+    // check cart
+    const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
+    if (!cart) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    // check cart item
+    const cartItem = await databaseService.cart_items.findOne({ _id: new ObjectId(cart_item_id), cart_id: cart._id })
+    if (!cartItem) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_ITEM_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    const product = await databaseService.products.findOne({ _id: cartItem.product_id })
+    if (!product) {
+      throw new ErrorWithStatus({
+        message: PRODUCT_MESSAGES.PRODUCT_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    // check quanitty
+    if (quantity > product!.quantity) {
+      throw new ErrorWithStatus({
+        message: PRODUCT_MESSAGES.INSUFFICIENT_PRODUCT_STOCK,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    return await databaseService.cart_items.updateOne(
+      { _id: new ObjectId(cart_item_id) },
+      { $set: { quantity: quantity, updated_at: new Date() } }
+    )
+  }
+
+  async deleteCartItem({ cart_item_id, user_id }: { cart_item_id: string; user_id: string }) {
+    // check cart
+    const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
+    if (!cart) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    // check cart item
+    const cartItem = await databaseService.cart_items.findOne({ _id: new ObjectId(cart_item_id), cart_id: cart._id })
+    if (!cartItem) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_ITEM_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return await databaseService.cart_items.deleteOne({ _id: new ObjectId(cart_item_id) })
+  }
+
+  async getCartItemsByUserId({ user_id }: { user_id: string }) {
+    // lấy cart của user
+    const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
+    if (!cart) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    // lấy cart items của cart
+    const cartItems = await databaseService.cart_items
+      .aggregate([
+        {
+          $match: { cart_id: cart._id }
+        },
+        {
+          $lookup: {
+            from: process.env.DB_PRODUCTS_COLLECTION as string,
+            localField: 'product_id',
+            foreignField: '_id',
+            as: 'product_infor'
+          }
+        },
+        {
+          $unwind: '$product_infor'
+        }
+      ])
+      .sort({ created_at: -1 })
+      .toArray()
+    return {
+      cartItems,
+      total_price: cartItems.reduce((total, item) => total + item.quantity * item.product_infor.price, 0)
+    }
   }
 }
 

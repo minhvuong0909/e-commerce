@@ -29,3 +29,72 @@ export const createCartController = async (
     data: cart
   })
 }
+
+export const updateCartItemController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  // check verify status của user trước khi tạo cart
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  const cartItem = await cartsService.updateCartItem({
+    user_id: user_id,
+    cart_item_id: req.params.id,
+    quantity: req.body.quantity
+  })
+  res.status(HTTP_STATUS.OK).json({
+    message: CART_MESSAGES.UPDATE_CART_ITEM_SUCCESS,
+    result: cartItem
+  })
+}
+
+export const deleteCartItemController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  // check verify status của user trước khi tạo cart
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  await cartsService.deleteCartItem({
+    user_id: user_id,
+    cart_item_id: req.params.id
+  })
+  res.status(HTTP_STATUS.OK).json({
+    message: CART_MESSAGES.DELETE_CART_ITEM_SUCCESS
+  })
+}
+
+export const getCartItemsController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  // check verify status của user trước khi tạo cart
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  const { cartItems, total_price } = await cartsService.getCartItemsByUserId({ user_id: req.params.user_id })
+  res.status(HTTP_STATUS.OK).json({
+    message: CART_MESSAGES.GET_CART_ITEMS_SUCCESS,
+    data: { cartItems, total_price }
+  })
+}

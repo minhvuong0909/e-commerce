@@ -168,5 +168,9 @@ export const CART_MESSAGES = {
   QUANTITY_MUST_BE_A_POSITIVE_NUMBER: 'Quantity must be a positive number',
   PRODUCT_NOT_FOUND: 'Product not found',
   INSUFFICIENT_PRODUCT_STOCK: 'Insufficient product stock',
-  ADD_TO_CART_SUCCESS: 'Add to cart success'
+  ADD_TO_CART_SUCCESS: 'Add to cart success',
+  CART_ITEM_NOT_FOUND: 'Cart item not found',
+  UPDATE_CART_ITEM_SUCCESS: 'Update cart item success',
+  DELETE_CART_ITEM_SUCCESS: 'Delete cart item success',
+  GET_CART_ITEMS_SUCCESS: 'Get cart items success'
 } as const
