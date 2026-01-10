@@ -115,7 +115,9 @@ export const PRODUCT_MESSAGES = {
   GET_PRODUCTS_SUCCESS: 'Get products success',
   PRODUCT_ID_MUST_BE_A_STRING: 'Product id must be a string',
   PRODUCT_ID_MUST_BE_A_VALID_OBJECT_ID: 'Product id must be a valid object id',
-  GET_PRODUCT_SUCCESS: 'Get product success'
+  GET_PRODUCT_SUCCESS: 'Get product success',
+  UPDATE_PRODUCT_SUCCESS: 'Update product success',
+  DELETE_PRODUCT_SUCCESS: 'Delete product success'
 } as const
 
 export const CATEGORY_MESSAGES = {

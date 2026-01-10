@@ -8,6 +8,7 @@ export const createProductValidator = validate(
   checkSchema(
     {
       name: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_NAME_IS_REQUIRED
         },
@@ -24,6 +25,7 @@ export const createProductValidator = validate(
         }
       },
       quantity: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_QUANTITY_IS_REQUIRED
         },
@@ -39,6 +41,7 @@ export const createProductValidator = validate(
         }
       },
       price: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_PRICE_IS_REQUIRED
         },
@@ -54,6 +57,7 @@ export const createProductValidator = validate(
         }
       },
       description: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_DESCRIPTION_IS_REQUIRED
         },
@@ -70,6 +74,7 @@ export const createProductValidator = validate(
         }
       },
       brand_id: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.BRAND_ID_IS_REQUIRED
         },
@@ -86,6 +91,7 @@ export const createProductValidator = validate(
         }
       },
       origin: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.ORIGIN_IS_REQUIRED
         },
@@ -102,6 +108,7 @@ export const createProductValidator = validate(
         }
       },
       volume: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_VOLUME_IS_REQUIRED
         },
@@ -117,6 +124,7 @@ export const createProductValidator = validate(
         }
       },
       weight: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_WEIGHT_IS_REQUIRED
         },
@@ -132,6 +140,7 @@ export const createProductValidator = validate(
         }
       },
       width: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_WIDTH_IS_REQUIRED
         },
@@ -147,6 +156,7 @@ export const createProductValidator = validate(
         }
       },
       height: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.PRODUCT_HEIGHT_IS_REQUIRED
         },
@@ -162,6 +172,7 @@ export const createProductValidator = validate(
         }
       },
       category_id: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.CATEGORY_IS_REQUIRED
         },
@@ -178,6 +189,7 @@ export const createProductValidator = validate(
         }
       },
       ship_category_id: {
+        optional: true,
         notEmpty: {
           errorMessage: PRODUCT_MESSAGES.SHIP_CATEGORY_ID_IS_REQUIRED
         },
@@ -194,6 +206,7 @@ export const createProductValidator = validate(
         }
       },
       medias: {
+        optional: true,
         isArray: {
           errorMessage: PRODUCT_MESSAGES.MEDIAS_MUST_BE_AN_ARRAY
         },
