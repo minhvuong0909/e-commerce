@@ -11,6 +11,7 @@ import staticRouter from './routes/statics.routers'
 import categoryRouter from './routes/categories.routers'
 import brandRouter from './routes/brands.routers'
 import brandsRouter from './routes/brands.routers'
+import cartsRouter from './routes/carts.routers'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -39,6 +40,10 @@ app.use('/static', staticRouter)
 app.use('/category', categoryRouter)
 
 app.use('/brand', brandsRouter)
+
+app.use('/carts', cartsRouter)
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // lỗi của controller ressponse
 app.use(defaultErrorHandler)
 

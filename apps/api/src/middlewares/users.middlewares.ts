@@ -345,7 +345,7 @@ export const updateProfileValidator = validate(
       date_of_birth: {
         optional: true,
         ...dateOfBirthSchema,
-        notEmpty: undefined 
+        notEmpty: undefined
       },
       bio: {
         optional: true,
@@ -420,18 +420,16 @@ export const changePasswordValidator = validate(
 )
 
 // check role
-// export const checkPermissions =
-//  (...allowedRoles: USER_ROLE[]) => 
-//   (req: Request, res: Response, next: NextFunction) => {
-//     const user_id = req.decode_authorization?.user_id
-//     const userRole = await usersService.findUserById({user_id})
-//     console.log('Role: ', userRole)
+export const checkPermissions =
+  (...allowedRoles: USER_ROLE[]) =>
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { user_id } = req.decode_authorization as TokenPayload
+    const user = await usersService.findUserById(user_id)
 
-//     if (!userRole || !allowedRoles.includes(userRole)) {
-//       return res.status(HTTP_STATUS.FORBIDDEN).json({
-//         message: USERS_MESSAGES.PERMISSION_DENIED
-//       })
-//     }
-
-//     next()
-//   }
+    if (!user.role || !allowedRoles.includes(user.role)) {
+      return res.status(HTTP_STATUS.FORBIDDEN).json({
+        message: USERS_MESSAGES.PERMISSION_DENIED
+      })
+    }
+    next()
+  }

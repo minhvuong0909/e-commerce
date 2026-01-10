@@ -111,6 +111,7 @@ export const PRODUCT_MESSAGES = {
   PRODUCT_DESCRIPTION_MUST_BE_A_STRING: 'Product description must be a string',
   PRODUCT_DESCRIPTION_LENGTH_MUST_BE_FROM_1_TO_1000: 'Product description length must be from 1 to 1000',
   PRODUCT_ID_IS_REQUIRED: 'Product id is required',
+  INSUFFICIENT_PRODUCT_STOCK: 'Insufficient product stock',
   PRODUCT_NOT_FOUND: 'Product not found',
   GET_PRODUCTS_SUCCESS: 'Get products success',
   PRODUCT_ID_MUST_BE_A_STRING: 'Product id must be a string',
@@ -158,4 +159,14 @@ export const BRANDS_MESSAGES = {
   CATEGORY_DESC_LENGTH_MUST_BE_FROM_1_TO_300: 'Brand description length must be from 1 to 300',
   BRAND_NOT_FOUND: 'Brand is not found',
   BRAND_HAS_PRODUCTS: 'Brand has products'
+} as const
+
+export const CART_MESSAGES = {
+  CART_NOT_FOUND: 'Cart not found',
+  QUANTITY_IS_REQUIRED: 'Quantity is required',
+  QUANTITY_MUST_BE_A_NUMBER: 'Quantity must be a number',
+  QUANTITY_MUST_BE_A_POSITIVE_NUMBER: 'Quantity must be a positive number',
+  PRODUCT_NOT_FOUND: 'Product not found',
+  INSUFFICIENT_PRODUCT_STOCK: 'Insufficient product stock',
+  ADD_TO_CART_SUCCESS: 'Add to cart success'
 } as const

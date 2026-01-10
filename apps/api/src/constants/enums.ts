@@ -33,3 +33,17 @@ export enum MediaType {
   Image,
   Video
 }
+
+export enum OrderStatus {
+  Pending, // đang chờ xử lý
+  Confirmed, // đã xác nhận
+  Shipped, // đã giao hàng
+  Delivered, // đã nhận hàng
+  Cancelled // đã hủy
+}
+
+export enum CartStatus {
+  ACTIVE, // đang hoạt động
+  CHECKED_OUT, //  thanh toán chyển về order
+  ABANDONED // bị bỏ rơi
+}
