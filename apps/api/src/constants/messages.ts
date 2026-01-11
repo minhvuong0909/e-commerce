@@ -172,5 +172,6 @@ export const CART_MESSAGES = {
   CART_ITEM_NOT_FOUND: 'Cart item not found',
   UPDATE_CART_ITEM_SUCCESS: 'Update cart item success',
   DELETE_CART_ITEM_SUCCESS: 'Delete cart item success',
-  GET_CART_ITEMS_SUCCESS: 'Get cart items success'
+  GET_CART_ITEMS_SUCCESS: 'Get cart items success',
+  NO_SELECTED_CART_ITEMS: 'No selected cart items for order'
 } as const

@@ -8,6 +8,8 @@ import Brand from '~/models/schemas/Brands.schema'
 import ProductMedia from '~/models/schemas/ProductImages.schema'
 import Cart from '~/models/schemas/Carts.schema'
 import CartItems from '~/models/schemas/CartItems.schema'
+import Order from '~/models/schemas/Orders.schema'
+import OrderItems from '~/models/schemas/OrderItems.Schema'
 
 dotenv.config()
 
@@ -71,6 +73,16 @@ class DatabaseService {
   // instance của cart items
   get cart_items(): Collection<CartItems> {
     return this.db.collection(process.env.DB_CART_ITEMS_COLLECTION as string)
+  }
+
+  // instance của orders
+  get orders(): Collection<Order> {
+    return this.db.collection(process.env.DB_ORDERS_COLLECTION as string)
+  }
+
+  // instance của order items
+  get order_items(): Collection<OrderItems> {
+    return this.db.collection(process.env.DB_ORDER_ITEMS_COLLECTION as string)
   }
 }
 

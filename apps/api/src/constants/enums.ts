@@ -43,7 +43,26 @@ export enum OrderStatus {
 }
 
 export enum CartStatus {
-  ACTIVE, // đang hoạt động
-  CHECKED_OUT, //  thanh toán chyển về order
-  ABANDONED // bị bỏ rơi
+  ACTIVE, // đang hoạt động,
+  CHECK_OUT, // đã thanh toán chyển về order
+  INACTIVE // bị hủy bỏ
+}
+
+export enum PaymentMethod {
+  CREDIT_CARD, // thanh toán qua thẻ tín dụng
+  PAYPAL, // thanh toán qua Paypal,
+  MOMO, // thanh toán qua Momo
+  CASH_ON_DELIVERY // thanh toán tiền mặt khi nhận hàng
+}
+
+export enum PaymentStatus {
+  PENDING, // đang chờ xử lý
+  COMPLETED, // đã hoàn thành
+  FAILED, // thất bại
+  REFUNDED // đã hoàn tiền
+}
+
+export enum DeliveryMethodType {
+  STANDARD, // giao hàng tiêu chuẩn
+  EXPRESS // giao hàng nhanh
 }
