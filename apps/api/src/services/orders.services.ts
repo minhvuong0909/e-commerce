@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb'
 import { CartStatus, OrderStatus, PaymentStatus } from '~/constants/enums'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
-import { CART_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
+import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Order from '~/models/schemas/Orders.schema'
@@ -73,15 +73,12 @@ class OrdersService {
       new Order({
         user_id: new ObjectId(user_id),
         total_price: total_price,
-        delivery_method_id: new ObjectId(payload.delivery_method_id),
         payment_method: payload.payment_method as any,
         payment_status: PaymentStatus.PENDING,
         shipping_fee: 0,
         status: OrderStatus.Pending
       })
     )
-
-    await databaseService.carts.findOneAndUpdate({ _id: cart._id }, { $set: { status: CartStatus.CHECK_OUT } })
     // đặt hàng thành công thì tạo order items và trừ quantity trong products
     for (const orderItem of orderItems) {
       orderItem.order_id = order.insertedId
@@ -91,11 +88,80 @@ class OrdersService {
         { _id: orderItem.product_id },
         {
           $inc: {
-            quantity: -orderItem.quantity
+            quantity: -orderItem.quantity,
+            soldNumber: orderItem.quantity
           }
         }
       )
     }
+    // xóa cart items đã đặt hàng
+    await databaseService.cart_items.deleteMany({
+      _id: { $in: cartItems.map((item) => item._id!) }
+    })
+    return order
+  }
+
+  async updateOrderStatus({ user_id, order_id }: { user_id: string; order_id: string }) {
+    const order = await databaseService.orders.findOneAndUpdate(
+      { _id: new ObjectId(order_id), user_id: new ObjectId(user_id), status: OrderStatus.Pending },
+      {
+        $set: {
+          status: OrderStatus.Confirmed,
+          updated_at: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
+    if (!order) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return order
+  }
+
+  async deleteOrder({ user_id, order_id }: { user_id: string; order_id: string }) {
+    const order = await databaseService.orders.findOneAndUpdate(
+      {
+        _id: new ObjectId(order_id),
+        user_id: new ObjectId(user_id),
+        status: OrderStatus.Pending
+      },
+
+      {
+        $set: {
+          status: OrderStatus.Cancelled,
+          updated_at: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
+    if (!order) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+  }
+
+  async getOrderById({ user_id, order_id }: { user_id: string; order_id: string }) {
+    const order = await databaseService.orders.findOne({
+      _id: new ObjectId(order_id),
+      user_id: new ObjectId(user_id)
+    })
+    if (!order) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return order
+  }
+
+  async getAllOrders() {
+    const orders = await databaseService.orders.find({}).sort({ created_at: -1 }).toArray()
+    return orders
   }
 }
 

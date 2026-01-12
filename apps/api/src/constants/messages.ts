@@ -175,3 +175,12 @@ export const CART_MESSAGES = {
   GET_CART_ITEMS_SUCCESS: 'Get cart items success',
   NO_SELECTED_CART_ITEMS: 'No selected cart items for order'
 } as const
+
+export const ORDER_MESSAGES = {
+  CREATE_ORDER_SUCCESS: 'Create order success',
+  ORDER_NOT_FOUND: 'Order not found',
+  GET_ORDERS_SUCCESS: 'Get orders success',
+  GET_ORDER_SUCCESS: 'Get order success',
+  UPDATE_ORDER_SUCCESS: 'Update order success',
+  DELETE_ORDER_SUCCESS: 'Cancel order success'
+} as const

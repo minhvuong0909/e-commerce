@@ -4,7 +4,7 @@ import { OrderStatus, PaymentMethod, PaymentStatus } from '~/constants/enums'
 interface OrderType {
   _id?: ObjectId
   user_id: ObjectId
-  delivery_method_id: ObjectId
+  delivery_method_id?: ObjectId
   payment_method: PaymentMethod
   payment_status: PaymentStatus
   total_price: number
@@ -17,7 +17,7 @@ interface OrderType {
 export default class Order {
   _id?: ObjectId
   user_id: ObjectId
-  delivery_method_id: ObjectId
+  delivery_method_id?: ObjectId
   payment_method: PaymentMethod
   payment_status: PaymentStatus
   total_price: number

@@ -44,7 +44,6 @@ export enum OrderStatus {
 
 export enum CartStatus {
   ACTIVE, // đang hoạt động,
-  CHECK_OUT, // đã thanh toán chyển về order
   INACTIVE // bị hủy bỏ
 }
 
@@ -65,4 +64,11 @@ export enum PaymentStatus {
 export enum DeliveryMethodType {
   STANDARD, // giao hàng tiêu chuẩn
   EXPRESS // giao hàng nhanh
+}
+
+export enum DeliveryStatus {
+  Delivered, // đã giao
+  InTransit, // đang vận chuyển
+  Pending, // đang chờ xử lý
+  Cancelled // đã hủy
 }
