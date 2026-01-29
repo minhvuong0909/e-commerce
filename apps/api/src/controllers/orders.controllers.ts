@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from 'express'
 import { ParamsDictionary } from 'express-serve-static-core'
-import { UserVerifyStatus } from '~/constants/enums'
+import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ORDER_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
+import { checkPermissions } from '~/middlewares/users.middlewares'
 import { ErrorWithStatus } from '~/models/Errors'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import ordersService from '~/services/orders.services'
@@ -102,5 +103,45 @@ export const getOrderByIdController = async (
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.GET_ORDER_SUCCESS,
     result: order
+  })
+}
+
+export const getAllMyOrdersController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  const orders = await ordersService.getAllMyOrders({ user_id: user_id })
+  res.status(HTTP_STATUS.OK).json({
+    message: ORDER_MESSAGES.GET_ALL_ORDERS_SUCCESS,
+    result: orders
+  })
+}
+
+export const getAllOrdersController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  const orders = await ordersService.getAllOrders()
+  res.status(HTTP_STATUS.OK).json({
+    message: ORDER_MESSAGES.GET_ALL_ORDERS_SUCCESS,
+    result: orders
   })
 }

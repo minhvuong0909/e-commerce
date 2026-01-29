@@ -3,6 +3,8 @@ import { USER_ROLE } from '~/constants/enums'
 import {
   createOrderController,
   deleteOrderController,
+  getAllMyOrdersController,
+  getAllOrdersController,
   getOrderByIdController,
   updateOrderController
 } from '~/controllers/orders.controllers'
@@ -44,8 +46,20 @@ ordersRouter.delete('/:id', accessTokenValidator, checkPermissions(USER_ROLE.Use
 ordersRouter.get('/:id', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getOrderByIdController))
 
 /*
+    description: get all orders user of user 
+    method: GET
+*/
+ordersRouter.get('/me', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getAllMyOrdersController))
+
+/*
     description: get all orders (admin, staff)
     method: GET
 */
-// ordersRouter.get('/', accessTokenValidator, checkPermissions(USER_ROLE.Staff || USER_ROLE.Admin), wrapAsync(getAllOrdersController))
+ordersRouter.get(
+  '/all',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Staff || USER_ROLE.Admin),
+  wrapAsync(getAllOrdersController)
+)
+
 export default ordersRouter

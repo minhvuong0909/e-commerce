@@ -7,6 +7,8 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Order from '~/models/schemas/Orders.schema'
 import { CreateOrderReqBody } from '~/models/requests/Orders.requests'
+import { or } from 'sequelize'
+import { filter } from 'lodash'
 class OrdersService {
   async createOrderItem({
     user_id,
@@ -159,8 +161,28 @@ class OrdersService {
     return order
   }
 
+  async getAllMyOrders({ user_id }: { user_id: string }) {
+    const orders = (await databaseService.orders
+      .find({ user_id: new ObjectId(user_id) })
+      .sort({ created_at: -1 })
+      .toArray()) as Order[]
+    if (orders.length === 0) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.NO_ORDERS_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    return orders
+  }
+
   async getAllOrders() {
-    const orders = await databaseService.orders.find({}).sort({ created_at: -1 }).toArray()
+    const orders = (await databaseService.orders.find().sort({ created_at: -1 }).toArray()) as Order[]
+    if (orders.length === 0) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.NO_ORDERS_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
     return orders
   }
 }

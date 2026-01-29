@@ -182,5 +182,7 @@ export const ORDER_MESSAGES = {
   GET_ORDERS_SUCCESS: 'Get orders success',
   GET_ORDER_SUCCESS: 'Get order success',
   UPDATE_ORDER_SUCCESS: 'Update order success',
-  DELETE_ORDER_SUCCESS: 'Cancel order success'
+  DELETE_ORDER_SUCCESS: 'Cancel order success',
+  GET_ALL_ORDERS_SUCCESS: 'Get all orders success',
+  NO_ORDERS_FOUND: 'No orders found'
 } as const
