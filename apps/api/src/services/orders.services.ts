@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { CartStatus, OrderStatus, PaymentStatus } from '~/constants/enums'
+import { CartStatus, DeliveryMethodType, OrderStatus, PaymentMethod, PaymentStatus } from '~/constants/enums'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
@@ -7,8 +7,6 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Order from '~/models/schemas/Orders.schema'
 import { CreateOrderReqBody } from '~/models/requests/Orders.requests'
-import { or } from 'sequelize'
-import { filter } from 'lodash'
 class OrdersService {
   async createOrderItem({
     user_id,
@@ -41,6 +39,17 @@ class OrdersService {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+    // validate delivery method
+    const delivery_method = await databaseService.delivery_methods.findOne({
+      _id: new ObjectId(payload.delivery_method_id)
+    })
+
+    if (!delivery_method) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.DELIVERY_METHOD_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
     // tính tổng tiền
     let total_price = 0
     const orderItems: OrderItems[] = []
@@ -70,14 +79,17 @@ class OrdersService {
         })
       )
     }
+    // tính shipping fee và total price
+    const shipping_fee = delivery_method.type === DeliveryMethodType.STANDARD ? 30000 : 50000
     // tạo order
     const order = await databaseService.orders.insertOne(
       new Order({
         user_id: new ObjectId(user_id),
-        total_price: total_price,
+        total_price: total_price + shipping_fee,
         payment_method: payload.payment_method as any,
         payment_status: PaymentStatus.PENDING,
-        shipping_fee: 0,
+        delivery_method_id: delivery_method._id,
+        shipping_fee: shipping_fee,
         status: OrderStatus.Pending
       })
     )
@@ -102,7 +114,7 @@ class OrdersService {
     })
     return order
   }
-
+  // cập nhật trạng thái đơn hàng
   async updateOrderStatus({ user_id, order_id }: { user_id: string; order_id: string }) {
     const order = await databaseService.orders.findOneAndUpdate(
       { _id: new ObjectId(order_id), user_id: new ObjectId(user_id), status: OrderStatus.Pending },

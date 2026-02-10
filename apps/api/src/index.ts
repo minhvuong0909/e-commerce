@@ -13,6 +13,8 @@ import brandRouter from './routes/brands.routers'
 import brandsRouter from './routes/brands.routers'
 import cartsRouter from './routes/carts.routers'
 import ordersRouter from './routes/orders.routers'
+import deliveryMethodsService from './services/delivery_methods.services'
+import { seedDeliverysController } from './controllers/delivery_methods.controllers'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -28,6 +30,8 @@ app.use(
 )
 // kết nối db
 databaseService.connect()
+// seed delivery methods
+seedDeliverysController()
 app.use(express.json()) // cho server xài middleware biến đổi json khi sử dụng post()
 // gọi server dùng router để tạo
 app.use('/users', userRouter)
@@ -60,5 +64,6 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 
 // listen dùng để mở server ổ port 3000
 app.listen(port, () => {
+  // seed delivery methods
   console.log('Server backend đang chạy trên port 3000')
 })

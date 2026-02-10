@@ -10,6 +10,7 @@ import Cart from '~/models/schemas/Carts.schema'
 import CartItems from '~/models/schemas/CartItems.schema'
 import Order from '~/models/schemas/Orders.schema'
 import OrderItems from '~/models/schemas/OrderItems.Schema'
+import Delivery from '~/models/schemas/Deliverys.schema'
 
 dotenv.config()
 
@@ -83,6 +84,11 @@ class DatabaseService {
   // instance của order items
   get order_items(): Collection<OrderItems> {
     return this.db.collection(process.env.DB_ORDER_ITEMS_COLLECTION as string)
+  }
+
+  // instance của delivery methods
+  get delivery_methods(): Collection<Delivery> {
+    return this.db.collection(process.env.DB_DELIVERY_METHODS_COLLECTION as string)
   }
 }
 
