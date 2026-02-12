@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import AuthLayout from './layouts/AuthLayout'
 import LoginPage from './pages/auth/LoginPage'
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
@@ -30,9 +31,10 @@ import AdminMediaPage from './pages/admin/medias/AdminMediaPage'
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster richColors position='top-right' />
       <Routes>
-        {/* <Route path='/' element={<Navigate to='/auth/login' replace />} /> */}
-        <Route path='/' element={<Navigate to='/user/home' replace />} />
+        <Route path='/' element={<Navigate to='/auth/login' replace />} />
+        {/* <Route path='/' element={<Navigate to='/user/home' replace />} /> */}
 
         {/* auth layouts */}
         <Route path='/auth' element={<AuthLayout />}>

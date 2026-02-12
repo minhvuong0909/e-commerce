@@ -5,11 +5,13 @@ export const ROUTES = {
   // ======= ROLE ========
   ADMIN: '/admin',
   STAFF: '/staff',
+  USER: '/user',
   DASHBOARD: '/dashboard',
 
   // ======= AUTHENTICATION =======
-  LOGIN: '/sign-in',
-  REGISTER: '/sign-up',
+  AUTH: '/auth',
+  LOGIN: '/login',
+  REGISTER: '/register',
   FORGET_PASSWORD: '/forgot-password',
   CHANGE_PASSWORD: '/change-password',
   RESET_PASSWORD: '/reset-password'

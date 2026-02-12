@@ -2,8 +2,40 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-
+import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { loginApi } from '../../services/auths.services'
+import { toast } from 'sonner'
+import { ROUTES } from '../../routes/route.paths'
 export default function LoginPage() {
+  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [forms, setForms] = useState({
+    email: '',
+    password: ''
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForms({
+      ...forms,
+      [e.target.name]: e.target.value
+    })
+  }
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    // Call api login
+    try {
+      setLoading(true)
+      const res = await loginApi(forms)
+      localStorage.setItem('access_token', res.data.result.tokens.access_token)
+      toast.success('Đăng nhập thành công!')
+      navigate('/user/home')
+    } catch (error) {
+      toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
+    } finally {
+      setLoading(false)
+    }
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -17,9 +49,23 @@ export default function LoginPage() {
       </div>
 
       {/* Form */}
-      <form className='space-y-4'>
-        <Input label='Email' type='email' placeholder='example@email.com' />
-        <Input label='Mật khẩu' type='password' placeholder='••••••••' />
+      <form className='space-y-4' onSubmit={handleSubmit}>
+        <Input
+          label='Email'
+          name='email'
+          type='email'
+          placeholder='example@email.com'
+          value={forms.email}
+          onChange={handleChange}
+        />
+        <Input
+          label='Mật khẩu'
+          name='password'
+          type='password'
+          placeholder='••••••••'
+          value={forms.password}
+          onChange={handleChange}
+        />
 
         <div className='flex items-center justify-between'>
           <label className='flex items-center gap-2 text-sm text-white/65'>
@@ -28,7 +74,7 @@ export default function LoginPage() {
           </label>
 
           <Link
-            to='/auth/forgot-password'
+            to={ROUTES.AUTH + ROUTES.FORGET_PASSWORD}
             className='text-sm font-semibold text-orange-300 hover:text-orange-200 hover:underline'
           >
             Quên mật khẩu?
@@ -36,8 +82,8 @@ export default function LoginPage() {
         </div>
 
         {/* Primary */}
-        <Button full type='submit'>
-          Đăng nhập
+        <Button full type='submit' disabled={loading}>
+          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </Button>
 
         {/* Divider */}
