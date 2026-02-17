@@ -83,8 +83,8 @@ api.interceptors.response.use(
       } catch {
         const navigate = useNavigate()
         toast.error('Phiên đã hết hạn, vui lòng đăng nhập lại!')
-        navigate('/users/login')
-      } finally { 
+        navigate('/auth/login')
+      } finally {
         isRefreshing = false
       }
     }

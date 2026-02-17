@@ -12,14 +12,26 @@ import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests
 import { REGEX_USERNAME } from '~/constants/regex'
 import nodemailer from 'nodemailer'
 
+console.log('PASS LENGTH:', process.env.GMAIL_PASS?.length)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_PASS
   }
 })
 
+// VERIFY SMTP
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('SMTP VERIFY ERROR:')
+    console.log(error)
+  } else {
+    console.log('SMTP READY:', success)
+  }
+})
 class UserServices {
   // kí access_token bằng jwt
   private signAccessToken(user_id: string) {
@@ -58,6 +70,8 @@ class UserServices {
   // hàm gửi mail xác thức token
   private async sendEmail(to: string, subject: string, html: string) {
     try {
+      console.log('vào chưa')
+
       return await transporter.sendMail({
         from: process.env.GMAIL_USER as string,
         to,
@@ -220,10 +234,11 @@ class UserServices {
     const tokens = await this.signAccessAndRefreshTokens(user_id.toString())
     // check có đúng email verify token gửi lên không
     const uri = `http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}`
-    await this.sendEmail(
-      payload.email,
-      'Verify your account',
-      `
+    try {
+      await this.sendEmail(
+        payload.email,
+        'Verify your account',
+        `
           <h2>Welcome to My E-commerce</h2>
           <p>Click the link below to verify your account:</p>
           <a href="${uri}"
@@ -239,8 +254,11 @@ class UserServices {
       Verify Account
     </a>
         `
-    )
-    console.log(`Gửi mail link xác thực sau: 
+      )
+    } catch (error) {
+      console.error('Send email error:', error)
+    }
+    console.log(`Gửi mail link xác thực sau:
         http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}
       `)
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)

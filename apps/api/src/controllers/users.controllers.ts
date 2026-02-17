@@ -52,6 +52,7 @@ export const registerController = async (
       message: USERS_MESSAGES.EMAIL_ALREADY_EXISTS
     })
   }
+
   const result = await usersService.register(req.body)
   // response
   res.status(HTTP_STATUS.OK).json({
