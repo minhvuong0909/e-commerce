@@ -1,14 +1,61 @@
-import { useSearchParams, Link } from 'react-router-dom'
+import { useSearchParams, Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { toast } from 'sonner'
+
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Alert from '../../components/ui/Alert'
+import { resetPasswordApi } from '../../services/auths.services'
+import { ROUTES } from '../../routes/route.paths'
 
 export default function ResetPasswordPage() {
   const [sp] = useSearchParams()
-  const token = sp.get('token')
+  const navigate = useNavigate()
 
+  const token = sp.get('forgot_password_token')
   const hasToken = Boolean(token)
+
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (!token) {
+      toast.error('Token không hợp lệ hoặc đã hết hạn.')
+      return
+    }
+
+    if (!password || !confirmPassword) {
+      toast.error('Vui lòng nhập đầy đủ thông tin.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Mật khẩu xác nhận không khớp.')
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      await resetPasswordApi({
+        password,
+        confirm_password: confirmPassword,
+        forgot_password_token: token
+      })
+
+      toast.success('Đặt lại mật khẩu thành công!')
+
+      navigate(ROUTES.AUTH + ROUTES.LOGIN)
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Token không hợp lệ hoặc đã hết hạn.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <motion.div
@@ -32,18 +79,35 @@ export default function ResetPasswordPage() {
         />
       )}
 
-      <form className='mt-4 space-y-4'>
-        <Input label='Mật khẩu mới' type='password' placeholder='Tối thiểu 8 ký tự' disabled={!hasToken} />
+      <form className='mt-4 space-y-4' onSubmit={handleSubmit}>
+        <Input
+          label='Mật khẩu mới'
+          type='password'
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder='Tối thiểu 8 ký tự'
+          disabled={!hasToken}
+        />
 
-        <Input label='Xác nhận mật khẩu' type='password' placeholder='Nhập lại mật khẩu' disabled={!hasToken} />
+        <Input
+          label='Xác nhận mật khẩu'
+          type='password'
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder='Nhập lại mật khẩu'
+          disabled={!hasToken}
+        />
 
-        <Button full type='submit' variant='gradient' disabled={!hasToken}>
+        <Button full type='submit' variant='gradient' loading={loading} disabled={!hasToken || loading}>
           Đặt mật khẩu
         </Button>
 
         <p className='text-center text-sm text-white/65'>
           Quay lại{' '}
-          <Link to='/auth/login' className='font-semibold text-orange-300 hover:text-orange-200 hover:underline'>
+          <Link
+            to={ROUTES.AUTH + ROUTES.LOGIN}
+            className='font-semibold text-orange-300 hover:text-orange-200 hover:underline'
+          >
             Đăng nhập
           </Link>
         </p>

@@ -23,15 +23,6 @@ const transporter = nodemailer.createTransport({
   }
 })
 
-// VERIFY SMTP
-transporter.verify((error, success) => {
-  if (error) {
-    console.log('SMTP VERIFY ERROR:')
-    console.log(error)
-  } else {
-    console.log('SMTP READY:', success)
-  }
-})
 class UserServices {
   // kí access_token bằng jwt
   private signAccessToken(user_id: string) {
@@ -70,8 +61,6 @@ class UserServices {
   // hàm gửi mail xác thức token
   private async sendEmail(to: string, subject: string, html: string) {
     try {
-      console.log('vào chưa')
-
       return await transporter.sendMail({
         from: process.env.GMAIL_USER as string,
         to,
@@ -239,7 +228,7 @@ class UserServices {
         payload.email,
         'Verify your account',
         `
-          <h2>Welcome to My E-commerce</h2>
+          <h2>Welcome to Vibrant Mart </h2>
           <p>Click the link below to verify your account:</p>
           <a href="${uri}"
        style="
@@ -291,7 +280,7 @@ class UserServices {
       user.email,
       'Verify your account',
       `
-          <h2>Welcome to My E-commerce</h2>
+          <h2>Welcome to Vibrant Mart</h2>
           <p>Click the link below to verify your account:</p>
           <a href="${uri}">${uri}</a>
         `
@@ -350,31 +339,29 @@ class UserServices {
           }
         ]
       )
-      const uri = `http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}`
+      const uri = `http://localhost:5173/auth/reset-password/?forgot_password_token=${forgot_password_token}`
+
       await this.sendEmail(
         user.email,
-        'Verify your account',
+        'Reset your password',
         `
-          <h2>Welcome to My E-commerce</h2>
-          <p>Click the link below to verify your account:</p>
-                    <a href="${uri}"
-       style="
-         display: inline-block;
-         padding: 12px 24px;
-         background-color: #2563eb;
-         color: #ffffff;
-         text-decoration: none;
-         border-radius: 6px;
-         font-weight: bold;
-       ">
-      Verify Account
-    </a>
-        `
+            <h2>Welcome to Vibrant Mart</h2>
+            <p>Click the link below to reset your password:</p>
+                      <a href="${uri}"
+         style="
+           display: inline-block;
+           padding: 12px 24px;
+           background-color: #2563eb;
+           color: #ffffff;
+           text-decoration: none;
+           border-radius: 6px;
+           font-weight: bold;
+         ">
+        Reset Password
+      </a>
+          `
       )
       // gửi email cái link cho người dùng
-      console.log(`Gửi mail link xác thực sau:
-        http://localhost:3000/users/reset-password/?forgot_password_token=${forgot_password_token}
-      `)
       // console.log(`Gửi mail link xác thực sau:
       //   http://localhost:3000/users/reset-password/?token=${forgot_password_token}
       // `)

@@ -31,7 +31,6 @@ export default function RegisterPage() {
       await registerApi(data)
 
       toast.success('Đăng ký thành công! Vui lòng kiểm tra email.')
-
       setTimeout(() => {
         navigate(ROUTES.AUTH + ROUTES.LOGIN)
       }, 1500)
