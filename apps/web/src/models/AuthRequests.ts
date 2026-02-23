@@ -20,3 +20,18 @@ export interface ResetPasswordPayload {
   confirm_password: string
   forgot_password_token: string
 }
+
+export interface User {
+  _id: string
+  name: string
+  email: string
+  date_of_birth: string
+  role: number
+  verify_status: number
+  bio?: string
+  location: string
+  website?: string
+  username: string
+  avatar?: string
+  cover_photo?: string
+}

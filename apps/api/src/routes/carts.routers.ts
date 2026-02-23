@@ -51,13 +51,10 @@ cartsRouter.delete(
   wrapAsync(deleteCartItemController)
 )
 
-cartsRouter.get('/:user_id', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getCartItemsController))
-
-
 /* 
 
     Description: get cart items by user id
     method: GET
 */
-cartsRouter.get('/:user_id', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getCartItemsController))
+cartsRouter.get('/me', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getCartItemsController))
 export default cartsRouter

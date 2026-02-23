@@ -15,6 +15,7 @@ import cartsRouter from './routes/carts.routers'
 import ordersRouter from './routes/orders.routers'
 import deliveryMethodsService from './services/delivery_methods.services'
 import { seedDeliverysController } from './controllers/delivery_methods.controllers'
+import deliveyRoutes from './routes/deliveries.routes'
 dotenv.config()
 const cors = require('cors')
 const app = express() //dùng express tạo 1 server
@@ -49,6 +50,8 @@ app.use('/brand', brandsRouter)
 app.use('/carts', cartsRouter)
 
 app.use('/orders', ordersRouter)
+
+app.use('/delivery-methods', deliveyRoutes)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // lỗi của controller ressponse

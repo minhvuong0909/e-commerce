@@ -174,10 +174,10 @@ class OrdersService {
   }
 
   async getAllMyOrders({ user_id }: { user_id: string }) {
-    const orders = (await databaseService.orders
+    const orders = await databaseService.orders
       .find({ user_id: new ObjectId(user_id) })
       .sort({ created_at: -1 })
-      .toArray()) as Order[]
+      .toArray()
     if (orders.length === 0) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.NO_ORDERS_FOUND,

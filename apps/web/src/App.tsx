@@ -28,6 +28,7 @@ import AdminCategoryEditPage from './pages/admin/categories/AdminCategoryUpdateP
 import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
 import AdminMediaPage from './pages/admin/medias/AdminMediaPage'
+import ProfilePage from './pages/user/GetProfile'
 export default function App() {
   return (
     <BrowserRouter>
@@ -55,6 +56,7 @@ export default function App() {
           <Route path='checkout' element={<CheckoutPage />} />
           <Route path='orders' element={<MyOrdersPage />} />
           <Route path='orders/:id' element={<OrderDetailPage />} />
+          <Route path='me' element={<ProfilePage />} />
         </Route>
 
         <Route path='*' element={<Navigate to='/user' replace />} />

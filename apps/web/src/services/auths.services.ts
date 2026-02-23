@@ -16,3 +16,7 @@ export const forgotPasswordApi = (email: string) => {
 export const resetPasswordApi = (payload: ResetPasswordPayload) => {
   return api.post('/users/reset-password', payload)
 }
+
+export const getMeApi = () => {
+  return api.post('/users/me')
+}

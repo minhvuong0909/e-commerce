@@ -36,6 +36,11 @@ class DeliveryMethodsService {
       }
     }
   }
+
+  async getAllDeliveryMethods() {
+    const deliveryMethods = await databaseService.delivery_methods.find().toArray()
+    return deliveryMethods
+  }
 }
 let deliveryMethodsService = new DeliveryMethodsService()
 export default deliveryMethodsService

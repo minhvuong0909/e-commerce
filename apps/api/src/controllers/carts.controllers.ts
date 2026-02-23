@@ -92,7 +92,7 @@ export const getCartItemsController = async (
       message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
     })
   }
-  const { cartItems, total_price } = await cartsService.getCartItemsByUserId({ user_id: req.params.user_id })
+  const { cartItems, total_price } = await cartsService.getCartItemsByUserId({ user_id })
   res.status(HTTP_STATUS.OK).json({
     message: CART_MESSAGES.GET_CART_ITEMS_SUCCESS,
     data: { cartItems, total_price }
