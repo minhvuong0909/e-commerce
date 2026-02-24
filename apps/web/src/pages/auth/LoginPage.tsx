@@ -28,6 +28,7 @@ export default function LoginPage() {
       setLoading(true)
       const res = await loginApi(forms)
       localStorage.setItem('access_token', res.data.result.tokens.access_token)
+      localStorage.setItem('refresh_token', res.data.result.tokens.refresh_token)
       toast.success('Đăng nhập thành công!')
       navigate('/user/home')
     } catch (error) {

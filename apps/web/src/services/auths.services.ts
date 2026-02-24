@@ -20,3 +20,7 @@ export const resetPasswordApi = (payload: ResetPasswordPayload) => {
 export const getMeApi = () => {
   return api.post('/users/me')
 }
+
+export const logoutApi = (refresh_token: string) => {
+  return api.post('/users/logout', { refresh_token })
+}

@@ -30,10 +30,17 @@ export const loginController = async (
   const { email, password } = req.body
 
   const result = await usersService.login({ email, password })
-
+  // set refresh token vào cookie
+  // res.cookie('refresh_token', result?.tokens.refresh_token, {
+  //   httpOnly: true,
+  //   secure: process.env.PRODUCTION_ENV === 'production',
+  //   path: '/users/refresh-token',
+  //   sameSite: 'strict',
+  //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
+  // })
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,
-    result
+    access_token: result.tokens.access_token
   })
 }
 
@@ -106,9 +113,16 @@ export const logoutController = async (
   await usersService.checkRefreshToken({ user_id: user_id_at, refresh_token })
   // nếu có thì logout và xóa rf
   await usersService.logout(refresh_token)
-  res.status(HTTP_STATUS.OK).json({
-    message: USERS_MESSAGES.LOGOUT_SUCCESS
-  })
+  // xóa cookie
+  res
+    .clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: process.env.PRODUCTION_ENV === 'production'
+    })
+    .status(HTTP_STATUS.OK)
+    .json({
+      message: USERS_MESSAGES.LOGOUT_SUCCESS
+    })
 }
 
 // resendEmailVerifyToken
@@ -289,11 +303,12 @@ export const refreshTokenController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { refresh_token } = req.body
+  const { refresh_token } = req.cookies.refresh_token
   const { user_id, exp } = req.decode_refresh_token as TokenPayload
   // check trong db có refresh token hay khong
   await usersService.checkRefreshToken({ user_id, refresh_token })
   const result = await usersService.refreshToken({ user_id, refresh_token, exp })
+
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
     result

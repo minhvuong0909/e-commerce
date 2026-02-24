@@ -7,7 +7,7 @@ export default function UserLayout() {
     { to: '/user/home', label: 'Trang chủ' },
     { to: '/user/cart', label: 'Giỏ hàng' },
     { to: '/user/orders', label: 'Đơn hàng' },
-    { to: '/user/profile', label: 'Tài khoản' }
+    { to: '/user/me', label: 'Tài khoản' }
   ]
 
   return (

@@ -9,7 +9,7 @@ console.log('API URL:', import.meta.env.VITE_BASE_URL_API)
 // request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('access_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -34,13 +34,10 @@ api.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & {
       _retry?: boolean
     }
+    console.log('vào này chưa')
 
     // kiểm tra token hết hạn
-    if (
-      error.response?.data?.code === 401 &&
-      error.response?.data?.message === 'Expired token!' &&
-      !originalRequest._retry
-    ) {
+    if (error.response?.status === 401 && error.response?.data?.message === 'Jwt expired' && !originalRequest._retry) {
       if (isRefreshing) {
         // nếu refresh đang diễn ra, xếp request này vào hàng chờ
         return new Promise((resolve, reject) => {

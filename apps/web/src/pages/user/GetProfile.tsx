@@ -3,14 +3,14 @@ import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import type { User } from '../../models/AuthRequests'
-import { getMeApi } from '../../services/auths.services'
+import { getMeApi, logoutApi } from '../../services/auths.services'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
+  // const [uploading, setUploading] = useState(false)
 
-  const fileRef = useRef<HTMLInputElement>(null)
+  // const fileRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,38 +31,43 @@ export default function ProfilePage() {
 
   const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN')
 
-  const roleLabel = (role: number) => {
-    if (role === 0) return 'Admin'
-    if (role === 1) return 'Staff'
-    return 'User'
-  }
+  // const roleLabel = (role: number) => {
+  //   if (role === 0) return 'Admin'
+  //   if (role === 1) return 'Staff'
+  //   return 'User'
+  // }
 
-  const handleAvatarClick = () => {
-    fileRef.current?.click()
-  }
+  // const handleAvatarClick = () => {
+  //   fileRef.current?.click()
+  // }
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
-    const file = e.target.files[0]
+  // const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   if (!e.target.files?.[0]) return
+  //   const file = e.target.files[0]
 
-    try {
-      setUploading(true)
-      //   await updateAvatarApi(file)
-      toast.success('Cập nhật avatar thành công')
+  //   try {
+  //     setUploading(true)
+  //     //   await updateAvatarApi(file)
+  //     toast.success('Cập nhật avatar thành công')
 
-      const res = await getMeApi()
-      setUser(res.data.result)
-    } catch {
-      toast.error('Upload thất bại')
-    } finally {
-      setUploading(false)
-    }
-  }
+  //     const res = await getMeApi()
+  //     setUser(res.data.result)
+  //   } catch {
+  //     toast.error('Upload thất bại')
+  //   } finally {
+  //     setUploading(false)
+  //   }
+  // }
 
   const handleLogout = async () => {
-    // await logoutApi()
-    toast.success('Đã đăng xuất')
-    navigate('/login')
+    const refresh_token = localStorage.getItem('refresh_token')
+    if (refresh_token) {
+      await logoutApi(refresh_token || '')
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+    }
+    toast.success('Đăng xuất thành công!')
+    navigate('/auth/login')
   }
 
   if (loading) {
