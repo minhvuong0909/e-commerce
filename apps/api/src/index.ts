@@ -9,18 +9,18 @@ import productRouter from './routes/products.routers'
 import mediasRouter from './routes/medias.routers'
 import staticRouter from './routes/statics.routers'
 import categoryRouter from './routes/categories.routers'
-import brandRouter from './routes/brands.routers'
 import brandsRouter from './routes/brands.routers'
 import cartsRouter from './routes/carts.routers'
 import ordersRouter from './routes/orders.routers'
-import deliveryMethodsService from './services/delivery_methods.services'
 import { seedDeliverysController } from './controllers/delivery_methods.controllers'
 import deliveyRoutes from './routes/deliveries.routes'
+
 dotenv.config()
 const cors = require('cors')
+const cookieParser = require('cookie-parser')
+
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
-
 //
 app.use(
   cors({
@@ -29,6 +29,7 @@ app.use(
     exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges']
   })
 )
+
 // kết nối db
 databaseService.connect()
 // seed delivery methods

@@ -1,9 +1,9 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
-import { useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import { refreshTokenApi } from '../services/auths.services'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BASE_URL_API}`
+  baseURL: `${import.meta.env.VITE_BASE_URL_API}`,
+  withCredentials: true
 })
 console.log('API URL:', import.meta.env.VITE_BASE_URL_API)
 // request interceptor
@@ -34,20 +34,15 @@ api.interceptors.response.use(
     const originalRequest = error.config as AxiosRequestConfig & {
       _retry?: boolean
     }
-    console.log('vào này chưa')
 
-    // kiểm tra token hết hạn
-    if (error.response?.status === 401 && error.response?.data?.message === 'Jwt expired' && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // nếu refresh đang diễn ra, xếp request này vào hàng chờ
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
+        }).then((token) => {
+          if (originalRequest.headers) originalRequest.headers['Authorization'] = `Bearer ${token}`
+          return api(originalRequest)
         })
-          .then((token) => {
-            if (originalRequest.headers) originalRequest.headers['Authorization'] = `Bearer ${token}`
-            return api(originalRequest)
-          })
-          .catch((err) => Promise.reject(err))
       }
 
       originalRequest._retry = true
@@ -55,32 +50,23 @@ api.interceptors.response.use(
 
       try {
         const refresh_token = localStorage.getItem('refresh_token')
-        if (!refresh_token) throw new Error('No refresh token found')
+        if (!refresh_token) {
+          throw new Error('No refresh token available')
+        }
+        const res = await refreshTokenApi(refresh_token)
 
-        // gửi request refresh token
-        const res = await axios.post(`${import.meta.env.BASE_URL_API}/users/refresh-token`, {
-          token: refresh_token
-        })
+        const accessToken = res.data.result.tokens.access_token
 
-        const { accessToken, refreshToken: newRefreshToken } = res.data.result.tokens
+        // lưu access token mới
+        localStorage.setItem('access_token', accessToken)
 
-        // lưu lại token mới
-        localStorage.setItem('token', accessToken)
-        localStorage.setItem('refresh_token', newRefreshToken)
-
-        // cập nhật header mặc định cho axios
-        api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
         processQueue(null, accessToken)
 
-        // gửi lại request cũ
-        if (originalRequest.headers) originalRequest.headers['Authorization'] = `Bearer ${accessToken}`
         return api(originalRequest)
-
-        // nếu có lỗi thì cho đăng nhập lại
-      } catch {
-        const navigate = useNavigate()
-        toast.error('Phiên đã hết hạn, vui lòng đăng nhập lại!')
-        navigate('/auth/login')
+      } catch (err) {
+        processQueue(err, null)
+        localStorage.removeItem('access_token')
+        window.location.href = '/auth/login'
       } finally {
         isRefreshing = false
       }
@@ -89,13 +75,5 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
 
 export default api

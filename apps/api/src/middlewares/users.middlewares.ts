@@ -271,23 +271,19 @@ export const accessTokenValidator = validate(
 export const refreshTokenValidator = validate(
   checkSchema({
     refresh_token: {
-      notEmpty: {
-        errorMessage: USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED
-      },
       custom: {
-        options: async (value: string, { req }) => {
-          try {
-            const decode_refresh_token = await verifyToken({
-              token: value,
-              privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
-            })
-            ;(req as Request).decode_refresh_token = decode_refresh_token as TokenPayload
-          } catch (error) {
-            throw new ErrorWithStatus({
-              status: HTTP_STATUS.UNAUTHORIZED,
-              message: (error as JsonWebTokenError).message
-            })
+        options: async (_, { req }) => {
+          const token = req.body?.refresh_token
+          if (!token) {
+            throw new Error(USERS_MESSAGES.REFRESH_TOKEN_IS_REQUIRED)
           }
+
+          const decoded = await verifyToken({
+            token,
+            privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+          })
+
+          req.decode_refresh_token = decoded
           return true
         }
       }

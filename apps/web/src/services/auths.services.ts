@@ -1,8 +1,8 @@
 import api from '../configs/api'
-import type { LoginPayload, RegisterPayload, ResetPasswordPayload } from '../models/AuthRequests'
+import type { LoginPayload, RegisterPayload, ResetPasswordPayload, UpdateUserPayload } from '../models/AuthRequests'
 
 export const loginApi = (payload: LoginPayload) => {
-  return api.post('/users/login', payload)
+  return api.post('/users/login', payload, { withCredentials: true })
 }
 
 export const registerApi = (payload: RegisterPayload) => {
@@ -23,4 +23,14 @@ export const getMeApi = () => {
 
 export const logoutApi = (refresh_token: string) => {
   return api.post('/users/logout', { refresh_token })
+}
+
+// update me
+export const updateMeApi = (payload: UpdateUserPayload) => {
+  return api.patch('/users/me', payload)
+}
+
+// refresh token
+export const refreshTokenApi = (refresh_token: string) => {
+  return api.post('/users/refresh-token', { refresh_token })
 }

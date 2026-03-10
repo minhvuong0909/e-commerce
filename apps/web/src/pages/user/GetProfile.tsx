@@ -1,16 +1,42 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import type { User } from '../../models/AuthRequests'
-import { getMeApi, logoutApi } from '../../services/auths.services'
+import { getMeApi, logoutApi, updateMeApi } from '../../services/auths.services'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(false)
-  // const [uploading, setUploading] = useState(false)
+  const [updating, setUpdating] = useState(false)
 
-  // const fileRef = useRef<HTMLInputElement>(null)
+  // call api update profile
+  const handleUpdateProfile = async () => {
+    try {
+      setUpdating(true)
+
+      const res = await updateMeApi({
+        name: user?.name,
+        date_of_birth: user?.date_of_birth,
+        bio: user?.bio,
+        location: user?.location,
+        website: user?.website,
+        username: user?.username,
+        avatar: user?.avatar,
+        cover_photo: user?.cover_photo
+      })
+
+      toast.success('Cập nhật thông tin thành công')
+
+      setUser(res.data.result)
+    } catch (error) {
+      toast.error('Cập nhật thất bại')
+      console.error(error)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -31,38 +57,10 @@ export default function ProfilePage() {
 
   const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN')
 
-  // const roleLabel = (role: number) => {
-  //   if (role === 0) return 'Admin'
-  //   if (role === 1) return 'Staff'
-  //   return 'User'
-  // }
-
-  // const handleAvatarClick = () => {
-  //   fileRef.current?.click()
-  // }
-
-  // const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (!e.target.files?.[0]) return
-  //   const file = e.target.files[0]
-
-  //   try {
-  //     setUploading(true)
-  //     //   await updateAvatarApi(file)
-  //     toast.success('Cập nhật avatar thành công')
-
-  //     const res = await getMeApi()
-  //     setUser(res.data.result)
-  //   } catch {
-  //     toast.error('Upload thất bại')
-  //   } finally {
-  //     setUploading(false)
-  //   }
-  // }
-
   const handleLogout = async () => {
     const refresh_token = localStorage.getItem('refresh_token')
     if (refresh_token) {
-      await logoutApi(refresh_token || '')
+      await logoutApi(refresh_token)
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
     }
@@ -137,8 +135,11 @@ export default function ProfilePage() {
           </div>
 
           <div className='flex gap-3'>
-            <button className='rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20'>
-              Chỉnh sửa
+            <button
+              onClick={handleUpdateProfile}
+              className='rounded-2xl bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/20'
+            >
+              {updating ? 'Đang cập nhật...' : 'Chỉnh sửa'}
             </button>
 
             <button

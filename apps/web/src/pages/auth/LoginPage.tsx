@@ -103,7 +103,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <p className='pt-1 text-center text-sm text-white/65'>
-          Chưa có tài khoản?{' '}
+          Chưa có tài khoản?
           <Link to='/auth/register' className='font-semibold text-orange-300 hover:text-orange-200 hover:underline'>
             Đăng ký
           </Link>

@@ -16,10 +16,9 @@ import usersService from '~/services/users.services'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
-import { RoleStatus, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
+import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { json } from 'sequelize'
 import { ParamsDictionary } from 'express-serve-static-core'
-import User from '~/models/schemas/Users.schema'
 import databaseService from '~/services/database.service'
 
 export const loginController = async (
@@ -31,16 +30,18 @@ export const loginController = async (
 
   const result = await usersService.login({ email, password })
   // set refresh token vào cookie
-  // res.cookie('refresh_token', result?.tokens.refresh_token, {
+  // res.cookie('refresh_token', result?.refresh_token, {
   //   httpOnly: true,
-  //   secure: process.env.PRODUCTION_ENV === 'production',
+  //   // secure: process.env.PRODUCTION_ENV === 'production', với https
+  //   secure: false, // localhost
   //   path: '/users/refresh-token',
-  //   sameSite: 'strict',
-  //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày
+  //   sameSite: 'lax',
+  //   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 ngày,
   // })
+
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,
-    access_token: result.tokens.access_token
+    result
   })
 }
 
@@ -98,7 +99,7 @@ export const logoutController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { refresh_token } = req.body
+  const refresh_token = req.body.refresh_token
   // lấy ra 2 token mình kí và đã lưu vào file định nghĩa
   const { user_id: user_id_at } = req.decode_authorization as TokenPayload
   const { user_id: user_id_rf } = req.decode_refresh_token as TokenPayload
@@ -115,10 +116,12 @@ export const logoutController = async (
   await usersService.logout(refresh_token)
   // xóa cookie
   res
-    .clearCookie('refresh_token', {
-      httpOnly: true,
-      secure: process.env.PRODUCTION_ENV === 'production'
-    })
+    // .clearCookie('refresh_token', {
+    //   httpOnly: true,
+    //   path: '/users/refresh-token',
+    //   sameSite: 'strict',
+    //   secure: process.env.PRODUCTION_ENV === 'production'
+    // })
     .status(HTTP_STATUS.OK)
     .json({
       message: USERS_MESSAGES.LOGOUT_SUCCESS
@@ -303,7 +306,7 @@ export const refreshTokenController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { refresh_token } = req.cookies.refresh_token
+  const { refresh_token } = req.body
   const { user_id, exp } = req.decode_refresh_token as TokenPayload
   // check trong db có refresh token hay khong
   await usersService.checkRefreshToken({ user_id, refresh_token })

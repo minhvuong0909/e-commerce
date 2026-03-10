@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "antd": "^6.1.1",
+    "cookie-parser": "^1.4.7",
     "sharp": "^0.34.5",
     "slugify": "^1.6.6"
   }

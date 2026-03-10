@@ -35,3 +35,14 @@ export interface User {
   avatar?: string
   cover_photo?: string
 }
+
+export interface UpdateUserPayload {
+  name?: string
+  date_of_birth?: string
+  bio?: string
+  location?: string
+  website?: string
+  username?: string
+  avatar?: string
+  cover_photo?: string
+}
