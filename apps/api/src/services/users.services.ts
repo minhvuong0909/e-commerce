@@ -1,4 +1,4 @@
-import { RoleStatus, TokenType, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
+import { TokenType, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseService from './database.service'
 import { ObjectId } from 'mongodb'
@@ -101,6 +101,12 @@ class UserServices {
 
   // find user by id
   async findUserById(user_id: string) {
+    if (!ObjectId.isValid(user_id)) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: 'USERS_MESSAGES.INVALID_USER_ID'
+      })
+    }
     const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
     if (!user) {
       throw new ErrorWithStatus({
@@ -108,6 +114,7 @@ class UserServices {
         message: USERS_MESSAGES.USER_NOT_FOUND
       })
     }
+
     return user
   }
   // hàm login

@@ -174,11 +174,22 @@ class OrdersService {
   }
 
   async getAllMyOrders({ user_id }: { user_id: string }) {
-    const orders = await databaseService.orders
-      .find({ user_id: new ObjectId(user_id) })
-      .sort({ created_at: -1 })
-      .toArray()
-    if (orders.length === 0) {
+    console.log('user_id: ' + user_id)
+
+    if (!ObjectId.isValid(user_id)) {
+      throw new ErrorWithStatus({
+        message: 'Invalid user_id',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // const userObjectId = new ObjectId(user_id)
+
+    const orders = (await databaseService.orders
+      .aggregate([{ $match: { user_id: user_id } }, { $sort: { created_at: -1 } }])
+      .toArray()) as Order[]
+
+    if (!orders.length) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.NO_ORDERS_FOUND,
         status: HTTP_STATUS.NOT_FOUND
