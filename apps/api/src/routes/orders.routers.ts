@@ -49,14 +49,19 @@ ordersRouter.get('/:id', accessTokenValidator, checkPermissions(USER_ROLE.User),
     description: get all orders user of user 
     method: GET
 */
-ordersRouter.get('/me', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getAllMyOrdersController))
+ordersRouter.get(
+  '/me/my-orders',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  wrapAsync(getAllMyOrdersController)
+)
 
 /*
     description: get all orders (admin, staff)
     method: GET
 */
 ordersRouter.get(
-  '/all',
+  '/all/all-orders',
   accessTokenValidator,
   checkPermissions(USER_ROLE.Staff || USER_ROLE.Admin),
   wrapAsync(getAllOrdersController)

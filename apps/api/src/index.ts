@@ -17,7 +17,6 @@ import deliveyRoutes from './routes/deliveries.routes'
 
 dotenv.config()
 const cors = require('cors')
-const cookieParser = require('cookie-parser')
 
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
