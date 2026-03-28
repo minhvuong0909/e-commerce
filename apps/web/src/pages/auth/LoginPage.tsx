@@ -3,12 +3,14 @@ import { motion } from 'framer-motion'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { loginApi } from '../../services/auths.services'
 import { toast } from 'sonner'
 import { ROUTES } from '../../routes/route.paths'
+import { supabase } from '../../configs/config'
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [forms, setForms] = useState({
     email: '',
@@ -21,6 +23,11 @@ export default function LoginPage() {
       [e.target.name]: e.target.value
     })
   }
+  // redirect nếu đã có token
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (token) navigate('/user/home', { replace: true })
+  }, [navigate])
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     // Call api login
@@ -35,6 +42,27 @@ export default function LoginPage() {
       toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // LoginPage.tsx — đảm bảo signInWithOAuth không có queryParams thừa
+  const handleLoginGoogle = async () => {
+    try {
+      setGoogleLoading(true)
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+          // ✅ Bỏ hết queryParams cũ nếu có
+        }
+      })
+      if (error) {
+        toast.error(error.message)
+        setGoogleLoading(false)
+      }
+    } catch {
+      toast.error('Không thể đăng nhập với Google.')
+      setGoogleLoading(false)
     }
   }
   return (
@@ -96,7 +124,7 @@ export default function LoginPage() {
         </div>
 
         {/* Social */}
-        <Button full type='button'>
+        <Button full type='button' variant='outline' onClick={handleLoginGoogle} disabled={googleLoading}>
           <GoogleIcon />
           Đăng nhập với Google
         </Button>

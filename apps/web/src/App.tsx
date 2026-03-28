@@ -29,18 +29,19 @@ import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
 import AdminMediaPage from './pages/admin/medias/AdminMediaPage'
 import ProfilePage from './pages/user/GetProfile'
+import AuthCallbackPage from './pages/auth/AuthCallBackPage'
 export default function App() {
   return (
     <BrowserRouter>
       <Toaster richColors position='top-right' />
       <Routes>
-        <Route path='/' element={<Navigate to='/auth/login' replace />} />
         {/* <Route path='/' element={<Navigate to='/user/home' replace />} /> */}
-
+        <Route path='/auth/callback' element={<AuthCallbackPage />} />
         {/* auth layouts */}
         <Route path='/auth' element={<AuthLayout />}>
           <Route element={<Navigate to='login' replace />} />
           <Route path='login' element={<LoginPage />} />
+          {/* <Route path='callback' element={<AuthCallbackPage />} /> */}
           <Route path='register' element={<RegisterPage />} />
           <Route path='forgot-password' element={<ForgotPasswordPage />} />
           <Route path='reset-password' element={<ResetPasswordPage />} />
@@ -87,6 +88,8 @@ export default function App() {
           {/* media */}
           <Route path='media' element={<AdminMediaPage />} />
         </Route>
+
+        <Route path='/' element={<Navigate to='/auth/login' replace />} />
       </Routes>
     </BrowserRouter>
   )

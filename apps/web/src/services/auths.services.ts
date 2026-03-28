@@ -34,3 +34,10 @@ export const updateMeApi = (payload: UpdateUserPayload) => {
 export const refreshTokenApi = (refresh_token: string) => {
   return api.post('/users/refresh-token', { refresh_token })
 }
+
+// login with google
+export const loginWithGoogleApi = (token: string) => {
+  return api.post('/users/login-with-google', { token })
+}
+
+

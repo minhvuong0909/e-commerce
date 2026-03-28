@@ -45,6 +45,14 @@ export const loginController = async (
   })
 }
 
+export const loginWithGoogleController = async (req: Request, res: Response, next: NextFunction) => {
+  const { access_token } = req.body
+  const result = await usersService.loginWithGoogle(access_token)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.LOGIN_SUCCESS,
+    result
+  })
+}
 export const registerController = async (
   req: Request<ParamsDictionary, any, RegisterRequestBody>,
   res: Response,

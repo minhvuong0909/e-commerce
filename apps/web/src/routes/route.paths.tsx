@@ -14,5 +14,10 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGET_PASSWORD: '/forgot-password',
   CHANGE_PASSWORD: '/change-password',
-  RESET_PASSWORD: '/reset-password'
+  RESET_PASSWORD: '/reset-password',
+
+  // ======= PRODUCTS =======
+  CREATE_PRODUCT: '/products/create',
+  PRODUCT_DETAIL: '/products/:id',
+  PRODUCTS: '/products'
 }

@@ -43,6 +43,7 @@ export const USERS_MESSAGES = {
   RESEND_EMAIL_SUCCESS: 'Resend email success',
   CHECK_EMAIL_TO_RESET_PASSWORD: 'Check email to reset password',
   FORGOT_PASSWORD_TOKEN_IS_REQUIRED: 'Forgot password token is required',
+  INVALID_SUPABASE_ACCESS_TOKEN: 'Invalid supabase access token',
   FORGOT_PASSWORD_TOKEN_NOT_MATCH: 'Forgot password token not match',
   VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token successfully',
   RESET_PASSWORD_SUCCESS: 'Reset password successfully',
@@ -185,5 +186,5 @@ export const ORDER_MESSAGES = {
   DELETE_ORDER_SUCCESS: 'Cancel order success',
   GET_ALL_ORDERS_SUCCESS: 'Get all orders success',
   NO_ORDERS_FOUND: 'No orders found',
-  DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found'  
+  DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found'
 } as const

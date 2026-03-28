@@ -6,6 +6,7 @@ import {
   getProfileController,
   getUsers,
   loginController,
+  loginWithGoogleController,
   logoutController,
   refreshTokenController,
   registerController,
@@ -19,6 +20,7 @@ import { filterMiddleware } from '~/middlewares/common.middlewares'
 import {
   accessTokenValidator,
   changePasswordValidator,
+  checkPermissions,
   emailVerifyTokenValidator,
   forgotPasswordTokenValidator,
   forgotPasswordValidator,
@@ -199,6 +201,15 @@ userRouter.post('/refresh-token', wrapAsync(refreshTokenController))
   path: users
   method: get
 */
-// userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(getUsers))
+userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(getUsers))
 
+/*
+  desc: login with google
+  path: users/login-with-google
+  method: post
+  body: {
+    token: string
+  }
+*/
+userRouter.post('/login-with-google', wrapAsync(loginWithGoogleController))
 export default userRouter

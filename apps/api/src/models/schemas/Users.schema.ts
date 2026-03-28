@@ -8,7 +8,7 @@ interface UserType {
   role_id?: ObjectId
   name: string
   email: string
-  date_of_birth: Date
+  date_of_birth?: Date
   password: string
   role?: USER_ROLE
   created_at?: Date

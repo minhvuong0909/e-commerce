@@ -45,8 +45,6 @@ export default function ProfilePage() {
         setLoading(true)
         const res = await getMeApi()
         setUser(res.data.result)
-      } catch {
-        toast.error('Không thể tải thông tin người dùng')
       } finally {
         setLoading(false)
       }

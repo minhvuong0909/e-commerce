@@ -30,8 +30,6 @@ export default function CartPage() {
 
         // mặc định chọn tất cả
         setSelectedItems(items.map((i: CartItem) => i._id))
-      } catch {
-        toast.error('Không thể tải giỏ hàng')
       } finally {
         setLoading(false)
       }

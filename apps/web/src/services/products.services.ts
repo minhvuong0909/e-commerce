@@ -7,3 +7,16 @@ export const getProductsApi = (params?: Record<string, any>) => {
 export const getProductByIdApi = (id: string) => {
   return api.get(`/products/${id}`)
 }
+
+export const getAllProductsApi = (limit: number, page: number) => {
+  return api.get('/products', {
+    params: {
+      limit,
+      page
+    }
+  })
+}
+
+export const createProductApi = (data: Record<string, any>) => {
+  return api.post('/products/create', data)
+}

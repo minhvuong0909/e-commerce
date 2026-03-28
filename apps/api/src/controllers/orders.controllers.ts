@@ -132,15 +132,15 @@ export const getAllOrdersController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { user_id } = req.decode_authorization as TokenPayload
-  const user = await usersService.findUserById(user_id)
-  if (user.verify_status !== UserVerifyStatus.Verified) {
-    throw new ErrorWithStatus({
-      status: HTTP_STATUS.UNAUTHORIZED,
-      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
-    })
-  }
-  const orders = await ordersService.getAllOrders()
+  // const { user_id } = req.decode_authorization as TokenPayload
+  // const user = await usersService.findUserById(user_id)
+  // if (user.verify_status !== UserVerifyStatus.Verified) {
+  //   throw new ErrorWithStatus({
+  //     status: HTTP_STATUS.UNAUTHORIZED,
+  //     message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+  //   })
+  // }
+  const orders = await ordersService.getAllOrders(req)
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.GET_ALL_ORDERS_SUCCESS,
     result: orders

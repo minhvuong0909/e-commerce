@@ -1,7 +1,7 @@
 import { TokenType, USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { signToken, verifyToken } from '~/utils/jwt'
 import databaseService from './database.service'
-import { ObjectId } from 'mongodb'
+import { ObjectId, WithId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
@@ -11,6 +11,7 @@ import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { REGEX_USERNAME } from '~/constants/regex'
 import nodemailer from 'nodemailer'
+import { supabaseConfig } from '~/config/config'
 
 console.log('PASS LENGTH:', process.env.GMAIL_PASS?.length)
 const transporter = nodemailer.createTransport({
@@ -150,6 +151,104 @@ class UserServices {
         exp
       })
     )
+    return { tokens }
+  }
+
+  // hàm login with google
+  async loginWithGoogle(accessToken: string) {
+    const { data, error } = await supabaseConfig.auth.getUser(accessToken)
+
+    if (error || !data.user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.INVALID_SUPABASE_ACCESS_TOKEN
+      })
+    }
+
+    const supabaseUser = data.user
+
+    // check provider
+    const isGoogle = supabaseUser.identities?.some((i) => i.provider === 'google')
+    if (!isGoogle) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.INVALID_SUPABASE_ACCESS_TOKEN
+      })
+    }
+
+    const email = supabaseUser.email
+    const supabase_user_id = supabaseUser.id
+    const name = supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || ''
+    const avatar = supabaseUser.user_metadata?.avatar_url || ''
+
+    if (!email) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.BAD_REQUEST,
+        message: USERS_MESSAGES.EMAIL_IS_INCORRECT
+      })
+    }
+
+    let user = await databaseService.users.findOne({ supabase_user_id })
+
+    if (!user) {
+      user = await databaseService.users.findOne({ email })
+
+      if (user) {
+        user = await databaseService.users.findOneAndUpdate(
+          { _id: user._id },
+          {
+            $set: {
+              supabase_user_id,
+              name,
+              avatar,
+              verify_status: UserVerifyStatus.Verified,
+              updated_at: new Date()
+            }
+          },
+          { returnDocument: 'after' }
+        )
+      }
+    }
+
+    if (!user) {
+      const passwordHashed = await hashPassword(supabase_user_id)
+      const userId = new ObjectId()
+      const newUser = new User({
+        _id: userId,
+        username: `user${Date.now()}`,
+        email,
+        name,
+        avatar,
+        password: passwordHashed,
+        verify_status: UserVerifyStatus.Verified,
+        role: USER_ROLE.User,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      await databaseService.users.insertOne(newUser)
+      // withId là kiểu có _id, vì newUser chưa có _id nên phải ép kiểu
+      user = { ...newUser, _id: userId } as WithId<User>
+    }
+
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR,
+        message: USERS_MESSAGES.USER_NOT_FOUND
+      })
+    }
+
+    const tokens = await this.signAccessAndRefreshTokens(user._id.toString())
+    const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
+
+    await databaseService.refreshTokens.insertOne(
+      new RefreshToken({
+        user_id: new ObjectId(user._id),
+        token: tokens.refresh_token,
+        iat,
+        exp
+      })
+    )
+
     return { tokens }
   }
 

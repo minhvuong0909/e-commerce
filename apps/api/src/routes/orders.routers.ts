@@ -62,8 +62,8 @@ ordersRouter.get(
 */
 ordersRouter.get(
   '/all/all-orders',
-  accessTokenValidator,
-  checkPermissions(USER_ROLE.Staff || USER_ROLE.Admin),
+  //   accessTokenValidator,
+  //   checkPermissions(USER_ROLE.Staff || USER_ROLE.Admin),
   wrapAsync(getAllOrdersController)
 )
 
