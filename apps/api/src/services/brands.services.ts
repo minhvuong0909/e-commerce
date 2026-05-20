@@ -66,6 +66,66 @@ class BrandsService {
     }
     return brand
   }
+
+  async getBrands(limit: number = 10, page: number = 1) {
+    const skip = (page - 1) * limit
+
+    const brands = await databaseService.brands
+      .aggregate([
+        {
+          $lookup: {
+            from: 'products',
+            let: {
+              brandId: '$_id'
+            },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $eq: ['$brand_id', '$$brandId']
+                  }
+                }
+              },
+              {
+                $count: 'count'
+              }
+            ],
+            as: 'productsCountData'
+          }
+        },
+        {
+          $addFields: {
+            productsCount: {
+              $ifNull: [
+                {
+                  $arrayElemAt: ['$productsCountData.count', 0]
+                },
+                0
+              ]
+            }
+          }
+        },
+        {
+          $project: {
+            productsCountData: 0
+          }
+        },
+        {
+          $sort: {
+            created_at: -1
+          }
+        },
+        {
+          $skip: skip
+        },
+        {
+          $limit: limit
+        }
+      ])
+      .toArray()
+
+    return brands
+  }
 }
 
 let brandsService = new BrandsService()

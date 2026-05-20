@@ -32,12 +32,12 @@ export default class Product {
   price: number
   description: string
   rating_number?: number
-  brand_id?: ObjectId
+  brand_id: ObjectId
   origin: string // nguồn gốc,
   volume: number // dung tích
-  weight: number
-  width: number
-  height: number
+  weight?: number
+  width?: number
+  height?: number
   soldNumber?: number
   thumbnail: string
   medias?: Media[]

@@ -19,5 +19,4 @@ export interface CreateProductRequest extends Omit<Product, '_id' | 'rating_numb
   width?: number
   height?: number
   category_id: string
-  ship_category_id: string
 }

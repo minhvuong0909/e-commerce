@@ -5,7 +5,7 @@ const cn = (...c: (string | undefined | null | false)[]) => c.filter(Boolean).jo
 export default function Button({
   children,
   className = '',
-  variant = 'gradient', // gradient | secondary | ghost | danger | outline
+  variant = 'gradient',
   full = false,
   loading = false,
   disabled = false,
@@ -24,15 +24,14 @@ export default function Button({
   const isDisabled = disabled || loading
 
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-extrabold transition focus:outline-none focus:ring-2 focus:ring-orange-500/50'
+    'inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-emerald-100'
 
   const variants = {
-    gradient:
-      'bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg shadow-orange-500/15 hover:opacity-95 active:scale-[0.99]',
-    secondary: 'border border-white/10 bg-white/10 text-white hover:bg-white/15 active:scale-[0.99]',
-    outline: 'border border-white/15 bg-transparent text-white hover:bg-white/10 active:scale-[0.99]',
-    ghost: 'bg-transparent text-white/70 hover:bg-white/10 hover:text-white active:scale-[0.99]',
-    danger: 'bg-rose-500/85 text-white shadow-lg shadow-rose-500/15 hover:bg-rose-500 active:scale-[0.99]'
+    gradient: 'bg-slate-950 text-white shadow-lg shadow-slate-950/10 hover:-translate-y-0.5 hover:bg-emerald-500 hover:text-slate-950 active:translate-y-0',
+    secondary: 'border border-slate-200 bg-white text-slate-950 shadow-sm hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md active:translate-y-0',
+    outline: 'border border-slate-300 bg-transparent text-slate-950 hover:bg-white active:scale-[0.99]',
+    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-950 active:scale-[0.99]',
+    danger: 'bg-rose-600 text-white shadow-lg shadow-rose-600/15 hover:bg-rose-700 active:scale-[0.99]'
   }
 
   return (
@@ -43,7 +42,7 @@ export default function Button({
         base,
         variants[variant],
         full ? 'w-full' : '',
-        isDisabled ? 'cursor-not-allowed opacity-60 active:scale-100' : '',
+        isDisabled ? 'cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-none' : '',
         className
       )}
       {...props}
@@ -55,5 +54,5 @@ export default function Button({
 }
 
 function Spinner() {
-  return <span className='h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white' />
+  return <span className='h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current' />
 }

@@ -27,7 +27,6 @@ import AdminCategoryCreatePage from './pages/admin/categories/AdminCategoryCreat
 import AdminCategoryEditPage from './pages/admin/categories/AdminCategoryUpdatePage'
 import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
-import AdminMediaPage from './pages/admin/medias/AdminMediaPage'
 import ProfilePage from './pages/user/GetProfile'
 import AuthCallbackPage from './pages/auth/AuthCallBackPage'
 export default function App() {
@@ -52,6 +51,7 @@ export default function App() {
         {/* ================= USER ================= */}
         <Route path='/user' element={<UserLayout />}>
           <Route index element={<HomePage />} />
+          <Route path='home' element={<HomePage />} />
           <Route path='products/:id' element={<ProductDetailPage />} />
           <Route path='cart' element={<CartPage />} />
           <Route path='checkout' element={<CheckoutPage />} />
@@ -84,9 +84,6 @@ export default function App() {
           {/* orders */}
           <Route path='orders' element={<AdminOrdersPage />} />
           <Route path='orders/:id' element={<AdminOrderDetailPage />} />
-
-          {/* media */}
-          <Route path='media' element={<AdminMediaPage />} />
         </Route>
 
         <Route path='/' element={<Navigate to='/auth/login' replace />} />
