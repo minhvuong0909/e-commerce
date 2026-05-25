@@ -111,7 +111,7 @@ class OrdersService {
     }
     // xóa cart items đã đặt hàng
     await databaseService.cart_items.deleteMany({
-      _id: { $in: cartItems.map((item) => item._id!) }
+      _id: { $in: cartItems.map((item: any) => item._id!) }
     })    
     return order
   }

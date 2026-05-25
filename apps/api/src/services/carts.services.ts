@@ -182,7 +182,7 @@ class CartsService {
       .toArray()
     return {
       cartItems,
-      total_price: cartItems.reduce((total, item) => total + item.quantity * item.product_infor.price, 0)
+      total_price: cartItems.reduce((total: number, item: any) => total + item.quantity * item.product_infor.price, 0)
     }
   }
 }

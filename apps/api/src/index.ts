@@ -54,7 +54,7 @@ app.use('/orders', ordersRouter)
 
 app.use('/delivery-methods', deliveyRoutes)
 
-app.use('/payment', paymentRouter)
+app.use('/payment', paymentRouter)  
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // lỗi của controller ressponse

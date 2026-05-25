@@ -56,7 +56,7 @@ export const getProductByIdController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params
+  const id = req.params.id as string
   const product = await productsService.getProductById(id)
   return res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.GET_PRODUCT_SUCCESS,

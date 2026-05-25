@@ -37,7 +37,7 @@ export const updateBrandController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { brand_id } = req.params
+  const brand_id = req.params.brand_id as string
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
   // admin || staff
@@ -60,7 +60,7 @@ export const deleteBrandController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { brand_id } = req.params
+  const brand_id = req.params.brand_id as string
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
   // admin || staff
@@ -78,7 +78,7 @@ export const deleteBrandController = async (
 }
 
 export const getBrandController = async (req: Request<ParamsDictionary>, res: Response, next: NextFunction) => {
-  const { brand_id } = req.params
+  const brand_id = req.params.brand_id as string
   const brand = await brandsService.getBrandById(brand_id)
   return res.status(HTTP_STATUS.OK).json({
     message: BRANDS_MESSAGES.GET_BRAND_SUCCESS,
