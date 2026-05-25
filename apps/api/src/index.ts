@@ -69,10 +69,14 @@ app.use((error: any, req: Request, res: Response, next: NextFunction) => {
 })
 
 // listen dùng để mở server ổ port 3000
-app.listen(port, () => {
-  // seed delivery methods
-  console.log('Server backend đang chạy trên port 3000')
+// app.listen(port, () => {
+//   // seed delivery methods
+//   console.log('Server backend đang chạy trên port 3000')
+// })
+
+
+
+
+app.listen(Number(port), '0.0.0.0', () => {
+  console.log(`Server backend đang chạy trên port ${port}`)
 })
-
-
-
