@@ -38,7 +38,7 @@ export const updateCategoryController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { category_id } = req.params
+  const { category_id } = (req.params as any)
   // check user
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
@@ -72,7 +72,7 @@ export const deleteCategoryController = async (
       status: HTTP_STATUS.FORBIDDEN
     })
   }
-  const { category_id } = req.params
+  const { category_id } = (req.params as any)
   await categoryServices.deleteCategory(category_id)
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.DELETE_CATEGORY_SUCCESS
@@ -93,7 +93,7 @@ export const getCategoryController = async (
       status: HTTP_STATUS.FORBIDDEN
     })
   }
-  const { category_id } = req.params
+  const { category_id } = (req.params as any)
   const category = await categoryServices.getCategoryById(category_id)
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.GET_CATEGORY_SUCCESS,

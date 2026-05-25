@@ -11,7 +11,7 @@ import fs from 'fs'
 export const serveImageController = (req: Request, res: Response, next: NextFunction) => {
   // lấy ra filename từ req params
   // vd: http://localhost:3000/static/:filename
-  const { filename } = req.params
+  const { filename } = (req.params as any)
   res.sendFile(path.resolve(UPLOAD_IMAGE_DIR, filename), (error) => {
     if (error) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -22,7 +22,7 @@ export const serveImageController = (req: Request, res: Response, next: NextFunc
 }
 
 export const serveVideoController = (req: Request, res: Response) => {
-  const { filename } = req.params
+  const { filename } = (req.params as any)
 
   if (!filename) {
     return res.status(400).json({

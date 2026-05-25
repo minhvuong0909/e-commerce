@@ -31,7 +31,7 @@ class UserServices {
     return signToken({
       payload: { user_id, token_type: TokenType.AccessToken },
       privateKey: process.env.JWT_SECRET_ACCESS_TOKEN as string,
-      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN as string }
+      options: { expiresIn: process.env.ACCESS_TOKEN_EXPIRE_IN as any }
     })
   }
 
@@ -41,14 +41,14 @@ class UserServices {
       // tự set exp cho refresh token (timestamp kiểu số giây)
       return signToken({
         payload: { user_id, token_type: TokenType.RefreshToken, exp },
-        privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string
+        privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as any
       })
     }
 
     return signToken({
       payload: { user_id, token_type: TokenType.RefreshToken },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
-      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as string } 
+      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as any } 
     })
   }
 
@@ -258,7 +258,7 @@ class UserServices {
       payload: { user_id, token_type: TokenType.EmailVerificationToken },
       privateKey: process.env.JWT_SECRET_EMAIL_VERIFY_TOKEN as string,
       options: {
-        expiresIn: process.env.EMAIL_VERIFY_TOKEN_EXPIRE_IN as string
+        expiresIn: process.env.EMAIL_VERIFY_TOKEN_EXPIRE_IN as any
       }
     })
   }
@@ -417,7 +417,7 @@ class UserServices {
       payload: { user_id, token_type: TokenType.ForgotPasswordToken },
       privateKey: process.env.JWT_SECRET_FORGOT_PASWORD_TOKEN as string,
       options: {
-        expiresIn: process.env.FORGOT_PASSWORD_TOKEN_EXPIRE_IN as string
+        expiresIn: process.env.FORGOT_PASSWORD_TOKEN_EXPIRE_IN as any
       }
     })
   }

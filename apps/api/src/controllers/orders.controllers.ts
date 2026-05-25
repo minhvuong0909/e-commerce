@@ -50,7 +50,7 @@ export const updateOrderController = async (
   }
   const order = await ordersService.updateOrderStatus({
     user_id: user_id,
-    order_id: (req.params.id as string),
+    order_id: ((req.params as any).id as string),
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.UPDATE_ORDER_SUCCESS,
@@ -74,7 +74,7 @@ export const deleteOrderController = async (
   }
   const order = await ordersService.deleteOrder({
     user_id: user_id,
-    order_id: (req.params.id as string)
+    order_id: ((req.params as any).id as string)
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.DELETE_ORDER_SUCCESS
@@ -97,7 +97,7 @@ export const getOrderByIdController = async (
   }
   const order = await ordersService.getOrderById({
     user_id: user_id,
-    order_id: (req.params.id as string)
+    order_id: ((req.params as any).id as string)
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.GET_ORDER_SUCCESS,
