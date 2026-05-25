@@ -20,3 +20,7 @@ export const getAllOrdersApi = (limit: number, page: number) => {
     }
   })
 }
+
+export const updateOrderStatusApi = (orderId: string, status: string) => {
+  return api.patch(`/orders/status/${orderId}`, { status })
+}

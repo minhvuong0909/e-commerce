@@ -194,7 +194,7 @@ userRouter.put('/change-password', accessTokenValidator, changePasswordValidator
     refresh_token: string
   }
 */
-userRouter.post('/refresh-token', wrapAsync(refreshTokenController))
+userRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenController))
 
 /*
   desc: get list users 

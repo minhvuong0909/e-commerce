@@ -8,7 +8,7 @@ export const useProductDetail = (id?: string) => {
     queryFn: async () => {
       if (!id) throw new Error('Product ID is required')
       const res = await getProductByIdApi(id)
-      return res.data.data as Product
+      return (res.data.data || res.data.result) as Product
     },
     enabled: !!id // Chỉ gọi API khi id tồn tại
   })

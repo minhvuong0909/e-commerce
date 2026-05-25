@@ -1,15 +1,48 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+import { ROUTE_PATHS } from '../routes/route.paths'
 import { refreshTokenApi } from '../services/auths.services'
 
+const ACCESS_TOKEN_KEY = 'access_token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
+
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BASE_URL_API}`,
+  baseURL: import.meta.env.VITE_BASE_URL_API,
   withCredentials: true
 })
-console.log('API URL:', import.meta.env.VITE_BASE_URL_API)
-// request interceptor
+
+type RetryRequestConfig = AxiosRequestConfig & {
+  _retry?: boolean
+}
+
+type RefreshQueueItem = {
+  resolve: (token: string) => void
+  reject: (error: unknown) => void
+}
+
+let isRefreshing = false
+let failedQueue: RefreshQueueItem[] = []
+
+const clearAuthAndRedirect = () => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  window.location.href = ROUTE_PATHS.AUTH_LOGIN
+}
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error)
+      return
+    }
+
+    resolve(token as string)
+  })
+  failedQueue = []
+}
+
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
+    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -17,30 +50,26 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 )
-// xử lý refresh token chỉ cần gửi lên 1 request refresh token
-let isRefreshing = false
-let failedQueue: any[] = []
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) prom.reject(error)
-    else prom.resolve(token)
-  })
-  failedQueue = []
-}
 
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<any>) => {
-    const originalRequest = error.config as AxiosRequestConfig & {
-      _retry?: boolean
+    const originalRequest = error.config as RetryRequestConfig
+    const isRefreshRequest = originalRequest.url?.includes('/users/refresh-token')
+
+    if (error.response?.status === 401 && isRefreshRequest) {
+      clearAuthAndRedirect()
+      return Promise.reject(error)
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve, reject) => {
+        return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
         }).then((token) => {
-          if (originalRequest.headers) originalRequest.headers['Authorization'] = `Bearer ${token}`
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${token}`
+          }
           return api(originalRequest)
         })
       }
@@ -49,26 +78,24 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refresh_token = localStorage.getItem('refresh_token')
-        if (!refresh_token) {
+        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+        if (!refreshToken) {
           throw new Error('No refresh token available')
         }
-        const res = await refreshTokenApi(refresh_token)
 
+        const res = await refreshTokenApi(refreshToken)
         const accessToken = res.data.result.tokens.access_token
         const newRefreshToken = res.data.result.tokens.refresh_token
 
-        // lưu access token và refresh token mới
-        localStorage.setItem('access_token', accessToken)
-        localStorage.setItem('refresh_token', newRefreshToken)
-
+        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
+        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
         processQueue(null, accessToken)
 
         return api(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        localStorage.removeItem('access_token')
-        window.location.href = '/auth/login'
+        clearAuthAndRedirect()
+        return Promise.reject(err)
       } finally {
         isRefreshing = false
       }
@@ -77,7 +104,5 @@ api.interceptors.response.use(
     return Promise.reject(error)
   }
 )
-
-
 
 export default api

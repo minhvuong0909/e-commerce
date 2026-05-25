@@ -12,6 +12,7 @@ import CartPage from './pages/user/CartPage'
 import CheckoutPage from './pages/user/CheckoutPage'
 import MyOrdersPage from './pages/user/MyOrdersPage'
 import OrderDetailPage from './pages/user/OrderDetailPage'
+import OrderResultPage from './pages/user/OrderResultPage'
 import UserLayout from './layouts/UserLayout'
 import HomePage from './pages/user/HomePage'
 import AdminLayout from './layouts/AdminLayout'
@@ -29,65 +30,79 @@ import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
 import ProfilePage from './pages/user/GetProfile'
 import AuthCallbackPage from './pages/auth/AuthCallBackPage'
+import { ROUTE_PATHS, ROUTE_SEGMENTS } from './routes/route.paths'
 
 export default function App() {
   return (
     <BrowserRouter>
       <Toaster richColors position='top-right' />
       <Routes>
-        {/* <Route path='/' element={<Navigate to='/user/home' replace />} /> */}
-        <Route path='/auth/callback' element={<AuthCallbackPage />} />
+        <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
         {/* auth layouts */}
-        <Route path='/auth' element={<AuthLayout />}>
-          <Route element={<Navigate to='login' replace />} />
-          <Route path='login' element={<LoginPage />} />
-          {/* <Route path='callback' element={<AuthCallbackPage />} /> */}
-          <Route path='register' element={<RegisterPage />} />
-          <Route path='forgot-password' element={<ForgotPasswordPage />} />
-          <Route path='reset-password' element={<ResetPasswordPage />} />
-          <Route path='verify-result' element={<VerifyResultPage />} />
-          <Route path='resend-verify' element={<ResendVerifyEmailPage />} />
+        <Route path={ROUTE_PATHS.AUTH} element={<AuthLayout />}>
+          <Route index element={<Navigate to={ROUTE_SEGMENTS.LOGIN} replace />} />
+          <Route path={ROUTE_SEGMENTS.LOGIN} element={<LoginPage />} />
+          <Route path={ROUTE_SEGMENTS.REGISTER} element={<RegisterPage />} />
+          <Route path={ROUTE_SEGMENTS.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+          <Route path={ROUTE_SEGMENTS.RESET_PASSWORD} element={<ResetPasswordPage />} />
+          <Route path={ROUTE_SEGMENTS.VERIFY_RESULT} element={<VerifyResultPage />} />
+          <Route path={ROUTE_SEGMENTS.RESEND_VERIFY} element={<ResendVerifyEmailPage />} />
         </Route>
 
         {/* ================= USER ================= */}
-        <Route path='/user' element={<UserLayout />}>
+        <Route path={ROUTE_PATHS.USER} element={<UserLayout />}>
           <Route index element={<HomePage />} />
-          <Route path='home' element={<HomePage />} />
-          <Route path='products/:id' element={<ProductDetailPage />} />
-          <Route path='cart' element={<CartPage />} />
-          <Route path='checkout' element={<CheckoutPage />} />
-          <Route path='orders' element={<MyOrdersPage />} />
-          <Route path='orders/:id' element={<OrderDetailPage />} />
-          <Route path='me' element={<ProfilePage />} />
+          <Route path={ROUTE_SEGMENTS.USER_HOME} element={<HomePage />} />
+          <Route path={`${ROUTE_SEGMENTS.USER_PRODUCTS}/${ROUTE_SEGMENTS.ID}`} element={<ProductDetailPage />} />
+          <Route path={ROUTE_SEGMENTS.USER_CART} element={<CartPage />} />
+          <Route path={ROUTE_SEGMENTS.USER_CHECKOUT} element={<CheckoutPage />} />
+          <Route path={ROUTE_SEGMENTS.USER_ORDERS} element={<MyOrdersPage />} />
+          <Route path={`${ROUTE_SEGMENTS.USER_ORDERS}/${ROUTE_SEGMENTS.ID}`} element={<OrderDetailPage />} />
+          <Route path={ROUTE_SEGMENTS.USER_ORDER_RESULT} element={<OrderResultPage />} />
+          <Route path={ROUTE_SEGMENTS.USER_PROFILE} element={<ProfilePage />} />
         </Route>
 
-        <Route path='*' element={<Navigate to='/user' replace />} />
-        {/* <Route path='*' element={<Navigate to='/auth/login' replace />} /> */}
         {/* ================= ADMIN ================= */}
-        <Route path='/admin' element={<AdminLayout />}>
+        <Route path={ROUTE_PATHS.ADMIN} element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
 
           {/* products */}
-          <Route path='products' element={<AdminProductsPage />} />
-          <Route path='products/create' element={<AdminProductCreatePage />} />
-          <Route path='products/:id/edit' element={<AdminProductEditPage />} />
+          <Route path={ROUTE_SEGMENTS.ADMIN_PRODUCTS} element={<AdminProductsPage />} />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_PRODUCTS}/${ROUTE_SEGMENTS.CREATE}`}
+            element={<AdminProductCreatePage />}
+          />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_PRODUCTS}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
+            element={<AdminProductEditPage />}
+          />
 
           {/* brands */}
-          <Route path='brands' element={<AdminBrandsPage />} />
-          <Route path='brands/create' element={<AdminBrandCreatePage />} />
-          <Route path='brands/:id/edit' element={<AdminBrandEditPage />} />
+          <Route path={ROUTE_SEGMENTS.ADMIN_BRANDS} element={<AdminBrandsPage />} />
+          <Route path={`${ROUTE_SEGMENTS.ADMIN_BRANDS}/${ROUTE_SEGMENTS.CREATE}`} element={<AdminBrandCreatePage />} />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_BRANDS}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
+            element={<AdminBrandEditPage />}
+          />
 
           {/* categories */}
-          <Route path='categories' element={<AdminCategoriesPage />} />
-          <Route path='categories/create' element={<AdminCategoryCreatePage />} />
-          <Route path='categories/:id/edit' element={<AdminCategoryEditPage />} />
+          <Route path={ROUTE_SEGMENTS.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_CATEGORIES}/${ROUTE_SEGMENTS.CREATE}`}
+            element={<AdminCategoryCreatePage />}
+          />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_CATEGORIES}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
+            element={<AdminCategoryEditPage />}
+          />
 
           {/* orders */}
-          <Route path='orders' element={<AdminOrdersPage />} />
-          <Route path='orders/:id' element={<AdminOrderDetailPage />} />
+          <Route path={ROUTE_SEGMENTS.ADMIN_ORDERS} element={<AdminOrdersPage />} />
+          <Route path={`${ROUTE_SEGMENTS.ADMIN_ORDERS}/${ROUTE_SEGMENTS.ID}`} element={<AdminOrderDetailPage />} />
         </Route>
 
-        <Route path='/' element={<Navigate to='/auth/login' replace />} />
+        <Route path='/' element={<Navigate to={ROUTE_PATHS.AUTH_LOGIN} replace />} />
+        <Route path='*' element={<Navigate to={ROUTE_PATHS.USER} replace />} />
       </Routes>
     </BrowserRouter>
   )

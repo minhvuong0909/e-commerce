@@ -10,6 +10,7 @@ import { createOrderApi } from '../../services/orders.services'
 import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
 
@@ -37,7 +38,7 @@ export default function CheckoutPage() {
       try {
         if (selectedIds.length === 0) {
           toast.error('Không có sản phẩm được chọn')
-          navigate('/user/cart')
+          navigate(ROUTE_PATHS.USER_CART)
           return
         }
 
@@ -47,7 +48,7 @@ export default function CheckoutPage() {
 
         if (filtered.length === 0) {
           toast.error('Sản phẩm không hợp lệ')
-          navigate('/user/cart')
+          navigate(ROUTE_PATHS.USER_CART)
           return
         }
 
@@ -75,6 +76,14 @@ export default function CheckoutPage() {
     [cartItems]
   )
 
+  const shippingFee = useMemo(() => {
+    const method = deliveryMethods.find((m) => m._id === selectedDelivery)
+    if (!method) return 0
+    return method.type === 0 ? 30000 : 50000
+  }, [deliveryMethods, selectedDelivery])
+
+  const total = subtotal + shippingFee
+
   const handleCheckout = async () => {
     if (!selectedDelivery) {
       toast.error('Vui lòng chọn phương thức giao hàng')
@@ -94,9 +103,9 @@ export default function CheckoutPage() {
         payment_method: paymentMethod,
         delivery_method_id: selectedDelivery
       })
-
-      toast.success('Đặt hàng thành công!')
-      navigate('/user/orders')
+      // Dù là thanh toán MoMo hay COD → đều chuyển về trang đơn hàng chờ duyệt
+      toast.success('Đặt hàng thành công! Đang chờ duyệt.')
+      navigate(ROUTE_PATHS.USER_ORDERS)
     } catch {
       toast.error('Đặt hàng thất bại')
     } finally {
@@ -130,7 +139,10 @@ export default function CheckoutPage() {
                 const image = product.medias?.[0]?.url
 
                 return (
-                  <div key={item._id} className='flex flex-col gap-4 rounded-3xl border border-slate-200 p-4 sm:flex-row sm:items-center'>
+                  <div
+                    key={item._id}
+                    className='flex flex-col gap-4 rounded-3xl border border-slate-200 p-4 sm:flex-row sm:items-center'
+                  >
                     <div className='h-24 w-full overflow-hidden rounded-2xl bg-slate-100 sm:w-24'>
                       {image ? <img src={image} alt={product.name} className='h-full w-full object-cover' /> : null}
                     </div>
@@ -168,7 +180,9 @@ export default function CheckoutPage() {
                     key={method._id}
                     className={cn(
                       'cursor-pointer rounded-3xl border p-4 transition',
-                      isSelected ? 'border-brand-500/50 bg-brand-50 ring-4 ring-brand-500/10' : 'border-slate-200 hover:border-slate-300'
+                      isSelected
+                        ? 'border-brand-500/50 bg-brand-50 ring-4 ring-brand-500/10'
+                        : 'border-slate-200 hover:border-slate-300'
                     )}
                   >
                     <div className='flex items-start justify-between gap-3'>
@@ -209,7 +223,9 @@ export default function CheckoutPage() {
                     key={method}
                     className={cn(
                       'flex cursor-pointer items-center justify-between gap-3 rounded-3xl border p-4 transition',
-                      isSelected ? 'border-ink-950 bg-slate-50 ring-4 ring-slate-950/5' : 'border-slate-200 hover:border-slate-300'
+                      isSelected
+                        ? 'border-ink-950 bg-slate-50 ring-4 ring-slate-950/5'
+                        : 'border-slate-200 hover:border-slate-300'
                     )}
                   >
                     <span className='text-sm font-black text-ink-950'>{paymentMethodLabel[method]}</span>
@@ -237,12 +253,12 @@ export default function CheckoutPage() {
 
           <div className='space-y-3'>
             <div className='flex justify-between text-sm'>
-              <span className='text-slate-500'>Tổng tiền</span>
+              <span className='text-slate-500'>Tạm tính</span>
               <span className='font-bold text-ink-950'>{money(subtotal)}</span>
             </div>
             <div className='flex justify-between text-sm'>
               <span className='text-slate-500'>Phí giao hàng</span>
-              <span className='font-bold text-slate-700'>Theo phương thức</span>
+              <span className='font-bold text-slate-700'>{shippingFee === 0 ? 'Chưa chọn' : money(shippingFee)}</span>
             </div>
           </div>
 
@@ -250,7 +266,7 @@ export default function CheckoutPage() {
 
           <div className='flex justify-between gap-4'>
             <span className='text-sm font-bold text-slate-500'>Thanh toán</span>
-            <span className='text-2xl font-black text-ink-950'>{money(subtotal)}</span>
+            <span className='text-2xl font-black text-ink-950'>{money(total)}</span>
           </div>
 
           <Button full className='mt-6' onClick={handleCheckout} loading={loading} disabled={loading}>

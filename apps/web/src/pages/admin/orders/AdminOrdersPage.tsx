@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { RefreshCw, Search } from 'lucide-react'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import StatusBadge from '../../../components/ui/StatusBadge'
-import { ORDER_LIMIT, PAGE } from '../../../configs/config'
 import type { OrderApiResponse } from '../../../models/OrderRequests'
 import { getAllOrdersApi } from '../../../services/orders.services'
 import money from '../../../utils/money'
@@ -33,7 +32,8 @@ export default function AdminOrdersPage() {
     try {
       setLoading(true)
       setError('')
-      const res = await getAllOrdersApi(PAGE, ORDER_LIMIT)
+      // Tạm thời lấy 100 đơn hàng mới nhất (tham số: limit, page)
+      const res = await getAllOrdersApi(100, 1)
       setOrders(res?.data?.result ?? [])
     } catch (err) {
       console.error(err)
@@ -65,7 +65,10 @@ export default function AdminOrdersPage() {
       <div className='space-y-5'>
         <div className='surface-card flex flex-col gap-3 rounded-3xl p-4 md:flex-row md:items-center md:justify-between'>
           <div className='relative w-full md:max-w-sm'>
-            <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
+            <Search
+              size={16}
+              className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'
+            />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -84,32 +87,56 @@ export default function AdminOrdersPage() {
           </button>
         </div>
 
-        {error ? <div className='rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-900'>{error}</div> : null}
+        {error ? (
+          <div className='rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-900'>
+            {error}
+          </div>
+        ) : null}
 
         <div className='surface-strong overflow-x-auto rounded-3xl'>
           <table className='w-full text-sm'>
             <thead>
               <tr className='border-b border-slate-200 bg-slate-50/80'>
-                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>Đơn hàng</th>
-                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>Khách hàng</th>
-                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>Tổng tiền</th>
-                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>Trạng thái</th>
-                <th className='px-5 py-4 text-right text-xs font-black uppercase tracking-[0.12em] text-slate-400'>Thao tác</th>
+                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>
+                  Đơn hàng
+                </th>
+                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>
+                  Khách hàng
+                </th>
+                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>
+                  Tổng tiền
+                </th>
+                <th className='px-5 py-4 text-left text-xs font-black uppercase tracking-[0.12em] text-slate-400'>
+                  Trạng thái
+                </th>
+                <th className='px-5 py-4 text-right text-xs font-black uppercase tracking-[0.12em] text-slate-400'>
+                  Thao tác
+                </th>
               </tr>
             </thead>
 
             <tbody>
-              {loading ? (
-                Array.from({ length: 5 }).map((_, index) => (
-                  <tr key={index} className='border-b border-slate-100'>
-                    <td className='p-4'><div className='h-4 w-28 animate-pulse rounded bg-slate-100' /></td>
-                    <td className='p-4'><div className='h-4 w-40 animate-pulse rounded bg-slate-100' /></td>
-                    <td className='p-4'><div className='h-4 w-28 animate-pulse rounded bg-slate-100' /></td>
-                    <td className='p-4'><div className='h-7 w-28 animate-pulse rounded-full bg-slate-100' /></td>
-                    <td className='p-4'><div className='ml-auto h-4 w-20 animate-pulse rounded bg-slate-100' /></td>
-                  </tr>
-                ))
-              ) : null}
+              {loading
+                ? Array.from({ length: 5 }).map((_, index) => (
+                    <tr key={index} className='border-b border-slate-100'>
+                      <td className='p-4'>
+                        <div className='h-4 w-28 animate-pulse rounded bg-slate-100' />
+                      </td>
+                      <td className='p-4'>
+                        <div className='h-4 w-40 animate-pulse rounded bg-slate-100' />
+                      </td>
+                      <td className='p-4'>
+                        <div className='h-4 w-28 animate-pulse rounded bg-slate-100' />
+                      </td>
+                      <td className='p-4'>
+                        <div className='h-7 w-28 animate-pulse rounded-full bg-slate-100' />
+                      </td>
+                      <td className='p-4'>
+                        <div className='ml-auto h-4 w-20 animate-pulse rounded bg-slate-100' />
+                      </td>
+                    </tr>
+                  ))
+                : null}
 
               {!loading && filteredOrders.length === 0 ? (
                 <tr>
@@ -123,7 +150,10 @@ export default function AdminOrdersPage() {
                 ? filteredOrders.map((order) => {
                     const status = mapStatus(order.status)
                     return (
-                      <tr key={order._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
+                      <tr
+                        key={order._id}
+                        className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'
+                      >
                         <td className='px-5 py-4'>
                           <div className='font-mono font-black text-ink-950'>#{order._id.slice(-8).toUpperCase()}</div>
                           <div className='mt-0.5 text-xs font-semibold text-slate-400'>
@@ -140,7 +170,10 @@ export default function AdminOrdersPage() {
                           <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                         </td>
                         <td className='px-5 py-4 text-right'>
-                          <Link to={`/admin/orders/${order._id}`} className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
+                          <Link
+                            to={`/admin/orders/${order._id}`}
+                            className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'
+                          >
                             Xem
                           </Link>
                         </td>

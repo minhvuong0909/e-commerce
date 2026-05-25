@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { supabase } from '../../configs/config'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import { loginWithGoogleApi } from '../../services/auths.services'
 
 export default function AuthCallbackPage() {
@@ -15,27 +16,22 @@ export default function AuthCallbackPage() {
 
     const handleCallback = async () => {
       try {
-        console.log('1. URL:', window.location.href)
-
         const code = new URL(window.location.href).searchParams.get('code')
-        console.log('2. code:', code)
 
         if (!code) {
           toast.error('Không tìm thấy auth code.')
-          navigate('/auth/login', { replace: true })
+          navigate(ROUTE_PATHS.AUTH_LOGIN, { replace: true })
           return
         }
 
         // ✅ Xóa code khỏi URL ngay để tránh dùng lại
-        window.history.replaceState({}, '', '/auth/callback')
+        window.history.replaceState({}, '', ROUTE_PATHS.AUTH_CALLBACK)
 
         const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-        console.log('3. session:', data?.session)
-        console.log('3. error:', error)
 
         if (error || !data.session) {
           toast.error(error?.message || 'Lấy session thất bại.')
-          navigate('/auth/login', { replace: true })
+          navigate(ROUTE_PATHS.AUTH_LOGIN, { replace: true })
           return
         }
 
@@ -46,11 +42,10 @@ export default function AuthCallbackPage() {
         localStorage.setItem('refresh_token', refresh_token)
 
         toast.success('Đăng nhập Google thành công!')
-        navigate('/user/home', { replace: true })
-      } catch (err) {
-        console.log('CATCH:', err)
+        navigate(ROUTE_PATHS.USER_HOME, { replace: true })
+      } catch {
         toast.error('Xác thực với server thất bại.')
-        navigate('/auth/login', { replace: true })
+        navigate(ROUTE_PATHS.AUTH_LOGIN, { replace: true })
       }
     }
 

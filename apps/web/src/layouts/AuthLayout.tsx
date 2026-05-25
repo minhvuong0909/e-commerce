@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { BadgeCheck, LockKeyhole, PackageCheck, ShoppingBag } from 'lucide-react'
 import { Link, Outlet } from 'react-router-dom'
 import { panelMotion } from '../constants/motion'
+import { ROUTE_PATHS } from '../routes/route.paths'
 import heroImage from '../assets/images/background_home.png'
 
 export default function AuthLayout() {
@@ -13,7 +14,7 @@ export default function AuthLayout() {
           <div className='absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.15)_0%,rgba(2,6,23,0.72)_72%,rgba(2,6,23,0.92)_100%)]' />
 
           <div className='relative flex h-full flex-col justify-between p-8 text-white lg:p-10'>
-            <Link to='/user/home' className='flex w-fit items-center gap-3'>
+            <Link to={ROUTE_PATHS.USER_HOME} className='flex w-fit items-center gap-3'>
               <span className='grid h-11 w-11 place-items-center rounded-2xl bg-white text-ink-950'>
                 <ShoppingBag size={20} />
               </span>
@@ -48,10 +49,7 @@ export default function AuthLayout() {
         </section>
 
         <section className='flex min-h-[calc(100vh-48px)] items-center justify-center'>
-          <motion.div
-            {...panelMotion}
-            className='surface-strong w-full max-w-md rounded-3xl p-6 backdrop-blur md:p-8'
-          >
+          <motion.div {...panelMotion} className='surface-strong w-full max-w-md rounded-3xl p-6 backdrop-blur md:p-8'>
             <div className='mb-6 flex items-center gap-3 md:hidden'>
               <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-950 text-white'>
                 <ShoppingBag size={18} />

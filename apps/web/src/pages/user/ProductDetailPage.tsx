@@ -25,6 +25,9 @@ export default function ProductDetailPage() {
     })
   }, [product, qty, addToCart])
 
+  const inc = useCallback(() => setQty((q) => Math.min(product?.quantity || 1, q + 1)), [product?.quantity])
+  const dec = useCallback(() => setQty((q) => Math.max(1, q - 1)), [])
+
   if (loading) {
     return (
       <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
@@ -51,9 +54,6 @@ export default function ProductDetailPage() {
   const outOfStock = product.quantity <= 0
   const overStock = qty > product.quantity
   const mainImage = product.medias?.[0]?.url
-
-  const inc = useCallback(() => setQty((q) => Math.min(product.quantity, q + 1)), [product.quantity])
-  const dec = useCallback(() => setQty((q) => Math.max(1, q - 1)), [])
 
   return (
     <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>

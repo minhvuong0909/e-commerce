@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Alert from '../../components/ui/Alert'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 
 export default function VerifyResultPage() {
   const [sp] = useSearchParams()
@@ -17,7 +18,11 @@ export default function VerifyResultPage() {
       </div>
 
       {isSuccess ? (
-        <Alert variant='success' title='Xác minh thành công' desc='Bạn đã có thể thêm sản phẩm vào giỏ và thanh toán.' />
+        <Alert
+          variant='success'
+          title='Xác minh thành công'
+          desc='Bạn đã có thể thêm sản phẩm vào giỏ và thanh toán.'
+        />
       ) : null}
 
       {isFailed ? (
@@ -31,14 +36,14 @@ export default function VerifyResultPage() {
       <div className='mt-5 grid gap-3'>
         {isSuccess ? (
           <Link
-            to='/user/home'
+            to={ROUTE_PATHS.USER_HOME}
             className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
           >
             Về trang chủ
           </Link>
         ) : (
           <Link
-            to='/auth/resend-verify'
+            to={ROUTE_PATHS.AUTH_RESEND_VERIFY}
             className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
           >
             Gửi lại email xác minh
@@ -46,7 +51,7 @@ export default function VerifyResultPage() {
         )}
 
         <Link
-          to='/auth/login'
+          to={ROUTE_PATHS.AUTH_LOGIN}
           className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
         >
           Đăng nhập

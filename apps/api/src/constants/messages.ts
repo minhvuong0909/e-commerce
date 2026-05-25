@@ -188,3 +188,11 @@ export const ORDER_MESSAGES = {
   NO_ORDERS_FOUND: 'No orders found',
   DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found'
 } as const
+
+export const PAYMENT_MESSAGES = {
+  CREATE_MOMO_PAYMENT_SUCCESS: 'Create MoMo payment URL success',
+  PAYMENT_ORDER_NOT_FOUND: 'Order not found for payment',
+  MOMO_WEBHOOK_SUCCESS: 'MoMo webhook processed successfully',
+  MOMO_WEBHOOK_INVALID_SIGNATURE: 'Invalid MoMo webhook signature',
+  PAYMENT_ALREADY_COMPLETED: 'Payment has already been completed'
+} as const

@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { supabase } from '../../configs/config'
-import { ROUTES } from '../../routes/route.paths'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import { loginApi } from '../../services/auths.services'
 
 export default function LoginPage() {
@@ -27,7 +27,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token')
-    if (token) navigate('/user/home', { replace: true })
+    if (token) navigate(ROUTE_PATHS.USER_HOME, { replace: true })
   }, [navigate])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -39,7 +39,7 @@ export default function LoginPage() {
       localStorage.setItem('access_token', res.data.result.tokens.access_token)
       localStorage.setItem('refresh_token', res.data.result.tokens.refresh_token)
       toast.success('Đăng nhập thành công!')
-      navigate('/user/home')
+      navigate(ROUTE_PATHS.USER_HOME)
     } catch {
       toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
     } finally {
@@ -53,7 +53,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}${ROUTE_PATHS.AUTH_CALLBACK}`
         }
       })
       if (error) {
@@ -102,7 +102,10 @@ export default function LoginPage() {
             Nhớ đăng nhập
           </label>
 
-          <Link to={ROUTES.AUTH + ROUTES.FORGET_PASSWORD} className='text-sm font-black text-brand-600 hover:text-brand-900'>
+          <Link
+            to={ROUTE_PATHS.AUTH_FORGOT_PASSWORD}
+            className='text-sm font-black text-brand-600 hover:text-brand-900'
+          >
             Quên mật khẩu?
           </Link>
         </div>
@@ -118,14 +121,21 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Button full type='button' variant='outline' onClick={handleLoginGoogle} loading={googleLoading} disabled={googleLoading}>
+        <Button
+          full
+          type='button'
+          variant='outline'
+          onClick={handleLoginGoogle}
+          loading={googleLoading}
+          disabled={googleLoading}
+        >
           <GoogleIcon />
           Đăng nhập với Google
         </Button>
 
         <p className='pt-1 text-center text-sm text-slate-500'>
           Chưa có tài khoản?{' '}
-          <Link to='/auth/register' className='font-black text-brand-600 hover:text-brand-900'>
+          <Link to={ROUTE_PATHS.AUTH_REGISTER} className='font-black text-brand-600 hover:text-brand-900'>
             Đăng ký
           </Link>
         </p>

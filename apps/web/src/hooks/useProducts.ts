@@ -7,7 +7,6 @@ export const useProducts = (page: number, limit: number) => {
     queryKey: ['products', page, limit],
     queryFn: async () => {
       const res = await getAllProductsApi(limit, page)
-      // Giả định API trả về res.data.result là danh sách sản phẩm.
       return res.data.result as Product[]
     }
   })

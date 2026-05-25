@@ -5,7 +5,6 @@ import { PRODUCT_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CreateProductBody } from '~/models/requests/Products.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
-import databaseService from '~/services/database.service'
 import productsService from '~/services/products.services'
 import usersService from '~/services/users.services'
 
@@ -58,10 +57,10 @@ export const getProductByIdController = async (
   next: NextFunction
 ) => {
   const { id } = req.params
-  const product = await productsService.getProductById(id) //chưa làm
+  const product = await productsService.getProductById(id)
   return res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.GET_PRODUCT_SUCCESS,
-    data: product
+    result: product
   })
 }
 

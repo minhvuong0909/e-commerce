@@ -11,7 +11,6 @@ export const useCartActions = () => {
     mutationFn: (data: { product_id: string; quantity: number }) => addToCartApi(data),
     onSuccess: () => {
       toast.success('Đã thêm vào giỏ hàng')
-      // Invalidate cart query if there's one to trigger refetch
       queryClient.invalidateQueries({ queryKey: ['cart'] })
       nav('/user/cart')
     },

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 
 export default function ResendVerifyEmailPage() {
   return (
@@ -21,7 +22,7 @@ export default function ResendVerifyEmailPage() {
 
         <p className='text-center text-sm text-slate-500'>
           Quay lại{' '}
-          <Link to='/auth/login' className='font-black text-brand-600 hover:text-brand-900'>
+          <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
             Đăng nhập
           </Link>
         </p>

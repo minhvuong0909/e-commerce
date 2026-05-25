@@ -5,6 +5,7 @@ import { BadgeCheck, Globe2, LogOut, Mail, MapPin, PenLine, UserRound } from 'lu
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import type { User } from '../../models/AuthRequests'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import { getMeApi, logoutApi, updateMeApi } from '../../services/auths.services'
 
 export default function ProfilePage() {
@@ -62,7 +63,7 @@ export default function ProfilePage() {
       localStorage.removeItem('refresh_token')
     }
     toast.success('Đăng xuất thành công!')
-    navigate('/auth/login')
+    navigate(ROUTE_PATHS.AUTH_LOGIN)
   }
 
   if (loading) {

@@ -29,7 +29,14 @@ ordersRouter.post('/create', accessTokenValidator, checkPermissions(USER_ROLE.Us
 ordersRouter.put(
   '/status/:id',
   accessTokenValidator,
-  checkPermissions(USER_ROLE.Staff),
+  checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
+  wrapAsync(updateOrderController)
+)
+
+ordersRouter.patch(
+  '/status/:id',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
   wrapAsync(updateOrderController)
 )
 
@@ -43,7 +50,12 @@ ordersRouter.delete('/:id', accessTokenValidator, checkPermissions(USER_ROLE.Use
     description: get order by id
     method: GET
 */
-ordersRouter.get('/:id', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getOrderByIdController))
+ordersRouter.get(
+  '/:id',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User, USER_ROLE.Staff, USER_ROLE.Admin),
+  wrapAsync(getOrderByIdController)
+)
 
 /*
     description: get all orders user of user 

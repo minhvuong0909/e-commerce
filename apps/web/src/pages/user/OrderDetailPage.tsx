@@ -1,28 +1,89 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, CalendarClock, CreditCard, MapPin, ReceiptText } from 'lucide-react'
+import { QRCode } from 'antd'
+import { ArrowLeft, CalendarClock, CreditCard, ExternalLink, MapPin, ReceiptText, Smartphone } from 'lucide-react'
+import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import StatusBadge from '../../components/ui/StatusBadge'
 import type { OrderStatus } from '../../constants/order'
 import type { OrderApiResponse, OrderUI, PaymentMethod } from '../../models/OrderRequests'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import { getOrderByIdApi } from '../../services/orders.services'
+import {
+  getMomoPaymentUrlApi,
+  getPaypalPaymentUrlApi,
+} from '../../services/payment.services'
+import formatDate from '../../utils/date'
 import money from '../../utils/money'
+
+type MomoPayment = {
+  payUrl?: string
+  qrCodeUrl?: string
+  deeplink?: string
+}
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [order, setOrder] = useState<OrderUI | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [paying, setPaying] = useState(false)
+  const [mocking] = useState(false)
+  const [momoPayment, setMomoPayment] = useState<MomoPayment | null>(null)
 
-  const formatDateTime = (dateString: string) =>
-    new Date(dateString).toLocaleString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+
+  const handlePayment = async () => {
+    if (!order?.id) return
+    try {
+      setPaying(true)
+      setMomoPayment(null)
+      const res = await getMomoPaymentUrlApi(order.id)
+      const momoResult = res.data?.result || res.data?.data || res.data
+      const payUrl = momoResult?.payUrl
+      const qrCodeUrl = momoResult?.qrCodeUrl
+      const deeplink = momoResult?.deeplink
+      if (qrCodeUrl) {
+        setMomoPayment({ payUrl, qrCodeUrl, deeplink })
+        toast.success('Đã tạo mã QR MoMo sandbox.')
+        return
+      }
+      if (payUrl) {
+        toast.success('Đang mở trang thanh toán MoMo...')
+        window.location.href = payUrl
+      } else {
+        toast.error('Không thể tạo mã QR thanh toán.')
+      }
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi tạo thanh toán.'
+      toast.error(errMsg)
+      console.error(err)
+    } finally {
+      setPaying(false)
+    }
+  }
+
+  const handlePayPalPayment = async () => {
+    if (!order?.id) return
+    try {
+      setPaying(true)
+      const res = await getPaypalPaymentUrlApi(order.id)
+      const paypalResult = res.data?.result || res.data?.data || res.data
+      const payUrl = paypalResult?.payUrl
+      if (payUrl) {
+        toast.success('Đang mở trang thanh toán PayPal...')
+        window.location.href = payUrl
+      } else {
+        toast.error('Không thể tạo liên kết thanh toán PayPal.')
+      }
+    } catch (err: any) {
+      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi tạo thanh toán PayPal.'
+      toast.error(errMsg)
+      console.error(err)
+    } finally {
+      setPaying(false)
+    }
+  }
 
   const createOrderCode = (value: string) => `#${value.slice(-6).toUpperCase()}`
 
@@ -86,6 +147,7 @@ export default function OrderDetailPage() {
           throw new Error('Order data is invalid')
         }
 
+        setMomoPayment(null)
         const statusInfo = mapStatus(rawOrder.status)
 
         const mappedOrder: OrderUI = {
@@ -93,13 +155,15 @@ export default function OrderDetailPage() {
           code: createOrderCode(rawOrder._id),
           status: statusInfo.status,
           statusLabel: statusInfo.statusLabel,
-          subtotal: rawOrder.total_price,
+          subtotal: rawOrder.total_price - rawOrder.shipping_fee,
           shippingFee: rawOrder.shipping_fee,
-          total: rawOrder.total_price + rawOrder.shipping_fee,
-          items: 0,
+          total: rawOrder.total_price,
+          items: rawOrder.items || [],
           paymentMethod: mapPaymentMethod(rawOrder.payment_method),
-          createdAt: formatDateTime(rawOrder.created_at),
-          updatedAt: formatDateTime(rawOrder.updated_at),
+          rawPaymentMethod: String(rawOrder.payment_method),
+          rawPaymentStatus: rawOrder.payment_status,
+          createdAt: formatDate(rawOrder.created_at),
+          updatedAt: formatDate(rawOrder.updated_at),
           paymentStatusLabel: mapPaymentStatus(rawOrder.payment_status),
           deliveryMethodId: rawOrder.delivery_method_id
         }
@@ -117,6 +181,22 @@ export default function OrderDetailPage() {
   }, [id])
 
   const canCancel = useMemo(() => order?.status === 'processing', [order])
+
+  const canPayMomo = useMemo(
+    () =>
+      order?.status === 'shipping' &&
+      order?.rawPaymentStatus === 0 &&
+      (order?.rawPaymentMethod === 'MOMO' || order?.rawPaymentMethod === '2'),
+    [order]
+  )
+
+  const canPayPaypal = useMemo(
+    () =>
+      order?.status === 'shipping' &&
+      order?.rawPaymentStatus === 0 &&
+      (order?.rawPaymentMethod === 'PAYPAL' || order?.rawPaymentMethod === '1'),
+    [order]
+  )
 
   if (loading) {
     return (
@@ -137,7 +217,11 @@ export default function OrderDetailPage() {
         <div className='space-y-5'>
           <Alert variant='error' title='Có lỗi xảy ra' desc={error || 'Không tìm thấy đơn hàng.'} />
 
-          <Link to='/user/orders' preventScrollReset className='inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-ink-950'>
+          <Link
+            to={ROUTE_PATHS.USER_ORDERS}
+            preventScrollReset
+            className='inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition hover:text-ink-950'
+          >
             <ArrowLeft size={16} />
             Quay lại danh sách đơn hàng
           </Link>
@@ -148,7 +232,11 @@ export default function OrderDetailPage() {
 
   return (
     <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-      <Link to='/user/orders' preventScrollReset className='mb-6 inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-ink-950'>
+      <Link
+        to={ROUTE_PATHS.USER_ORDERS}
+        preventScrollReset
+        className='mb-6 inline-flex items-center gap-2 text-sm font-black text-slate-500 transition hover:text-ink-950'
+      >
         <ArrowLeft size={17} />
         Quay lại danh sách đơn hàng
       </Link>
@@ -204,8 +292,19 @@ export default function OrderDetailPage() {
               </span>
               <h2 className='text-lg font-black text-ink-950'>Sản phẩm trong đơn</h2>
             </div>
-            <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500'>
-              Backend hiện chưa trả danh sách sản phẩm của đơn hàng này.
+            <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500'>
+              {order.items?.length > 0 ? (
+                <ul className='list-inside list-disc space-y-1'>
+                  {order.items.map((item: any) => (
+                    <li key={item._id}>
+                      <span className='font-bold text-ink-950'>{item.product?.name || 'Sản phẩm'}</span>
+                      <span className='text-slate-500'> (x{item.quantity})</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                'Không có dữ liệu sản phẩm.'
+              )}
             </div>
           </section>
         </div>
@@ -227,7 +326,9 @@ export default function OrderDetailPage() {
 
               <div className='flex justify-between text-sm text-slate-500'>
                 <span>Phí vận chuyển</span>
-                <span className='font-bold text-ink-950'>{order.shippingFee === 0 ? 'Miễn phí' : money(order.shippingFee)}</span>
+                <span className='font-bold text-ink-950'>
+                  {order.shippingFee === 0 ? 'Miễn phí' : money(order.shippingFee)}
+                </span>
               </div>
 
               <div className='h-px bg-slate-200' />
@@ -237,6 +338,72 @@ export default function OrderDetailPage() {
                 <span className='text-xl font-black text-ink-950'>{money(order.total)}</span>
               </div>
             </div>
+
+            {canPayMomo && (
+              <Button full className='mt-6' onClick={handlePayment} loading={paying} disabled={paying || mocking}>
+                Thanh toán qua MoMo
+              </Button>
+            )}
+
+            {canPayPaypal && (
+              <Button
+                full
+                className='mt-6 !bg-amber-500 hover:!bg-amber-600 text-white'
+                onClick={handlePayPalPayment}
+                loading={paying}
+                disabled={paying || mocking}
+              >
+                Thanh toán qua PayPal
+              </Button>
+            )}
+
+            {/* {(canPayMomo || canPayPaypal) && (
+              <Button
+                full
+                variant='secondary'
+                className='mt-3'
+                onClick={handleMockPayment}
+                loading={mocking}
+                disabled={paying || mocking}
+              >
+                Giả lập thanh toán thành công (Test Free)
+              </Button>
+            )} */}
+
+            {momoPayment?.qrCodeUrl && (
+              <div className='mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-center'>
+                <div className='mx-auto inline-flex rounded-xl bg-white p-2 shadow-sm'>
+                  <QRCode value={momoPayment.qrCodeUrl} size={220} bordered={false} />
+                </div>
+                <p className='mt-3 text-sm font-black text-ink-950'>Quét mã bằng MoMo Test app</p>
+                <p className='mt-1 text-xs leading-5 text-slate-500'>
+                  QR sandbox cho đơn {order.code}. Nếu app báo hết hạn, bấm thanh toán để tạo mã mới.
+                </p>
+
+                <div className='mt-4 grid gap-2'>
+                  {momoPayment.deeplink && (
+                    <a
+                      href={momoPayment.deeplink}
+                      className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-ink-950 px-4 text-sm font-bold text-white transition hover:bg-brand-600'
+                    >
+                      <Smartphone size={16} />
+                      Mở app MoMo
+                    </a>
+                  )}
+                  {momoPayment.payUrl && (
+                    <a
+                      href={momoPayment.payUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-ink-950 transition hover:border-slate-300 hover:bg-slate-50'
+                    >
+                      <ExternalLink size={16} />
+                      Mở trang thanh toán
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </aside>
 
           {canCancel ? (

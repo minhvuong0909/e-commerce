@@ -2,13 +2,14 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Menu, PackageCheck, Search, ShieldCheck, ShoppingBag, Truck, UserRound } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { pageMotion } from '../constants/motion'
+import { ROUTE_PATHS } from '../routes/route.paths'
 import cn from '../utils/cn'
 
 const nav = [
-  { to: '/user/home', label: 'Trang chủ', icon: ShoppingBag },
-  { to: '/user/cart', label: 'Giỏ hàng', icon: PackageCheck },
-  { to: '/user/orders', label: 'Đơn hàng', icon: Truck },
-  { to: '/user/me', label: 'Tài khoản', icon: UserRound }
+  { to: ROUTE_PATHS.USER_HOME, label: 'Trang chủ', icon: ShoppingBag },
+  { to: ROUTE_PATHS.USER_CART, label: 'Giỏ hàng', icon: PackageCheck },
+  { to: ROUTE_PATHS.USER_ORDERS, label: 'Đơn hàng', icon: Truck },
+  { to: ROUTE_PATHS.USER_PROFILE, label: 'Tài khoản', icon: UserRound }
 ]
 
 export default function UserLayout() {
@@ -18,7 +19,7 @@ export default function UserLayout() {
     <div className='min-h-screen bg-[var(--page-bg)] text-slate-800'>
       <header className='sticky top-0 z-50 border-b border-slate-300/60 bg-white/[0.88] shadow-sm backdrop-blur-2xl'>
         <div className='mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 md:px-6'>
-          <Link to='/user/home' className='flex shrink-0 items-center gap-3' aria-label='Vibrant Mart home'>
+          <Link to={ROUTE_PATHS.USER_HOME} className='flex shrink-0 items-center gap-3' aria-label='Vibrant Mart home'>
             <span className='grid h-11 w-11 place-items-center rounded-2xl bg-brand-600 text-white shadow-card'>
               <ShoppingBag size={20} />
             </span>
@@ -95,10 +96,7 @@ export default function UserLayout() {
 
       <main className='min-h-[calc(100vh-156px)]'>
         <AnimatePresence mode='wait'>
-          <motion.div
-            key={location.pathname}
-            {...pageMotion}
-          >
+          <motion.div key={location.pathname} {...pageMotion}>
             <Outlet />
           </motion.div>
         </AnimatePresence>

@@ -26,6 +26,7 @@ export type OrderApiResponse = {
   status: number
   created_at: string
   updated_at: string
+  items: any[]
 }
 export type Status = 'all' | 'processing' | 'shipping' | 'done' | 'cancel'
 
@@ -37,9 +38,11 @@ export type OrderUI = {
   total: number
   subtotal: number
   shippingFee: number
-  items: number
+  items: any[]
   date?: string
   paymentMethod: string
+  rawPaymentMethod?: string
+  rawPaymentStatus?: number
   createdAt?: string
   updatedAt?: string
   paymentStatusLabel?: string

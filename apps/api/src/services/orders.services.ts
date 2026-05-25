@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { CartStatus, DeliveryMethodType, OrderStatus, PaymentMethod, PaymentStatus } from '~/constants/enums'
+import { CartStatus, DeliveryMethodType, OrderStatus, PaymentMethod, PaymentStatus, USER_ROLE } from '~/constants/enums'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
@@ -112,13 +112,21 @@ class OrdersService {
     // xóa cart items đã đặt hàng
     await databaseService.cart_items.deleteMany({
       _id: { $in: cartItems.map((item) => item._id!) }
-    })
+    })    
     return order
   }
   // cập nhật trạng thái đơn hàng
   async updateOrderStatus({ user_id, order_id }: { user_id: string; order_id: string }) {
+    const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
+    const isStaffOrAdmin = user && (user.role === USER_ROLE.Admin || user.role === USER_ROLE.Staff)
+
+    const filter: any = { _id: new ObjectId(order_id), status: OrderStatus.Pending }
+    if (!isStaffOrAdmin) {
+      filter.user_id = new ObjectId(user_id)
+    }
+
     const order = await databaseService.orders.findOneAndUpdate(
-      { _id: new ObjectId(order_id), user_id: new ObjectId(user_id), status: OrderStatus.Pending },
+      filter,
       {
         $set: {
           status: OrderStatus.Confirmed,
@@ -161,16 +169,102 @@ class OrdersService {
   }
 
   async getOrderById({ user_id, order_id }: { user_id: string; order_id: string }) {
-    const order = await databaseService.orders.findOne({
-      _id: new ObjectId(order_id),
-      user_id: new ObjectId(user_id)
-    })
-    if (!order) {
+    const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
+    const isStaffOrAdmin = user && (user.role === USER_ROLE.Admin || user.role === USER_ROLE.Staff)
+
+    const filter: any = { _id: new ObjectId(order_id) }
+    if (!isStaffOrAdmin) {
+      filter.user_id = new ObjectId(user_id)
+    }
+
+    const orderList = await databaseService.orders.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'user_id',
+          foreignField: '_id',
+          as: 'customer'
+        }
+      },
+      {
+        $unwind: {
+          path: '$customer',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'order_items',
+          localField: '_id',
+          foreignField: 'order_id',
+          as: 'items'
+        }
+      },
+      {
+        $unwind: {
+          path: '$items',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'items.product_id',
+          foreignField: '_id',
+          as: 'items.product'
+        }
+      },
+      {
+        $unwind: {
+          path: '$items.product',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $group: {
+          _id: '$_id',
+          user_id: { $first: '$user_id' },
+          total_price: { $first: '$total_price' },
+          payment_method: { $first: '$payment_method' },
+          payment_status: { $first: '$payment_status' },
+          delivery_method_id: { $first: '$delivery_method_id' },
+          shipping_fee: { $first: '$shipping_fee' },
+          status: { $first: '$status' },
+          created_at: { $first: '$created_at' },
+          updated_at: { $first: '$updated_at' },
+          customer: {
+            $first: {
+              name: '$customer.name',
+              email: '$customer.email'
+            }
+          },
+          items: {
+            $push: {
+              _id: '$items._id',
+              product_id: '$items.product_id',
+              quantity: '$items.quantity',
+              price: '$items.price',
+              product: '$items.product'
+            }
+          }
+        }
+      }
+    ]).toArray()
+
+    if (orderList.length === 0) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.ORDER_NOT_FOUND,
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+
+    const order = orderList[0]
+    // Clean empty items if no items found
+    if (order.items && order.items.length === 1 && !order.items[0].product_id) {
+      order.items = []
+    }
+
     return order
   }
 
