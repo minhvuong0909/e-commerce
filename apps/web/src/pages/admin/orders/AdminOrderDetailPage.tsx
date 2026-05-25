@@ -1,81 +1,83 @@
 import { Link, useParams } from 'react-router-dom'
+import { Printer, RefreshCw } from 'lucide-react'
+import Button from '../../../components/ui/Button'
+import StatusBadge from '../../../components/ui/StatusBadge'
 
 export default function AdminOrderDetailPage() {
   const { id } = useParams()
-
-  // demo data
   const status = 'PENDING'
 
   return (
-    <div>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-2xl font-extrabold'>Order #{id}</h1>
-        <Link to='/admin/orders' className='font-semibold text-primary'>
-          ← Back
+    <div className='space-y-6'>
+      <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+        <div>
+          <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Order detail</p>
+          <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>Order #{id}</h1>
+          <p className='mt-2 text-sm text-slate-500'>Kiểm tra sản phẩm, thanh toán và trạng thái giao hàng.</p>
+        </div>
+        <Link to='/admin/orders' className='text-sm font-black text-brand-600 hover:text-brand-900'>
+          Quay lại
         </Link>
       </div>
 
-      <div className='mt-6 grid gap-6 md:grid-cols-3'>
-        <div className='md:col-span-2 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5'>
-          <div className='font-bold text-gray-900'>Items</div>
+      <div className='grid gap-6 md:grid-cols-3'>
+        <section className='surface-strong rounded-3xl p-6 md:col-span-2'>
+          <div className='font-black text-ink-950'>Items</div>
 
           <div className='mt-4 space-y-3'>
             {[
               { name: 'Áo thun', qty: 2, price: 199000 },
               { name: 'Giày sneaker', qty: 1, price: 499000 }
-            ].map((x, idx) => (
-              <div key={idx} className='flex items-center justify-between rounded-2xl border p-4'>
+            ].map((item) => (
+              <div key={item.name} className='flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 p-4'>
                 <div>
-                  <div className='font-semibold'>{x.name}</div>
-                  <div className='text-sm text-gray-500'>Qty: {x.qty}</div>
+                  <div className='font-black text-ink-950'>{item.name}</div>
+                  <div className='text-sm font-semibold text-slate-500'>Qty: {item.qty}</div>
                 </div>
-                <div className='font-bold'>₫ {x.price.toLocaleString()}</div>
+                <div className='font-black text-ink-950'>₫ {item.price.toLocaleString('vi-VN')}</div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
-        <div className='rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5'>
-          <div className='font-bold text-gray-900'>Summary</div>
+        <aside className='surface-card rounded-3xl p-6'>
+          <div className='font-black text-ink-950'>Summary</div>
 
-          <div className='mt-4 space-y-2 text-sm'>
-            <div className='flex justify-between'>
-              <span>Customer</span>
-              <span className='font-semibold'>Nguyễn Văn A</span>
-            </div>
-            <div className='flex justify-between'>
-              <span>Delivery</span>
-              <span className='font-semibold'>Standard</span>
-            </div>
-            <div className='flex justify-between'>
-              <span>Payment</span>
-              <span className='font-semibold'>COD</span>
-            </div>
-            <div className='flex justify-between'>
-              <span>Status</span>
-              <span className='font-semibold'>{status}</span>
+          <div className='mt-4 space-y-3 text-sm'>
+            <SummaryRow label='Customer' value='Nguyễn Văn A' />
+            <SummaryRow label='Delivery' value='Standard' />
+            <SummaryRow label='Payment' value='COD' />
+            <div className='flex items-center justify-between gap-3'>
+              <span className='text-slate-500'>Status</span>
+              <StatusBadge tone='processing'>{status}</StatusBadge>
             </div>
 
-            <div className='border-t pt-3 flex justify-between font-bold'>
-              <span>Total</span>
-              <span className='text-primary'>₫ 897.000</span>
+            <div className='border-t border-slate-200 pt-3'>
+              <SummaryRow label='Total' value='₫ 897.000' strong />
             </div>
           </div>
 
           <div className='mt-5 grid gap-2'>
-            <button className='rounded-2xl border bg-white px-4 py-2 font-semibold hover:bg-gray-50'>
-              Update Status (demo)
-            </button>
-            <button className='rounded-2xl border bg-white px-4 py-2 font-semibold hover:bg-gray-50'>
-              Print Invoice (demo)
-            </button>
+            <Button variant='secondary'>
+              <RefreshCw size={16} />
+              Update Status
+            </Button>
+            <Button variant='secondary'>
+              <Printer size={16} />
+              Print Invoice
+            </Button>
           </div>
-
-          <div className='mt-4 text-xs text-gray-500'>
-            ⚠️ Admin không bị rule “Cancel Pending” như User, nhưng vẫn nên quản lý status chuẩn.
-          </div>
-        </div>
+        </aside>
       </div>
+    </div>
+  )
+}
+
+function SummaryRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div className='flex justify-between gap-3'>
+      <span className='text-slate-500'>{label}</span>
+      <span className={strong ? 'font-black text-brand-700' : 'font-black text-ink-950'}>{value}</span>
     </div>
   )
 }

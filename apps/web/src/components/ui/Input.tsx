@@ -1,6 +1,6 @@
+import { Eye, EyeOff } from 'lucide-react'
 import { useId, useState, type ChangeEvent, type InputHTMLAttributes, type ReactNode } from 'react'
-
-const cn = (...c: (string | undefined)[]) => c.filter(Boolean).join(' ')
+import cn from '../../utils/cn'
 
 interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label?: string
@@ -11,7 +11,6 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChan
   helperText?: string
   leftIcon?: ReactNode
   rightSlot?: ReactNode
-  disabled?: boolean
 }
 
 export default function Input({
@@ -37,14 +36,13 @@ export default function Input({
   return (
     <div className='space-y-1.5'>
       {label ? (
-        <label htmlFor={id} className='text-sm font-semibold text-white/80'>
+        <label htmlFor={id} className='text-sm font-bold text-ink-900'>
           {label}
         </label>
       ) : null}
 
       <div className='relative'>
-        {/* Left icon */}
-        {leftIcon ? <div className='absolute left-3 top-1/2 -translate-y-1/2 text-white/45'>{leftIcon}</div> : null}
+        {leftIcon ? <div className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'>{leftIcon}</div> : null}
 
         <input
           id={id}
@@ -54,38 +52,34 @@ export default function Input({
           placeholder={placeholder}
           disabled={disabled}
           className={cn(
-            'h-11 w-full rounded-2xl border px-4 text-sm font-medium text-white outline-none transition',
-            'bg-white/5 placeholder:text-white/35',
-            'border-white/10 focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/25',
-            leftIcon ? 'pl-10' : '',
+            'premium-input',
+            leftIcon ? 'pl-11' : '',
             rightSlot || isPassword ? 'pr-12' : '',
             disabled ? 'cursor-not-allowed opacity-60' : '',
-            error ? 'border-rose-500/40 focus:border-rose-500/60 focus:ring-rose-500/20' : '',
+            error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15' : '',
             className
           )}
           {...props}
         />
 
-        {/* Password toggle */}
         {isPassword ? (
           <button
             type='button'
             onClick={() => setShowPass((s) => !s)}
-            className='absolute right-3 top-1/2 -translate-y-1/2 rounded-xl bg-white/10 px-2 py-1 text-xs font-bold text-white/70 hover:bg-white/15 hover:text-white'
+            className='absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-ink-950'
+            aria-label={showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
           >
-            {showPass ? 'Ẩn' : 'Hiện'}
+            {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
         ) : null}
 
-        {/* Right slot */}
         {!isPassword && rightSlot ? <div className='absolute right-3 top-1/2 -translate-y-1/2'>{rightSlot}</div> : null}
       </div>
 
-      {/* Error / helper */}
       {error ? (
-        <p className='text-xs font-semibold text-rose-300'>{error}</p>
+        <p className='text-xs font-semibold text-rose-600'>{error}</p>
       ) : helperText ? (
-        <p className='text-xs text-white/45'>{helperText}</p>
+        <p className='text-xs font-medium text-slate-500'>{helperText}</p>
       ) : null}
     </div>
   )

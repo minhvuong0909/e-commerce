@@ -1,13 +1,14 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { Mail, ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { useNavigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { loginApi } from '../../services/auths.services'
-import { toast } from 'sonner'
-import { ROUTES } from '../../routes/route.paths'
 import { supabase } from '../../configs/config'
+import { ROUTES } from '../../routes/route.paths'
+import { loginApi } from '../../services/auths.services'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -17,20 +18,21 @@ export default function LoginPage() {
     password: ''
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForms({
       ...forms,
       [e.target.name]: e.target.value
     })
   }
-  // redirect nếu đã có token
+
   useEffect(() => {
     const token = localStorage.getItem('access_token')
     if (token) navigate('/user/home', { replace: true })
   }, [navigate])
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Call api login
+
     try {
       setLoading(true)
       const res = await loginApi(forms)
@@ -38,14 +40,13 @@ export default function LoginPage() {
       localStorage.setItem('refresh_token', res.data.result.tokens.refresh_token)
       toast.success('Đăng nhập thành công!')
       navigate('/user/home')
-    } catch (error) {
+    } catch {
       toast.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.')
     } finally {
       setLoading(false)
     }
   }
 
-  // LoginPage.tsx — đảm bảo signInWithOAuth không có queryParams thừa
   const handleLoginGoogle = async () => {
     try {
       setGoogleLoading(true)
@@ -53,7 +54,6 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`
-          // ✅ Bỏ hết queryParams cũ nếu có
         }
       })
       if (error) {
@@ -65,19 +65,18 @@ export default function LoginPage() {
       setGoogleLoading(false)
     }
   }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-    >
-      {/* Header */}
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
-        <h2 className='text-2xl font-extrabold text-white'>Đăng nhập</h2>
-        <p className='mt-1 text-sm text-white/65'>Chào mừng bạn quay lại. Hãy đăng nhập để tiếp tục mua sắm.</p>
+        <div className='mb-4 inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-black text-brand-700'>
+          <ShieldCheck size={14} />
+          Bảo mật tài khoản
+        </div>
+        <h2 className='text-2xl font-black tracking-tight text-ink-950'>Đăng nhập</h2>
+        <p className='mt-2 text-sm leading-6 text-slate-500'>Chào mừng bạn quay lại. Đăng nhập để tiếp tục mua sắm.</p>
       </div>
 
-      {/* Form */}
       <form className='space-y-4' onSubmit={handleSubmit}>
         <Input
           label='Email'
@@ -86,53 +85,47 @@ export default function LoginPage() {
           placeholder='example@email.com'
           value={forms.email}
           onChange={handleChange}
+          leftIcon={<Mail size={17} />}
         />
         <Input
           label='Mật khẩu'
           name='password'
           type='password'
-          placeholder='••••••••'
+          placeholder='Tối thiểu 8 ký tự'
           value={forms.password}
           onChange={handleChange}
         />
 
-        <div className='flex items-center justify-between'>
-          <label className='flex items-center gap-2 text-sm text-white/65'>
-            <input type='checkbox' className='h-4 w-4 rounded border-white/20 bg-white/10 accent-orange-500' />
+        <div className='flex items-center justify-between gap-4'>
+          <label className='flex items-center gap-2 text-sm font-semibold text-slate-500'>
+            <input type='checkbox' className='h-4 w-4 rounded border-slate-300 accent-ink-950' />
             Nhớ đăng nhập
           </label>
 
-          <Link
-            to={ROUTES.AUTH + ROUTES.FORGET_PASSWORD}
-            className='text-sm font-semibold text-orange-300 hover:text-orange-200 hover:underline'
-          >
+          <Link to={ROUTES.AUTH + ROUTES.FORGET_PASSWORD} className='text-sm font-black text-brand-600 hover:text-brand-900'>
             Quên mật khẩu?
           </Link>
         </div>
 
-        {/* Primary */}
-        <Button full type='submit' disabled={loading}>
-          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+        <Button full type='submit' loading={loading} disabled={loading}>
+          Đăng nhập
         </Button>
 
-        {/* Divider */}
         <div className='relative py-2'>
-          <div className='h-px w-full bg-white/10' />
-          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/60 px-3 text-xs text-white/50'>
+          <div className='h-px w-full bg-slate-200' />
+          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs font-bold text-slate-400'>
             hoặc
           </div>
         </div>
 
-        {/* Social */}
-        <Button full type='button' variant='outline' onClick={handleLoginGoogle} disabled={googleLoading}>
+        <Button full type='button' variant='outline' onClick={handleLoginGoogle} loading={googleLoading} disabled={googleLoading}>
           <GoogleIcon />
           Đăng nhập với Google
         </Button>
 
-        {/* Footer */}
-        <p className='pt-1 text-center text-sm text-white/65'>
-          Chưa có tài khoản?
-          <Link to='/auth/register' className='font-semibold text-orange-300 hover:text-orange-200 hover:underline'>
+        <p className='pt-1 text-center text-sm text-slate-500'>
+          Chưa có tài khoản?{' '}
+          <Link to='/auth/register' className='font-black text-brand-600 hover:text-brand-900'>
             Đăng ký
           </Link>
         </p>
@@ -143,7 +136,7 @@ export default function LoginPage() {
 
 function GoogleIcon() {
   return (
-    <svg className='mr-2 h-5 w-5' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'>
+    <svg className='h-5 w-5' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
       <path
         fill='#FFC107'
         d='M43.6 20.5H42V20H24v8h11.3C33.8 32.7 29.4 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 2.9l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z'

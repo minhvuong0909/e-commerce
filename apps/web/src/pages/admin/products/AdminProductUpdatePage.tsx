@@ -1,3 +1,4 @@
+import { ImagePlus, Trash2 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Button from '../../../components/ui/Button'
 
@@ -7,150 +8,117 @@ export default function AdminProductEditPage() {
 
   return (
     <div className='space-y-6'>
-      {/* TOP */}
       <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
         <div>
-          <h1 className='text-2xl font-extrabold'>Chỉnh sửa sản phẩm</h1>
-          <p className='mt-1 text-sm text-white/60'>Cập nhật thông tin, giá bán và tồn kho cho sản phẩm #{id}.</p>
+          <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Product editor</p>
+          <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>Chỉnh sửa sản phẩm</h1>
+          <p className='mt-2 text-sm text-slate-500'>Cập nhật thông tin, giá bán và tồn kho cho sản phẩm #{id}.</p>
         </div>
 
-        <Link to='/admin/products' className='text-sm font-semibold text-white/60 hover:text-white'>
-          ← Quay lại danh sách
+        <Link to='/admin/products' className='text-sm font-black text-brand-600 hover:text-brand-900'>
+          Quay lại danh sách
         </Link>
       </div>
 
       <div className='grid gap-6 md:grid-cols-3'>
-        {/* FORM */}
-        <div className='md:col-span-2 rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur'>
+        <section className='surface-strong rounded-3xl p-6 md:col-span-2'>
           <div className='grid gap-4 md:grid-cols-2'>
-            {/* NAME */}
-            <label className='block md:col-span-2'>
-              <div className='text-sm font-semibold text-white/70'>Tên sản phẩm</div>
-              <input
-                defaultValue='Áo thun nam basic'
-                className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
-              />
-            </label>
-
-            {/* SKU */}
+            <FormField label='Tên sản phẩm' className='md:col-span-2' defaultValue='Áo thun nam basic' />
+            <FormField label='SKU' defaultValue='TSHIRT-001' />
             <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>SKU</div>
-              <input
-                defaultValue='TSHIRT-001'
-                className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
-              />
-            </label>
-
-            {/* STATUS */}
-            <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>Trạng thái</div>
-              <select className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'>
+              <div className='mb-2 text-sm font-black text-ink-950'>Trạng thái</div>
+              <select className='premium-input'>
                 <option>Đang bán</option>
                 <option>Ngừng bán</option>
               </select>
             </label>
-
-            {/* PRICE */}
+            <FormField label='Giá bán (VND)' type='number' defaultValue='199000' />
+            <FormField label='Tồn kho' type='number' defaultValue='20' />
             <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>Giá bán (VND)</div>
-              <input
-                type='number'
-                defaultValue='199000'
-                className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
-              />
-            </label>
-
-            {/* STOCK */}
-            <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>Tồn kho</div>
-              <input
-                type='number'
-                defaultValue='20'
-                className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
-              />
-            </label>
-
-            {/* CATEGORY */}
-            <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>Danh mục</div>
-              <select className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'>
+              <div className='mb-2 text-sm font-black text-ink-950'>Danh mục</div>
+              <select className='premium-input'>
                 <option>Thời trang</option>
                 <option>Giày dép</option>
                 <option>Phụ kiện</option>
               </select>
             </label>
-
-            {/* BRAND */}
             <label className='block'>
-              <div className='text-sm font-semibold text-white/70'>Thương hiệu</div>
-              <select className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'>
+              <div className='mb-2 text-sm font-black text-ink-950'>Thương hiệu</div>
+              <select className='premium-input'>
                 <option>Nike</option>
                 <option>Adidas</option>
                 <option>Puma</option>
               </select>
             </label>
-
-            {/* SLUG */}
-            <label className='block md:col-span-2'>
-              <div className='text-sm font-semibold text-white/70'>Slug (tuỳ chọn)</div>
-              <input
-                defaultValue='ao-thun-nam-basic'
-                className='mt-1 h-11 w-full rounded-2xl border border-white/10 bg-black/20 px-4 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
-              />
-              <p className='mt-1 text-xs text-white/45'>Slug dùng cho URL thân thiện. Có thể để trống.</p>
-            </label>
+            <FormField label='Slug' className='md:col-span-2' defaultValue='ao-thun-nam-basic' />
           </div>
 
-          {/* DESC */}
           <label className='mt-4 block'>
-            <div className='text-sm font-semibold text-white/70'>Mô tả sản phẩm</div>
+            <div className='mb-2 text-sm font-black text-ink-950'>Mô tả sản phẩm</div>
             <textarea
               rows={6}
               defaultValue='Mô tả sản phẩm demo...'
-              className='mt-1 w-full resize-none rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none focus:border-orange-500/40 focus:ring-2 focus:ring-orange-500/20'
+              className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
             />
           </label>
 
-          {/* ACTION */}
           <div className='mt-6 flex flex-col gap-3 sm:flex-row'>
-            <Button full variant='gradient' onClick={() => nav('/admin/products')}>
-              Cập nhật
-            </Button>
-
-            <Link to='/admin/products' className='w-full'>
-              <Button full variant='secondary'>
-                Huỷ
-              </Button>
+            <Button onClick={() => nav('/admin/products')}>Cập nhật</Button>
+            <Link
+              to='/admin/products'
+              className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+            >
+              Hủy
             </Link>
           </div>
-        </div>
+        </section>
 
-        {/* MEDIA */}
-        <div className='rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur'>
-          <div className='font-extrabold'>Hình ảnh / Video</div>
-          <p className='mt-1 text-sm text-white/60'>Quản lý ảnh hiển thị ngoài trang mua sắm.</p>
+        <aside className='surface-card rounded-3xl p-6'>
+          <div className='font-black text-ink-950'>Hình ảnh / Video</div>
+          <p className='mt-1 text-sm leading-6 text-slate-500'>Quản lý ảnh hiển thị ngoài trang mua sắm.</p>
 
-          <label className='mt-4 flex h-40 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-white/20 bg-black/10 text-sm text-white/60 hover:bg-black/20'>
-            Kéo thả hoặc bấm để chọn file
+          <label className='mt-4 flex h-40 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 text-sm font-bold text-slate-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'>
+            <ImagePlus size={24} />
+            <span className='mt-2'>Chọn file</span>
             <input type='file' accept='image/*' multiple className='hidden' />
           </label>
 
           <div className='mt-4 grid grid-cols-3 gap-3'>
-            <div className='h-20 rounded-2xl bg-white/5' />
-            <div className='h-20 rounded-2xl bg-white/5' />
-            <div className='h-20 rounded-2xl bg-white/5' />
+            <div className='h-20 rounded-2xl bg-slate-50' />
+            <div className='h-20 rounded-2xl bg-slate-50' />
+            <div className='h-20 rounded-2xl bg-slate-50' />
           </div>
 
-          <div className='mt-4 rounded-3xl border border-rose-500/20 bg-rose-500/10 p-4'>
-            <div className='text-sm font-extrabold text-rose-200'>Khu vực nguy hiểm</div>
-            <p className='mt-1 text-xs text-rose-100/80'>Không nên xoá sản phẩm nếu đang có đơn hàng liên quan.</p>
+          <div className='mt-4 rounded-3xl border border-rose-200 bg-rose-50 p-4'>
+            <div className='text-sm font-black text-rose-900'>Khu vực nguy hiểm</div>
+            <p className='mt-1 text-xs leading-5 text-rose-700'>Không nên xoá sản phẩm nếu đang có đơn hàng liên quan.</p>
 
-            <button className='mt-3 w-full rounded-2xl bg-rose-500/20 py-3 text-sm font-extrabold text-rose-200 hover:bg-rose-500/30'>
-              Xoá sản phẩm
+            <button className='mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-rose-600 py-3 text-sm font-black text-white hover:bg-rose-700'>
+              <Trash2 size={16} />
+              Xóa sản phẩm
             </button>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
+  )
+}
+
+function FormField({
+  label,
+  className = '',
+  type = 'text',
+  defaultValue
+}: {
+  label: string
+  className?: string
+  type?: string
+  defaultValue?: string
+}) {
+  return (
+    <label className={className}>
+      <div className='mb-2 text-sm font-black text-ink-950'>{label}</div>
+      <input type={type} defaultValue={defaultValue} className='premium-input' />
+    </label>
   )
 }

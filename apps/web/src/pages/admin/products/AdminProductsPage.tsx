@@ -1,49 +1,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
 import { RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
 import AdminTableShell from '../../../components/ui/AdminTable'
-import money from '../../../utils/money'
-import { getAllProductsApi } from '../../../services/products.services'
+import { STOCK_BADGE, STOCK_LABEL, STOCK_OPTIONS } from '../../../constants/product'
 import type { Product } from '../../../models/ProductRequests'
 import { ROUTES } from '../../../routes/route.paths'
-import { STOCK_BADGE, STOCK_LABEL, STOCK_OPTIONS } from '../../../constants/product'
+import { getAllProductsApi } from '../../../services/products.services'
+import cn from '../../../utils/cn'
+import money from '../../../utils/money'
 
-const getStockType = (q: number) => (q <= 0 ? 'stock' : 'active')
+const getStockType = (q: number) => (q <= 0 ? 'stock' : q <= 5 ? 'low' : 'active')
 
 function StockBadge({ quantity }: { quantity: number }) {
   const type = getStockType(quantity)
   return (
-    <motion.span
-      whileHover={{ scale: 1.04 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
-      className={`inline-flex rounded-lg px-2.5 py-1 font-mono text-[11px] font-bold ring-1 ring-inset ${STOCK_BADGE[type]}`}
-    >
+    <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-black', STOCK_BADGE[type])}>
       {STOCK_LABEL(quantity)}
-    </motion.span>
+    </span>
   )
 }
 
 function SkeletonRow() {
   return (
-    <tr className='border-b border-white/[0.05]'>
-      {[70, 40, 30, 25, 20].map((w, i) => (
-        <td key={i} className='p-4'>
-          <div className='h-4 animate-pulse rounded-md bg-white/[0.06]' style={{ width: `${w}%` }} />
+    <tr className='border-b border-slate-100'>
+      {[70, 40, 30, 25, 20].map((width, index) => (
+        <td key={index} className='p-4'>
+          <div className='h-4 animate-pulse rounded-md bg-slate-100' style={{ width: `${width}%` }} />
         </td>
       ))}
     </tr>
   )
-}
-
-const tbodyVariants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.03
-    }
-  }
 }
 
 export default function AdminProductsPage() {
@@ -74,228 +60,129 @@ export default function AdminProductsPage() {
 
   const filteredProducts = useMemo(() => {
     const kw = search.toLowerCase()
-    return products.filter((p) => {
+    return products.filter((product) => {
       const matchSearch =
-        p.name.toLowerCase().includes(kw) || p.origin.toLowerCase().includes(kw) || p._id.toLowerCase().includes(kw)
-      const matchStock = stockFilter === 'all' || stockFilter === getStockType(p.quantity)
+        product.name.toLowerCase().includes(kw) ||
+        product.origin.toLowerCase().includes(kw) ||
+        product._id.toLowerCase().includes(kw)
+      const matchStock = stockFilter === 'all' || stockFilter === getStockType(product.quantity)
       return matchSearch && matchStock
     })
   }, [products, search, stockFilter])
 
   return (
     <AdminTableShell title='Sản phẩm' createTo={ROUTES.ADMIN + ROUTES.CREATE_PRODUCT}>
-      <motion.div
-        initial='hidden'
-        animate='show'
-        className='min-h-screen p-5 sm:p-7'
-        style={{
-          background: `
-            radial-gradient(ellipse 55% 35% at 85% 0%,   rgba(255,140,66,0.06) 0%, transparent 55%),
-            radial-gradient(ellipse 45% 30% at 15% 100%, rgba(79,142,247,0.06) 0%, transparent 50%),
-            linear-gradient(180deg, #080c18 0%, #0d1424 50%, #0f172a 100%)
-          `
-        }}
-      >
-        <div className='mx-auto max-w-[1400px] space-y-5'>
-          <motion.div
-            initial='hidden'
-            animate='show'
-            className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'
-          >
-            <div className='relative w-full md:max-w-sm'>
-              <Search
-                size={14}
-                className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500'
-              />
-              <motion.input
-                whileFocus={{ scale: 1.01 }}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder='Tìm theo tên, xuất xứ, ID...'
-                className='h-10 w-full rounded-xl border border-white/[0.08] bg-white/[0.04] pl-9 pr-4 text-[13px] text-white placeholder:text-slate-600 outline-none transition focus:border-white/[0.15] focus:bg-white/[0.06]'
-              />
+      <div className='space-y-5'>
+        <div className='surface-card flex flex-col gap-3 rounded-3xl p-4 md:flex-row md:items-center md:justify-between'>
+          <div className='relative w-full md:max-w-sm'>
+            <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Tìm theo tên, xuất xứ, ID...'
+              className='premium-input pl-10'
+            />
+          </div>
+
+          <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
+            <div className='relative'>
+              <SlidersHorizontal size={15} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
+              <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className='premium-input cursor-pointer pl-10 pr-8'>
+                {STOCK_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className='flex items-center gap-2'>
-              <motion.div whileHover={{ y: -1 }} className='relative'>
-                <SlidersHorizontal
-                  size={13}
-                  className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500'
-                />
-                <select
-                  value={stockFilter}
-                  onChange={(e) => setStockFilter(e.target.value)}
-                  className='h-10 cursor-pointer appearance-none rounded-xl border border-white/[0.08] bg-white/[0.04] pl-8 pr-4 text-[13px] text-white outline-none transition hover:bg-white/[0.06] focus:border-white/[0.15]'
-                >
-                  {STOCK_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value} className='bg-[#0d1424]'>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </motion.div>
+            <button
+              onClick={fetchProducts}
+              disabled={loading}
+              className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
+            >
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              Reload
+            </button>
+          </div>
+        </div>
 
-              <motion.button
-                whileHover={{ y: -1, scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={fetchProducts}
-                disabled={loading}
-                className='flex h-10 items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 text-[13px] text-slate-300 transition hover:bg-white/[0.08] hover:text-white disabled:opacity-40'
-              >
-                <motion.span
-                  animate={loading ? { rotate: 360 } : { rotate: 0 }}
-                  transition={loading ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : { duration: 0.2 }}
-                  className='inline-flex'
-                >
-                  <RefreshCw size={13} />
-                </motion.span>
-                Reload
-              </motion.button>
-            </div>
-          </motion.div>
+        {error ? <div className='rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-900'>{error}</div> : null}
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className='rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-300'
-              >
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className='surface-strong overflow-x-auto rounded-3xl'>
+          <table className='w-full text-sm'>
+            <thead>
+              <tr className='border-b border-slate-200 bg-slate-50/80'>
+                {['Sản phẩm', 'Xuất xứ', 'Giá', 'Tồn kho', ''].map((heading, index) => (
+                  <th key={heading} className={cn('px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-slate-400', index === 4 ? 'text-right' : 'text-left')}>
+                    {heading}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-          <motion.div
-            initial='hidden'
-            animate='show'
-            className='overflow-x-auto rounded-[20px] border border-white/[0.08] bg-white/[0.035] shadow-[0_10px_40px_rgba(0,0,0,0.18)]'
-          >
-            <table className='w-full text-sm'>
-              <thead>
-                <tr className='border-b border-white/[0.06]'>
-                  {['Sản phẩm', 'Xuất xứ', 'Giá', 'Tồn kho', ''].map((h, i) => (
-                    <th
-                      key={i}
-                      className={`px-5 py-3.5 text-[11px] font-semibold tracking-wider text-slate-500 ${i === 4 ? 'text-right' : 'text-left'}`}
-                    >
-                      {h}
-                    </th>
-                  ))}
+            <tbody>
+              {loading ? Array.from({ length: 5 }).map((_, index) => <SkeletonRow key={index} />) : null}
+
+              {!loading && filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
+                    Không tìm thấy sản phẩm nào.
+                  </td>
                 </tr>
-              </thead>
+              ) : null}
 
-              <motion.tbody variants={tbodyVariants} initial='hidden' animate='show'>
-                {loading &&
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <motion.tr
-                      key={i}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: i * 0.04 }}
-                    >
-                      <SkeletonRow />
-                    </motion.tr>
-                  ))}
+              {!loading
+                ? filteredProducts.map((product) => (
+                    <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
+                      <td className='px-5 py-4'>
+                        <div className='flex items-center gap-3'>
+                          <div className='h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100'>
+                            {product.medias?.[0]?.url ? (
+                              <img src={product.medias[0].url} alt={product.name} className='h-full w-full object-cover' />
+                            ) : (
+                              <div className='flex h-full w-full items-center justify-center text-[10px] font-bold text-slate-400'>N/A</div>
+                            )}
+                          </div>
 
-                {!loading && filteredProducts.length === 0 && (
-                  <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <td colSpan={5} className='px-5 py-14 text-center text-sm text-slate-600'>
-                      Không tìm thấy sản phẩm nào.
-                    </td>
-                  </motion.tr>
-                )}
-
-                {!loading && (
-                  <AnimatePresence mode='popLayout'>
-                    {filteredProducts.map((p) => (
-                      <motion.tr
-                        key={p._id}
-                        layout
-                        initial='hidden'
-                        animate='show'
-                        exit='exit'
-                        whileHover={{ backgroundColor: 'rgba(255,255,255,0.035)' }}
-                        className='group border-b border-white/[0.05] transition-colors last:border-0'
-                      >
-                        <td className='px-5 py-4'>
-                          <div className='flex items-center gap-3'>
-                            <motion.div
-                              whileHover={{ scale: 1.06 }}
-                              transition={{ type: 'spring', stiffness: 320, damping: 20 }}
-                              className='relative h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.04]'
-                            >
-                              {p.medias?.[0]?.url ? (
-                                <img src={p.medias[0].url} alt={p.name} className='h-full w-full object-cover' />
-                              ) : (
-                                <div className='flex h-full w-full items-center justify-center text-[10px] text-slate-600'>
-                                  N/A
-                                </div>
-                              )}
-                            </motion.div>
-
-                            <div className='min-w-0'>
-                              <motion.div layout className='truncate font-semibold text-white'>
-                                {p.name}
-                              </motion.div>
-                              <div className='mt-0.5 truncate font-mono text-[11px] text-slate-600'>
-                                #{p._id.slice(-8).toUpperCase()}
-                              </div>
+                          <div className='min-w-0'>
+                            <div className='truncate font-black text-ink-950'>{product.name}</div>
+                            <div className='mt-0.5 truncate font-mono text-xs font-semibold text-slate-400'>
+                              #{product._id.slice(-8).toUpperCase()}
                             </div>
                           </div>
-                        </td>
+                        </div>
+                      </td>
 
-                        <td className='px-5 py-4 text-[13px] text-slate-400'>{p.origin}</td>
+                      <td className='px-5 py-4 font-semibold text-slate-500'>{product.origin}</td>
+                      <td className='px-5 py-4 font-mono font-black text-ink-950'>{money(product.price)}</td>
+                      <td className='px-5 py-4'>
+                        <StockBadge quantity={product.quantity} />
+                      </td>
 
-                        <td className='px-5 py-4 font-mono text-[13px] font-semibold text-white'>{money(p.price)}</td>
+                      <td className='px-5 py-4 text-right'>
+                        <div className='flex items-center justify-end gap-2'>
+                          <Link to={`/admin/products/${product._id}/edit`} className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
+                            Sửa
+                          </Link>
+                          <button className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100'>
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                : null}
+            </tbody>
+          </table>
 
-                        <td className='px-5 py-4'>
-                          <StockBadge quantity={p.quantity} />
-                        </td>
-
-                        <td className='px-5 py-4 text-right'>
-                          <div className='flex items-center justify-end gap-2'>
-                            <motion.div whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }}>
-                              <Link
-                                to={`/admin/products/${p._id}/edit`}
-                                className='rounded-lg border border-white/[0.08] bg-white/[0.05] px-3 py-1.5 text-[12px] font-medium text-slate-300 transition hover:border-white/[0.15] hover:bg-white/[0.09] hover:text-white'
-                              >
-                                Sửa
-                              </Link>
-                            </motion.div>
-
-                            <motion.button
-                              whileHover={{ y: -1, scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              className='rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[12px] font-medium text-rose-300 transition hover:bg-rose-500/20'
-                            >
-                              Xoá
-                            </motion.button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </AnimatePresence>
-                )}
-              </motion.tbody>
-            </table>
-
-            <AnimatePresence>
-              {!loading && filteredProducts.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 8 }}
-                  className='border-t border-white/[0.05] px-5 py-3 text-[12px] text-slate-600'
-                >
-                  Hiển thị {filteredProducts.length} / {products.length} sản phẩm
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
+          {!loading && filteredProducts.length > 0 ? (
+            <div className='border-t border-slate-100 px-5 py-3 text-xs font-bold text-slate-500'>
+              Hiển thị {filteredProducts.length} / {products.length} sản phẩm
+            </div>
+          ) : null}
         </div>
-      </motion.div>
+      </div>
     </AdminTableShell>
   )
 }

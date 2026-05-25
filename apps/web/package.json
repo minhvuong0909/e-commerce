@@ -12,6 +12,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.100.13",
     "antd": "^6.1.1",
     "axios": "^1.11.0",
     "date-fns": "^4.1.0",
@@ -23,6 +24,7 @@
     "react-router-dom": "^7.11.0",
     "react-toastify": "^11.0.5",
     "sonner": "^2.0.7",
+    "three": "^0.184.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -30,6 +32,7 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
     "eslint": "^9.39.1",

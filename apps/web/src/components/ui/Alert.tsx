@@ -1,4 +1,5 @@
-const cn = (...c: string[]) => c.filter(Boolean).join(' ')
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
+import cn from '../../utils/cn'
 
 interface AlertProps {
   variant?: 'info' | 'success' | 'warning' | 'error'
@@ -7,94 +8,44 @@ interface AlertProps {
   className?: string
 }
 
-export default function Alert({
-  variant = 'info', // info | success | warning | error
-  title,
-  desc,
-  className = ''
-}: AlertProps) {
+export default function Alert({ variant = 'info', title, desc, className = '' }: AlertProps) {
   const map = {
     info: {
-      box: 'border-sky-500/25 bg-sky-500/10',
-      title: 'text-sky-100',
-      desc: 'text-white/70',
-      icon: <InfoIcon />
+      box: 'border-sky-200 bg-sky-50/80 text-sky-900',
+      icon: Info,
+      iconBox: 'bg-sky-100 text-sky-700'
     },
     success: {
-      box: 'border-emerald-500/25 bg-emerald-500/10',
-      title: 'text-emerald-100',
-      desc: 'text-white/70',
-      icon: <SuccessIcon />
+      box: 'border-emerald-200 bg-emerald-50/80 text-emerald-900',
+      icon: CheckCircle2,
+      iconBox: 'bg-emerald-100 text-emerald-700'
     },
     warning: {
-      box: 'border-orange-500/25 bg-orange-500/10',
-      title: 'text-orange-100',
-      desc: 'text-white/70',
-      icon: <WarnIcon />
+      box: 'border-amber-200 bg-amber-50/85 text-amber-950',
+      icon: AlertTriangle,
+      iconBox: 'bg-amber-100 text-amber-700'
     },
     error: {
-      box: 'border-rose-500/25 bg-rose-500/10',
-      title: 'text-rose-100',
-      desc: 'text-white/70',
-      icon: <ErrorIcon />
+      box: 'border-rose-200 bg-rose-50/85 text-rose-950',
+      icon: XCircle,
+      iconBox: 'bg-rose-100 text-rose-700'
     }
   }
 
-  const s = map[variant]
+  const current = map[variant]
+  const Icon = current.icon
 
   return (
-    <div className={cn('rounded-2xl border p-4 backdrop-blur', s.box, className)}>
+    <div className={cn('rounded-2xl border p-4 shadow-sm', current.box, className)}>
       <div className='flex gap-3'>
-        <div className='mt-0.5'>{s.icon}</div>
+        <span className={cn('grid h-9 w-9 shrink-0 place-items-center rounded-xl', current.iconBox)}>
+          <Icon size={18} />
+        </span>
         <div className='min-w-0'>
-          {title ? <div className={cn('text-sm font-extrabold', s.title)}>{title}</div> : null}
-          {desc ? <div className={cn('mt-1 text-sm', s.desc)}>{desc}</div> : null}
+          {title ? <div className='text-sm font-extrabold'>{title}</div> : null}
+          {desc ? <div className='mt-1 text-sm leading-6 opacity-75'>{desc}</div> : null}
         </div>
       </div>
     </div>
-  )
-}
-
-/* Icons */
-function InfoIcon() {
-  return (
-    <svg width='18' height='18' viewBox='0 0 24 24' fill='none'>
-      <path d='M12 2a10 10 0 100 20 10 10 0 000-20z' stroke='currentColor' strokeWidth='2' opacity='0.9' />
-      <path d='M12 11v6' stroke='currentColor' strokeWidth='2' />
-      <path d='M12 7h.01' stroke='currentColor' strokeWidth='3' />
-    </svg>
-  )
-}
-
-function SuccessIcon() {
-  return (
-    <svg width='18' height='18' viewBox='0 0 24 24' fill='none'>
-      <path d='M20 6L9 17l-5-5' stroke='currentColor' strokeWidth='2.4' strokeLinecap='round' strokeLinejoin='round' />
-    </svg>
-  )
-}
-
-function WarnIcon() {
-  return (
-    <svg width='18' height='18' viewBox='0 0 24 24' fill='none'>
-      <path
-        d='M10.3 4.3a2 2 0 013.4 0l8 13.3A2 2 0 0120 20H4a2 2 0 01-1.7-3L10.3 4.3z'
-        stroke='currentColor'
-        strokeWidth='2'
-        opacity='0.9'
-      />
-      <path d='M12 9v4' stroke='currentColor' strokeWidth='2' />
-      <path d='M12 17h.01' stroke='currentColor' strokeWidth='3' />
-    </svg>
-  )
-}
-
-function ErrorIcon() {
-  return (
-    <svg width='18' height='18' viewBox='0 0 24 24' fill='none'>
-      <path d='M12 2a10 10 0 100 20 10 10 0 000-20z' stroke='currentColor' strokeWidth='2' opacity='0.9' />
-      <path d='M15 9l-6 6' stroke='currentColor' strokeWidth='2.2' />
-      <path d='M9 9l6 6' stroke='currentColor' strokeWidth='2.2' />
-    </svg>
   )
 }

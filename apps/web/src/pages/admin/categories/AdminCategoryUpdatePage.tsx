@@ -1,26 +1,46 @@
 import { Link, useParams } from 'react-router-dom'
+import Button from '../../../components/ui/Button'
 
 export default function AdminCategoryEditPage() {
   const { id } = useParams()
 
   return (
-    <div>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-2xl font-extrabold'>Edit Category #{id}</h1>
-        <Link to='/admin/categories' className='font-semibold text-primary'>
-          ← Back
+    <div className='space-y-6'>
+      <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
+        <div>
+          <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Category editor</p>
+          <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>Chỉnh sửa danh mục #{id}</h1>
+        </div>
+        <Link to='/admin/categories' className='text-sm font-black text-brand-600 hover:text-brand-900'>
+          Quay lại
         </Link>
       </div>
 
-      <div className='mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5'>
-        <input className='w-full rounded-2xl border p-3' defaultValue='Clothes' />
+      <section className='surface-strong rounded-3xl p-6'>
+        <label className='block'>
+          <div className='mb-2 text-sm font-black text-ink-950'>Tên danh mục</div>
+          <input className='premium-input' defaultValue='Clothes' />
+        </label>
 
-        <textarea className='mt-4 w-full rounded-2xl border p-3' rows={6} defaultValue='Category description demo...' />
+        <label className='mt-4 block'>
+          <div className='mb-2 text-sm font-black text-ink-950'>Mô tả</div>
+          <textarea
+            className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
+            rows={6}
+            defaultValue='Category description demo...'
+          />
+        </label>
 
-        <button className='mt-5 w-full rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-bold text-white'>
-          Update Category
-        </button>
-      </div>
+        <div className='mt-6 flex flex-col gap-3 sm:flex-row'>
+          <Button>Update Category</Button>
+          <Link
+            to='/admin/categories'
+            className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+          >
+            Hủy
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }

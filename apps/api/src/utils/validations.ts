@@ -19,7 +19,7 @@ export const validate = (validations: RunnableValidationChains<ValidationChain>)
       const { msg } = errorObject[key] // lấy ra msg trong mỗi thuộc tính
       // nếu có nội dung lỗi nào mà giống nội dung ErrorWithStatus hoặc là có mã khác 422
       if (msg instanceof ErrorWithStatus && msg.status !== HTTP_STATUS.UNPROCESSABLE_ENTITY) {
-        next(msg) // đưa cái lỗi cho thak tổng
+        return next(msg) // đưa cái lỗi cho thak tổng
       }
       // những lỗi là 422 sẽ đc nhét vào entityError
       entityError.errors[key] = errorObject[key].msg

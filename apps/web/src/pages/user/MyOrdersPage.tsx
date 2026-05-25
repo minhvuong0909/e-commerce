@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { getMyOrdersApi } from '../../services/orders.services'
-import type { OrderApiResponse, OrderUI, Status } from '../../models/OrderRequests'
+import { ArrowRight, PackageOpen, ReceiptText } from 'lucide-react'
+import EmptyState from '../../components/ui/EmptyState'
+import StatusBadge from '../../components/ui/StatusBadge'
 import { TABS, VALID_STATUS } from '../../constants/order'
+import type { OrderApiResponse, OrderUI, Status } from '../../models/OrderRequests'
+import { getMyOrdersApi } from '../../services/orders.services'
+import money from '../../utils/money'
+import cn from '../../utils/cn'
 
 export default function MyOrdersPage() {
   const location = useLocation()
@@ -10,12 +15,6 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState<OrderUI[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-
-  const money = (n: number) =>
-    n.toLocaleString('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    })
 
   const activeStatus = useMemo<Status>(() => {
     const statusFromQuery = new URLSearchParams(location.search).get('status')
@@ -45,21 +44,6 @@ export default function MyOrdersPage() {
     })
 
   const createOrderCode = (id: string) => `#${id.slice(-6).toUpperCase()}`
-
-  const badgeClass = (status: OrderUI['status']) => {
-    switch (status) {
-      case 'processing':
-        return 'border-orange-400/20 bg-orange-500/10 text-orange-200'
-      case 'shipping':
-        return 'border-sky-400/20 bg-sky-500/10 text-sky-200'
-      case 'done':
-        return 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
-      case 'cancel':
-        return 'border-red-400/20 bg-red-500/10 text-red-200'
-      default:
-        return 'border-white/10 bg-white/10 text-white/70'
-    }
-  }
 
   useEffect(() => {
     let cancelled = false
@@ -112,65 +96,17 @@ export default function MyOrdersPage() {
     return activeStatus === 'all' ? orders : orders.filter((o) => o.status === activeStatus)
   }, [orders, activeStatus])
 
-  const loadingUI = (
-    <div className='space-y-3'>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className='rounded-3xl border border-white/10 bg-black/25 p-4 backdrop-blur'>
-          <div className='flex items-start justify-between gap-4'>
-            <div className='min-w-0 flex-1'>
-              <div className='flex flex-wrap items-center gap-2'>
-                <div className='h-4 w-32 animate-pulse rounded bg-white/10' />
-                <div className='h-6 w-24 animate-pulse rounded-full bg-white/10' />
-              </div>
-
-              <div className='mt-2 space-y-2'>
-                <div className='h-4 w-40 animate-pulse rounded bg-white/10' />
-                <div className='h-3 w-44 animate-pulse rounded bg-white/10' />
-              </div>
-            </div>
-
-            <div className='w-32 shrink-0 text-right'>
-              <div className='ml-auto h-3 w-20 animate-pulse rounded bg-white/10' />
-              <div className='mt-2 ml-auto h-6 w-28 animate-pulse rounded bg-white/10' />
-              <div className='mt-3 ml-auto h-3 w-16 animate-pulse rounded bg-white/10' />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-
-  const emptyUI = (
-    <div className='rounded-3xl border border-white/10 bg-black/25 px-6 py-12 text-center backdrop-blur'>
-      <div className='text-lg font-extrabold text-white'>Chưa có đơn hàng</div>
-      <p className='mt-2 text-sm text-white/60'>Bạn chưa có đơn hàng nào trong mục này.</p>
-
-      <div className='mt-6'>
-        <Link
-          to='/user/home'
-          className='inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/20 transition hover:opacity-90'
-        >
-          Tiếp tục mua sắm
-        </Link>
-      </div>
-    </div>
-  )
-
-  const errorUI = (
-    <div className='rounded-3xl border border-red-500/20 bg-red-500/10 px-6 py-10 text-center backdrop-blur'>
-      <div className='text-lg font-extrabold text-red-200'>Có lỗi xảy ra</div>
-      <p className='mt-2 text-sm text-red-100/80'>{error}</p>
-    </div>
-  )
-
   return (
-    <div className='space-y-5'>
-      <div className='flex flex-col gap-1'>
-        <h1 className='text-2xl font-black tracking-tight text-white'>Đơn hàng của tôi</h1>
-        <p className='text-sm text-white/60'>Theo dõi trạng thái và xem chi tiết các đơn hàng bạn đã đặt.</p>
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
+      <div className='mb-6 flex flex-col gap-2'>
+        <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Order center</p>
+        <h1 className='text-3xl font-black tracking-tight text-ink-950'>Đơn hàng của tôi</h1>
+        <p className='max-w-2xl text-sm leading-6 text-slate-500'>
+          Theo dõi trạng thái, phương thức thanh toán và tổng tiền cho các đơn hàng đã đặt.
+        </p>
       </div>
 
-      <div className='flex flex-wrap gap-2'>
+      <div className='mb-6 flex gap-2 overflow-x-auto pb-1'>
         {TABS.map((tab) => {
           const active = activeStatus === tab.value
 
@@ -178,12 +114,12 @@ export default function MyOrdersPage() {
             <Link
               key={tab.value}
               to={`/user/orders${tab.value === 'all' ? '' : `?status=${tab.value}`}`}
-              className={[
-                'rounded-2xl border px-4 py-2 text-sm font-semibold transition',
+              className={cn(
+                'inline-flex min-h-10 shrink-0 items-center rounded-2xl border px-4 text-sm font-bold transition',
                 active
-                  ? 'border-white/15 bg-white/12 text-white shadow-sm'
-                  : 'border-white/8 bg-white/5 text-white/60 hover:border-white/12 hover:bg-white/10 hover:text-white'
-              ].join(' ')}
+                  ? 'border-ink-950 bg-ink-950 text-white shadow-card'
+                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:text-ink-950'
+              )}
             >
               {tab.label}
             </Link>
@@ -193,45 +129,58 @@ export default function MyOrdersPage() {
 
       <div className='min-h-[420px]'>
         {loading ? (
-          loadingUI
+          <div className='space-y-3'>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className='h-32 animate-pulse rounded-3xl bg-white shadow-sm' />
+            ))}
+          </div>
         ) : error ? (
-          errorUI
+          <div className='rounded-3xl border border-rose-200 bg-rose-50 px-6 py-10 text-center text-rose-900 shadow-sm'>
+            <div className='text-lg font-extrabold'>Có lỗi xảy ra</div>
+            <p className='mt-2 text-sm opacity-80'>{error}</p>
+          </div>
         ) : filtered.length === 0 ? (
-          emptyUI
+          <EmptyState
+            icon={<PackageOpen size={26} />}
+            title='Chưa có đơn hàng'
+            desc='Bạn chưa có đơn hàng nào trong mục này.'
+            action={
+              <Link to='/user/home' className='inline-flex h-12 items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-black text-white'>
+                Tiếp tục mua sắm
+              </Link>
+            }
+          />
         ) : (
           <div className='space-y-4'>
-            {filtered.map((o) => (
+            {filtered.map((order) => (
               <Link
-                key={o.id}
-                to={`/user/orders/${o.id}`}
-                className='group block border-b border-white/6 p-4 transition hover:bg-white/5 last:border-b-0'
+                key={order.id}
+                to={`/user/orders/${order.id}`}
+                className='surface-card interactive-lift group block rounded-3xl p-5'
               >
-                <div className='flex items-start justify-between gap-4'>
-                  <div className='min-w-0 flex-1'>
+                <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+                  <div className='min-w-0'>
                     <div className='flex flex-wrap items-center gap-2'>
-                      <span className='text-sm font-extrabold text-white'>Mã đơn {o.code}</span>
-                      <span
-                        className={['rounded-full border px-3 py-1 text-xs font-extrabold', badgeClass(o.status)].join(
-                          ' '
-                        )}
-                      >
-                        {o.statusLabel}
+                      <span className='inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-ink-950'>
+                        <ReceiptText size={18} />
                       </span>
+                      <span className='text-sm font-black text-ink-950'>Mã đơn {order.code}</span>
+                      <StatusBadge tone={order.status}>{order.statusLabel}</StatusBadge>
                     </div>
 
-                    <div className='mt-2 space-y-1 text-sm text-white/65'>
-                      <div>Đặt ngày {o.date}</div>
-                      <div className='text-xs text-white/45'>
-                        Phương thức thanh toán: {o.paymentMethod.replaceAll('_', ' ')}
-                      </div>
+                    <div className='mt-3 space-y-1 text-sm text-slate-500'>
+                      <div>Đặt ngày {order.date}</div>
+                      <div className='text-xs font-semibold'>Phương thức thanh toán: {order.paymentMethod.replaceAll('_', ' ')}</div>
                     </div>
                   </div>
 
-                  <div className='shrink-0 text-right'>
-                    <div className='text-xs text-white/50'>Tổng thanh toán</div>
-                    <div className='mt-1 text-lg font-black text-orange-300'>{money(o.total)}</div>
-                    <div className='mt-2 text-xs font-semibold text-white/45 transition group-hover:text-white/70'>
-                      Xem chi tiết →
+                  <div className='flex items-end justify-between gap-4 md:block md:text-right'>
+                    <div>
+                      <div className='text-xs font-bold uppercase tracking-[0.12em] text-slate-400'>Tổng thanh toán</div>
+                      <div className='mt-1 text-xl font-black text-ink-950'>{money(order.total)}</div>
+                    </div>
+                    <div className='inline-flex items-center gap-1 text-xs font-black text-brand-600 transition group-hover:text-brand-900'>
+                      Chi tiết <ArrowRight size={14} />
                     </div>
                   </div>
                 </div>

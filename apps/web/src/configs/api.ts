@@ -56,9 +56,11 @@ api.interceptors.response.use(
         const res = await refreshTokenApi(refresh_token)
 
         const accessToken = res.data.result.tokens.access_token
+        const newRefreshToken = res.data.result.tokens.refresh_token
 
-        // lưu access token mới
+        // lưu access token và refresh token mới
         localStorage.setItem('access_token', accessToken)
+        localStorage.setItem('refresh_token', newRefreshToken)
 
         processQueue(null, accessToken)
 

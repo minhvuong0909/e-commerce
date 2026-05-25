@@ -1,28 +1,23 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import Button from '../../components/ui/Button'
 import Alert from '../../components/ui/Alert'
 
 export default function VerifyResultPage() {
   const [sp] = useSearchParams()
-  const status = sp.get('status') // success | failed
+  const status = sp.get('status')
 
   const isSuccess = status === 'success'
   const isFailed = status === 'failed' || !status
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-    >
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
-        <h2 className='text-2xl font-extrabold text-white'>Xác minh email</h2>
-        <p className='mt-1 text-sm text-white/65'>Kết quả xác minh email của bạn.</p>
+        <h2 className='text-2xl font-black tracking-tight text-ink-950'>Xác minh email</h2>
+        <p className='mt-2 text-sm leading-6 text-slate-500'>Kết quả xác minh email của bạn.</p>
       </div>
 
       {isSuccess ? (
-        <Alert variant='success' title='Xác minh thành công 🎉' desc='Bạn đã có thể Add to cart và Checkout.' />
+        <Alert variant='success' title='Xác minh thành công' desc='Bạn đã có thể thêm sản phẩm vào giỏ và thanh toán.' />
       ) : null}
 
       {isFailed ? (
@@ -35,23 +30,26 @@ export default function VerifyResultPage() {
 
       <div className='mt-5 grid gap-3'>
         {isSuccess ? (
-          <Link to='/'>
-            <Button full variant='gradient'>
-              Về trang chủ
-            </Button>
+          <Link
+            to='/user/home'
+            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+          >
+            Về trang chủ
           </Link>
         ) : (
-          <Link to='/auth/resend-verify'>
-            <Button full variant='gradient'>
-              Gửi lại email xác minh
-            </Button>
+          <Link
+            to='/auth/resend-verify'
+            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+          >
+            Gửi lại email xác minh
           </Link>
         )}
 
-        <Link to='/auth/login'>
-          <Button full variant='secondary'>
-            Đăng nhập
-          </Button>
+        <Link
+          to='/auth/login'
+          className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+        >
+          Đăng nhập
         </Link>
       </div>
     </motion.div>

@@ -14,7 +14,7 @@ import Delivery from '~/models/schemas/Deliverys.schema'
 
 dotenv.config()
 
-const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard.0zguu.mongodb.net/?retryWrites=true&w=majority&appName=ShoppingCard`
+const uri = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard-shard-00-00.0zguu.mongodb.net:27017,shoppingcard-shard-00-01.0zguu.mongodb.net:27017,shoppingcard-shard-00-02.0zguu.mongodb.net:27017/?ssl=true&replicaSet=atlas-fcaat9-shard-0&authSource=admin&appName=ShoppingCard`
 
 class DatabaseService {
   private client: MongoClient

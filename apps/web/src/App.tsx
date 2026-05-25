@@ -29,6 +29,7 @@ import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
 import ProfilePage from './pages/user/GetProfile'
 import AuthCallbackPage from './pages/auth/AuthCallBackPage'
+
 export default function App() {
   return (
     <BrowserRouter>

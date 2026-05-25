@@ -57,5 +57,11 @@ export default function AuthCallbackPage() {
     handleCallback()
   }, [navigate])
 
-  return <div className='flex min-h-screen items-center justify-center text-white'>Đang xử lý đăng nhập...</div>
+  return (
+    <div className='flex min-h-screen items-center justify-center bg-[var(--page-bg)] text-ink-950'>
+      <div className='rounded-3xl border border-slate-200 bg-white px-6 py-5 text-sm font-bold shadow-card'>
+        Đang xử lý đăng nhập...
+      </div>
+    </div>
+  )
 }
