@@ -16,7 +16,7 @@ const redirectToOrderResult = (res: Response, params: Record<string, string>) =>
 }
 
 export const createMoMoPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const momoResponse = await paymentService.createMoMoPaymentUrl(req.params.order_id)
+  const momoResponse = await paymentService.createMoMoPaymentUrl((req.params.order_id as string))
 
   res.status(HTTP_STATUS.OK).json({
     message: PAYMENT_MESSAGES.CREATE_MOMO_PAYMENT_SUCCESS,
@@ -35,7 +35,7 @@ export const momoWebhookController = async (req: Request, res: Response) => {
 }
 
 export const createPayPalPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const approveUrl = await paypalService.createPayPalOrder(req.params.order_id)
+  const approveUrl = await paypalService.createPayPalOrder((req.params.order_id as string))
 
   res.status(HTTP_STATUS.OK).json({
     message: 'Tao don hang PayPal thanh cong!',
@@ -69,7 +69,7 @@ export const paypalSuccessController = async (req: Request, res: Response) => {
 }
 
 export const mockMoMoPaymentSuccessController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const result = await paymentService.mockPaymentSuccess(req.params.order_id)
+  const result = await paymentService.mockPaymentSuccess((req.params.order_id as string))
 
   res.status(HTTP_STATUS.OK).json({
     message: result.message,

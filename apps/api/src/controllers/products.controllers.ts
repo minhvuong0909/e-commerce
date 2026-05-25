@@ -44,7 +44,7 @@ export const updateProductController = async (
     })
   }
   // update
-  const result = await productsService.updateProduct({ product_id: req.params.id, payload: req.body })
+  const result = await productsService.updateProduct({ product_id: (req.params.id as string), payload: req.body })
   res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.UPDATE_PRODUCT_SUCCESS,
     result
@@ -56,7 +56,7 @@ export const getProductByIdController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const id = req.params.id as string
+  const id = (req.params.id as string) as string
   const product = await productsService.getProductById(id)
   return res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.GET_PRODUCT_SUCCESS,
@@ -78,7 +78,7 @@ export const deleteProductController = async (
     })
   }
   // delete
-  await productsService.deleteProduct(req.params.id)
+  await productsService.deleteProduct((req.params.id as string))
   res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.DELETE_PRODUCT_SUCCESS
   })

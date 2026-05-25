@@ -46,7 +46,7 @@ export const updateCartItemController = async (
   }
   const cartItem = await cartsService.updateCartItem({
     user_id: user_id,
-    cart_item_id: req.params.id,
+    cart_item_id: (req.params.id as string),
     quantity: req.body.quantity
   })
   res.status(HTTP_STATUS.OK).json({
@@ -71,7 +71,7 @@ export const deleteCartItemController = async (
   }
   await cartsService.deleteCartItem({
     user_id: user_id,
-    cart_item_id: req.params.id
+    cart_item_id: (req.params.id as string)
   })
   res.status(HTTP_STATUS.OK).json({
     message: CART_MESSAGES.DELETE_CART_ITEM_SUCCESS
