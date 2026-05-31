@@ -328,7 +328,8 @@ class UserServices {
     // sau khi insert vào db thì sign token cho nó
     const tokens = await this.signAccessAndRefreshTokens(user_id.toString())
     // check có đúng email verify token gửi lên không
-    const uri = `http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}`
+    const apiBaseUrl = process.env.HOST || 'http://localhost:3000'
+    const uri = `${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}`
     try {
       await this.sendEmail(
         payload.email,
@@ -354,7 +355,7 @@ class UserServices {
       console.error('Send email error:', error)
     }
     console.log(`Gửi mail link xác thực sau:
-        http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}
+        ${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}
       `)
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
 
@@ -381,7 +382,8 @@ class UserServices {
     const email_verify_token = await this.signEmailVerifyToken(user_id)
     // tìm user đúng id
     const user = await this.findUserById(user_id)
-    const uri = `http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}`
+    const apiBaseUrl = process.env.HOST || 'http://localhost:3000'
+    const uri = `${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}`
     await this.sendEmail(
       user.email,
       'Verify your account',
@@ -392,7 +394,7 @@ class UserServices {
         `
     )
     console.log(`Gửi mail link xác thực sau: 
-      http://localhost:3000/users/verify-email/?email_verify_token=${email_verify_token}
+      ${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}
     `)
 
     // lưu vào db
@@ -445,7 +447,8 @@ class UserServices {
           }
         ]
       )
-      const uri = `http://localhost:5173/auth/reset-password/?forgot_password_token=${forgot_password_token}`
+      const clientBaseUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+      const uri = `${clientBaseUrl}/auth/reset-password/?forgot_password_token=${forgot_password_token}`
 
       await this.sendEmail(
         user.email,

@@ -23,14 +23,9 @@ const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
 //
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://vuongdev.top',
-  'http://vuongdev.top',
-  'https://www.vuongdev.top',
-  'http://www.vuongdev.top'
-]
+const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000']
+const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map((s: string) => s.trim()) : []
+const allowedOrigins = [...defaultOrigins, ...envOrigins]
 
 app.use(
   cors({

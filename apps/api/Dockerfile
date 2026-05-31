@@ -19,9 +19,12 @@ COPY apps/api ./apps/api
 WORKDIR /app/apps/api
 RUN pnpm run build
 
-# Stage 2: Runner stage
+# Stage 2: Runner stage (production)
 FROM node:22-alpine AS runner
 WORKDIR /app
+
+# Thiết lập NODE_ENV=production để tối ưu hiệu suất
+ENV NODE_ENV=production
 
 # Copy built code từ stage 1
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
@@ -30,6 +33,9 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
 
 WORKDIR /app/apps/api
+
+# Tạo thư mục uploads và tmp cho media
+RUN mkdir -p uploads tmp
 
 # Expose port
 EXPOSE 3000

@@ -20,8 +20,8 @@ class MediaServices {
         // gọi sharp để nén
         const infor = await sharp(file.filepath).rotate().jpeg().toFile(newPath)
 
-        // chạy mỗi 5 phút
-        setInterval(cleanupTempFolder, 5 * 60 * 1000) // này sẽ dọn trong folder tmp
+        // Dọn dẹp file tạm sau khi xử lý xong (không dùng setInterval trong vòng lặp để tránh memory leak)
+        cleanupTempFolder()
         // console.log('File path: ' + file.filepath)
 
         // console.log('image comprise: ' + infor)

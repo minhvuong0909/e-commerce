@@ -293,7 +293,7 @@ class PaymentService {
             </table>
 
             <div style="margin-top: 24px; text-align: center;">
-              <a href="http://localhost:5173/user/orders/${order_id}"
+              <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/user/orders/${order_id}"
                 style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #22c55e, #16a34a); color: #ffffff; text-decoration: none; border-radius: 10px; font-weight: 700; font-size: 14px;">
                 Xem chi tiết đơn hàng
               </a>

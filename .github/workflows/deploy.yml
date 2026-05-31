@@ -5,9 +5,15 @@ on:
     branches:
       - main
 
+# Tránh 2 deploy chạy đồng thời — deploy mới sẽ cancel deploy cũ
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout Code
@@ -20,25 +26,50 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          command_timeout: 10m
           script: |
-            # Di chuyển tới thư mục dự án trên VPS (tự động nhận diện nếu là root)
+            set -e
+
+            # Di chuyển tới thư mục dự án trên VPS
             if [ "${{ secrets.VPS_USER }}" = "root" ]; then
               cd /root/e-commerce
             else
               cd /home/${{ secrets.VPS_USER }}/e-commerce
             fi
-            
+
             # Cập nhật mã nguồn mới nhất
             git pull origin main
-            
-            # Đồng bộ các biến môi trường cho Frontend khi build
-            echo "VITE_BASE_URL_API=${{ secrets.VITE_BASE_URL_API }}" > apps/web/.env
-            echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> apps/web/.env
-            echo "VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}" >> apps/web/.env
-            
-            # Build và khởi chạy lại các service qua Docker Compose
-            docker compose down
-            docker compose up -d --build
-            
-            # Dọn dẹp các docker image cũ/không dùng để tránh đầy ổ đĩa
-            docker image prune -f
+
+            # Đồng bộ các biến môi trường cho Frontend build
+            cat > .env << 'ENVEOF'
+            VITE_BASE_URL_API=${{ secrets.VITE_BASE_URL_API }}
+            VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
+            ENVEOF
+
+            # Zero-downtime deploy: build mới rồi thay thế container (KHÔNG dùng docker compose down)
+            docker compose up -d --build --remove-orphans
+
+            # Đợi API container khởi động và health check
+            echo "Đợi API container healthy..."
+            RETRIES=0
+            MAX_RETRIES=10
+            until [ $RETRIES -ge $MAX_RETRIES ]; do
+              if wget -q --spider http://localhost:3000/products 2>/dev/null; then
+                echo "✅ API health check passed!"
+                break
+              fi
+              RETRIES=$((RETRIES + 1))
+              echo "Đang chờ API... ($RETRIES/$MAX_RETRIES)"
+              sleep 5
+            done
+
+            if [ $RETRIES -ge $MAX_RETRIES ]; then
+              echo "❌ API health check failed! Kiểm tra logs:"
+              docker compose logs --tail=30 api
+              exit 1
+            fi
+
+            # Dọn dẹp toàn bộ tài nguyên Docker không dùng (images, volumes, networks)
+            docker system prune -f --volumes
+            echo "🚀 Deploy thành công!"
