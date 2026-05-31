@@ -67,7 +67,7 @@ export default function MyOrdersPage() {
             subtotal: order.total_price,
             shippingFee: order.shipping_fee,
             total: order.total_price + order.shipping_fee,
-            items: 0,
+            items: order.items || [],
             date: formatDate(order.created_at),
             paymentMethod: order.payment_method
           }
