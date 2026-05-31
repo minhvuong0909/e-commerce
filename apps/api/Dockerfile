@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Cài đặt pnpm
@@ -20,7 +20,7 @@ WORKDIR /app/apps/api
 RUN pnpm run build
 
 # Stage 2: Runner stage
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 # Copy built code từ stage 1

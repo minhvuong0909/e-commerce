@@ -22,13 +22,32 @@ const cors = require('cors')
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
 //
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://vuongdev.top',
+  'http://vuongdev.top',
+  'https://www.vuongdev.top',
+  'http://www.vuongdev.top'
+]
+
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: (origin: any, callback: any) => {
+      // Cho phép request không có origin (ví dụ: curl, postman, mobile app)
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.indexOf(origin) === -1) {
+        const msg = 'CORS policy does not allow access from the specified Origin.'
+        return callback(new Error(msg), false)
+      }
+      return callback(null, true)
+    },
     credentials: true,
     exposedHeaders: ['Content-Length', 'Content-Range', 'Accept-Ranges']
   })
 )
+
 
 // kết nối db
 databaseService.connect()
