@@ -4,9 +4,14 @@ import { OrderStatus, PaymentMethod, PaymentStatus } from '~/constants/enums'
 export interface ShippingAddress {
   recipient_name: string
   phone: string
+  note?: string
   address_line: string
   city?: string
   district?: string
+  lat?: number
+  lng?: number
+  distance_km?: number
+  address_source?: 'manual' | 'map'
 }
 
 interface OrderType {

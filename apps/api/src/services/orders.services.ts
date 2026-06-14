@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { CartStatus, DeliveryMethodType, OrderStatus, PaymentMethod, PaymentStatus, USER_ROLE } from '~/constants/enums'
+import { CartStatus, OrderStatus, PaymentStatus, USER_ROLE } from '~/constants/enums'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
@@ -9,6 +9,7 @@ import Order from '~/models/schemas/Orders.schema'
 import { CreateOrderReqBody } from '~/models/requests/Orders.requests'
 import { Request } from 'express'
 import { canTransitionOrderStatus, isValidOrderStatus } from '~/utils/orderStatus'
+import shippingService from './shipping.services'
 class OrdersService {
   async createOrderItem({
     user_id,
@@ -52,11 +53,16 @@ class OrdersService {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
-    // tính tổng tiền
+    // tính tổng tiền — load tất cả product một lần để tránh N+1
+    const products = await databaseService.products
+      .find({ _id: { $in: cartItems.map((item) => item.product_id) } })
+      .toArray()
+    const productMap = new Map(products.map((product) => [product._id.toString(), product]))
+
     let total_price = 0
     const orderItems: OrderItems[] = []
     for (const item of cartItems) {
-      const product = await databaseService.products.findOne({ _id: item.product_id })
+      const product = productMap.get(item.product_id.toString())
       if (!product) {
         throw new ErrorWithStatus({
           message: PRODUCT_MESSAGES.PRODUCT_NOT_FOUND,
@@ -71,7 +77,6 @@ class OrdersService {
         })
       }
       total_price += item.quantity * product.price
-      // push vào
       orderItems.push(
         new OrderItems({
           order_id: new ObjectId(),
@@ -81,12 +86,30 @@ class OrdersService {
         })
       )
     }
-    // tính shipping fee và total price
-    const shipping_fee = delivery_method.type === DeliveryMethodType.STANDARD ? 30000 : 50000
+    // tính shipping fee theo khoảng cách (OSRM) + loại giao hàng
+    const lat = Number(payload.lat)
+    const lng = Number(payload.lng)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.SHIPPING_COORDINATES_REQUIRED,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const quote = await shippingService.getShippingQuote({
+      address_line: payload.address_line,
+      city: payload.city,
+      district: payload.district,
+      lat,
+      lng,
+      delivery_method_id: payload.delivery_method_id
+    })
+    const shipping_fee = quote.shipping_fee
 
     const recipient_name = payload.recipient_name?.trim()
     const phone = payload.phone?.trim()
     const address_line = payload.address_line?.trim()
+    const note = payload.note?.trim()
     if (!recipient_name || !phone || !address_line) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.SHIPPING_ADDRESS_REQUIRED,
@@ -107,42 +130,48 @@ class OrdersService {
         shipping_address: {
           recipient_name,
           phone,
+          note: note || undefined,
           address_line,
           city: payload.city?.trim(),
-          district: payload.district?.trim()
+          district: payload.district?.trim(),
+          lat: quote.lat,
+          lng: quote.lng,
+          distance_km: quote.distance_km,
+          address_source: payload.address_source
         }
       })
     )
-    // đặt hàng thành công thì tạo order items và trừ quantity trong products
-    for (const orderItem of orderItems) {
+    // đặt hàng thành công: tạo order items + trừ kho theo batch (tránh N+1)
+    orderItems.forEach((orderItem) => {
       orderItem.order_id = order.insertedId
-      await databaseService.order_items.insertOne(orderItem)
-      // trừ quantity
-      await databaseService.products.findOneAndUpdate(
-        { _id: orderItem.product_id },
-        {
-          $inc: {
-            quantity: -orderItem.quantity,
-            soldNumber: orderItem.quantity
-          }
+    })
+    await databaseService.order_items.insertMany(orderItems)
+    await databaseService.products.bulkWrite(
+      orderItems.map((orderItem) => ({
+        updateOne: {
+          filter: { _id: orderItem.product_id },
+          update: { $inc: { quantity: -orderItem.quantity, soldNumber: orderItem.quantity } }
         }
-      )
-    }
+      }))
+    )
     // xóa cart items đã đặt hàng
     await databaseService.cart_items.deleteMany({
-      _id: { $in: cartItems.map((item: any) => item._id!) }
-    })    
+      _id: { $in: cartItems.map((item) => item._id!) }
+    })
     return order
   }
   // hoàn kho khi đơn bị hủy: cộng lại quantity và trừ soldNumber
   private async restockOrderItems(order_id: ObjectId) {
     const items = await databaseService.order_items.find({ order_id }).toArray()
-    for (const item of items) {
-      await databaseService.products.updateOne(
-        { _id: item.product_id },
-        { $inc: { quantity: item.quantity, soldNumber: -item.quantity } }
-      )
-    }
+    if (items.length === 0) return
+    await databaseService.products.bulkWrite(
+      items.map((item) => ({
+        updateOne: {
+          filter: { _id: item.product_id },
+          update: { $inc: { quantity: item.quantity, soldNumber: -item.quantity } }
+        }
+      }))
+    )
   }
 
   // cập nhật trạng thái đơn hàng theo trạng thái đích, có validate luồng chuyển trạng thái

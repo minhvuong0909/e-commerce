@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient, ObjectId } from 'mongodb'
+import { Collection, Db, MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
 import User from '~/models/schemas/Users.schema'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
@@ -15,7 +15,9 @@ import Payment from '~/models/schemas/Payments.schema'
 
 dotenv.config()
 
-const uri = `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard-shard-00-00.0zguu.mongodb.net:27017,shoppingcard-shard-00-01.0zguu.mongodb.net:27017,shoppingcard-shard-00-02.0zguu.mongodb.net:27017/?ssl=true&replicaSet=atlas-fcaat9-shard-0&authSource=admin&appName=ShoppingCard`
+const uri =
+  process.env.DATABASE_URL ||
+  `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard-shard-00-00.0zguu.mongodb.net:27017,shoppingcard-shard-00-01.0zguu.mongodb.net:27017,shoppingcard-shard-00-02.0zguu.mongodb.net:27017/?ssl=true&replicaSet=atlas-fcaat9-shard-0&authSource=admin&appName=ShoppingCard`
 
 class DatabaseService {
   private client: MongoClient

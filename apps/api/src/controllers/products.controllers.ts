@@ -36,7 +36,8 @@ export const updateProductController = async (
   next: NextFunction
 ) => {
   const { user_id } = req.decode_authorization as TokenPayload
-  const user = await usersService.findUserById(user_id)
+  // chỉ admin/staff được cập nhật sản phẩm (đồng bộ với create/delete)
+  const user = await usersService.checkRole(user_id)
   if (!user) {
     throw new ErrorWithStatus({
       message: USERS_MESSAGES.PERMISSION_DENIED,

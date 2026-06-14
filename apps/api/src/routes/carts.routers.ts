@@ -7,7 +7,7 @@ import {
   getCartItemsController,
   updateCartItemController
 } from '~/controllers/carts.controllers'
-import { accessTokenValidator, checkPermissions } from '~/middlewares/users.middlewares'
+import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 const cartsRouter = Router()
@@ -23,7 +23,13 @@ const cartsRouter = Router()
         }   
 */
 
-cartsRouter.post('/create', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(createCartController))
+cartsRouter.post(
+  '/create',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
+  wrapAsync(createCartController)
+)
 
 /* 
     Description: update cart item
@@ -36,6 +42,7 @@ cartsRouter.put(
   '/items/update/:id',
   accessTokenValidator,
   checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
   wrapAsync(updateCartItemController)
 )
 
@@ -49,6 +56,7 @@ cartsRouter.delete(
   '/items/delete/:id',
   accessTokenValidator,
   checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
   wrapAsync(deleteCartItemController)
 )
 
@@ -57,12 +65,24 @@ cartsRouter.delete(
     method: DELETE
     path: /carts/clear
 */
-cartsRouter.delete('/clear', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(clearCartController))
+cartsRouter.delete(
+  '/clear',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
+  wrapAsync(clearCartController)
+)
 
 /* 
 
     Description: get cart items by user id
     method: GET
 */
-cartsRouter.get('/me', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(getCartItemsController))
+cartsRouter.get(
+  '/me',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
+  wrapAsync(getCartItemsController)
+)
 export default cartsRouter

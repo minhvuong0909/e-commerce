@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search } from 'lucide-react'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import { getCategoriesApi } from '../../../services/categories.services'
@@ -30,28 +31,20 @@ function extractList(response: unknown): Category[] {
 }
 
 export default function AdminCategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      const res = await getCategoriesApi()
-      setCategories(extractList(res))
-    } catch (err) {
-      console.error(err)
-      setError('Không tải được danh sách danh mục')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    data: categories = [],
+    isLoading: loading,
+    isError,
+    refetch,
+    isFetching
+  } = useQuery<Category[]>({
+    queryKey: ['admin-categories'],
+    queryFn: async () => extractList(await getCategoriesApi())
+  })
 
-  useEffect(() => {
-    fetchCategories()
-  }, [])
+  const error = isError ? 'Không tải được danh sách danh mục' : ''
 
   const filteredCategories = useMemo(() => {
     const kw = search.trim().toLowerCase()
@@ -85,11 +78,11 @@ export default function AdminCategoriesPage() {
           </div>
 
           <button
-            onClick={fetchCategories}
-            disabled={loading}
+            onClick={() => refetch()}
+            disabled={isFetching}
             className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
           >
-            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
             Reload
           </button>
         </div>

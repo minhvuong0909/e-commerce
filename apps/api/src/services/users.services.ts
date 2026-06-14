@@ -346,9 +346,6 @@ class UserServices {
     } catch (error) {
       console.error('Send email error:', error)
     }
-    console.log(`Gửi mail link xác thực sau:
-        ${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}
-      `)
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
 
     // lưu refresh_token
@@ -385,9 +382,6 @@ class UserServices {
           <a href="${uri}">${uri}</a>
         `
     )
-    console.log(`Gửi mail link xác thực sau: 
-      ${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}
-    `)
 
     // lưu vào db
     await databaseService.users.updateOne(

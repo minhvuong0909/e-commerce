@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, Minus, PackageOpen, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react'
@@ -28,20 +28,15 @@ export default function CartPage() {
   const queryClient = useQueryClient()
   const { data: cartItems = [], isLoading, isFetching } = useCart()
 
-  const [selectedItems, setSelectedItems] = useState<string[]>([])
+  // theo dõi các item bị bỏ chọn — mặc định mọi item trong giỏ đều được chọn
+  const [deselectedIds, setDeselectedIds] = useState<Set<string>>(new Set())
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
 
-  useEffect(() => {
-    if (cartItems.length > 0) {
-      setSelectedItems((prev) => {
-        const valid = prev.filter((id) => cartItems.some((item) => item._id === id))
-        return valid.length > 0 ? valid : cartItems.map((item) => item._id)
-      })
-    } else {
-      setSelectedItems([])
-    }
-  }, [cartItems])
+  const selectedItems = useMemo(
+    () => cartItems.filter((item) => !deselectedIds.has(item._id)).map((item) => item._id),
+    [cartItems, deselectedIds]
+  )
 
   const invalidateCart = () => queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
 
@@ -50,7 +45,6 @@ export default function CartPage() {
       setMutatingId(id)
       await removeCartItemApi(id)
       queryClient.setQueryData<CartItem[]>(CART_QUERY_KEY, (prev = []) => prev.filter((item) => item._id !== id))
-      setSelectedItems((prev) => prev.filter((x) => x !== id))
       toast.success('Đã xóa sản phẩm khỏi giỏ hàng')
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Xóa sản phẩm thất bại'))
@@ -85,7 +79,6 @@ export default function CartPage() {
       setClearing(true)
       await clearCartApi()
       queryClient.setQueryData<CartItem[]>(CART_QUERY_KEY, [])
-      setSelectedItems([])
       toast.success('Đã xóa toàn bộ giỏ hàng')
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Xóa giỏ hàng thất bại'))
@@ -96,15 +89,17 @@ export default function CartPage() {
   }
 
   const toggleItem = (id: string) => {
-    setSelectedItems((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    setDeselectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const toggleAll = () => {
-    if (selectedItems.length === cartItems.length) {
-      setSelectedItems([])
-    } else {
-      setSelectedItems(cartItems.map((i) => i._id))
-    }
+    const allSelected = cartItems.length > 0 && selectedItems.length === cartItems.length
+    setDeselectedIds(allSelected ? new Set(cartItems.map((i) => i._id)) : new Set())
   }
 
   const selectedCartItems = useMemo(

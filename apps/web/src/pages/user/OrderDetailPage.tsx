@@ -16,11 +16,19 @@ import {
 } from '../../services/payment.services'
 import formatDate from '../../utils/date'
 import money from '../../utils/money'
+import { getApiErrorMessage } from '../../utils/apiError'
 
 type MomoPayment = {
   payUrl?: string
   qrCodeUrl?: string
   deeplink?: string
+}
+
+type OrderLineItem = {
+  _id?: string
+  price: number
+  quantity: number
+  product?: { name?: string; thumbnail?: string }
 }
 
 export default function OrderDetailPage() {
@@ -55,10 +63,8 @@ export default function OrderDetailPage() {
       } else {
         toast.error('Không thể tạo mã QR thanh toán.')
       }
-    } catch (err: any) {
-      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi tạo thanh toán.'
-      toast.error(errMsg)
-      console.error(err)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Có lỗi xảy ra khi tạo thanh toán.'))
     } finally {
       setPaying(false)
     }
@@ -77,10 +83,8 @@ export default function OrderDetailPage() {
       } else {
         toast.error('Không thể tạo liên kết thanh toán PayPal.')
       }
-    } catch (err: any) {
-      const errMsg = err.response?.data?.message || 'Có lỗi xảy ra khi tạo thanh toán PayPal.'
-      toast.error(errMsg)
-      console.error(err)
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Có lỗi xảy ra khi tạo thanh toán PayPal.'))
     } finally {
       setPaying(false)
     }
@@ -183,8 +187,8 @@ export default function OrderDetailPage() {
       await cancelOrderApi(order.id)
       toast.success('Đã hủy đơn hàng.')
       navigate(ROUTE_PATHS.USER_ORDERS)
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể hủy đơn hàng. Vui lòng thử lại.'))
     } finally {
       setCancelling(false)
     }
@@ -290,7 +294,7 @@ export default function OrderDetailPage() {
             </div>
             <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700'>
               {order.shippingAddress ? (
-                <div className='space-y-1'>
+                <div className='space-y-2'>
                   <p>
                     <span className='font-bold text-ink-950'>{order.shippingAddress.recipient_name}</span>
                     {' · '}
@@ -302,6 +306,24 @@ export default function OrderDetailPage() {
                       {[order.shippingAddress.district, order.shippingAddress.city].filter(Boolean).join(', ')}
                     </p>
                   )}
+                  {order.shippingAddress.note ? (
+                    <p className='text-slate-600'>
+                      <span className='font-bold text-ink-900'>Ghi chú:</span> {order.shippingAddress.note}
+                    </p>
+                  ) : null}
+                  {order.shippingAddress.distance_km != null ? (
+                    <p className='text-slate-600'>Khoảng cách giao hàng: {order.shippingAddress.distance_km} km</p>
+                  ) : null}
+                  {order.shippingAddress.lat != null && order.shippingAddress.lng != null ? (
+                    <a
+                      href={`https://www.openstreetmap.org/?mlat=${order.shippingAddress.lat}&mlon=${order.shippingAddress.lng}#map=16/${order.shippingAddress.lat}/${order.shippingAddress.lng}`}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex text-sm font-bold text-brand-600 hover:text-brand-900'
+                    >
+                      Xem vị trí trên bản đồ
+                    </a>
+                  ) : null}
                 </div>
               ) : (
                 <p className='text-slate-500'>Đơn hàng này chưa có thông tin địa chỉ giao hàng.</p>
@@ -319,7 +341,7 @@ export default function OrderDetailPage() {
             <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500'>
               {order.items?.length > 0 ? (
                 <ul className='space-y-3'>
-                  {order.items.map((item: any) => (
+                  {(order.items as OrderLineItem[]).map((item) => (
                     <li
                       key={item._id}
                       className='flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3'

@@ -1,5 +1,4 @@
-import express, { Router } from 'express'
-import { cloneDeep } from 'lodash'
+import express from 'express'
 import {
   createProductController,
   deleteProductController,
@@ -51,7 +50,6 @@ productRouter.patch(
     'thumbnail',
     'category_id',
     'ship_category_id',
-    'medias',
     'brand_id'
   ]),
   accessTokenValidator,

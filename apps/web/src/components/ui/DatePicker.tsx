@@ -37,7 +37,9 @@ export default function DatePicker({
   const yearFrom = minYear ?? currentYear - 100
   const yearTo = maxYear ?? currentYear
 
-  onChangeRef.current = onChange
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   useEffect(() => {
     if (!inputRef.current) return

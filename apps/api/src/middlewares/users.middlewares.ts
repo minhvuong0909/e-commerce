@@ -3,8 +3,7 @@ import { ParamsDictionary } from 'express-serve-static-core'
 import { checkSchema, ParamSchema } from 'express-validator'
 import { JsonWebTokenError } from 'jsonwebtoken'
 import { capitalize } from 'lodash'
-import { EnumDataType } from 'sequelize'
-import { USER_ROLE } from '~/constants/enums'
+import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
@@ -418,15 +417,32 @@ export const changePasswordValidator = validate(
 // check role
 export const checkPermissions =
   (...allowedRoles: USER_ROLE[]) =>
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, _res: Response, next: NextFunction) => {
     const { user_id } = req.decode_authorization as TokenPayload
     const user = await usersService.findUserById(user_id)
 
     const role = user.role
     if (role === undefined || role === null || !allowedRoles.includes(role)) {
-      return res.status(HTTP_STATUS.FORBIDDEN).json({
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.FORBIDDEN,
         message: USERS_MESSAGES.PERMISSION_DENIED
       })
     }
+    req.user = user
     next()
   }
+
+// yêu cầu user đã xác thực email — gắn req.user để controller tái dùng, tránh query lại
+export const requireVerifiedEmail = async (req: Request, _res: Response, next: NextFunction) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = req.user ?? (await usersService.findUserById(user_id))
+
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  req.user = user
+  next()
+}

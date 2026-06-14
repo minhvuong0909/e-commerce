@@ -334,7 +334,7 @@ export const refreshTokenController = async (
 
 // hàm getUsers
 export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
-  const page = Number(req.query.body) || 1
+  const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 10
   const users = await databaseService.users
     .find(
@@ -348,11 +348,11 @@ export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Re
           email: 1,
           avatar: 1,
           role: 1,
-          createdAt: 1
+          created_at: 1
         }
       }
     )
-    .sort({ createdAt: -1 }) // sort desc
+    .sort({ created_at: -1 }) // sort desc
     .skip((page - 1) * limit)
     .limit(limit)
     .toArray()

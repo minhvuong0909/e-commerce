@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { ArrowLeft, ImagePlus, RotateCcw, Save, Trash2 } from 'lucide-react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch, type UseFormRegisterReturn } from 'react-hook-form'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import Button from '../../../components/ui/Button'
 import Alert from '../../../components/ui/Alert'
@@ -69,16 +69,29 @@ function normalizeOptions(response: unknown): SelectOption[] {
     .filter((item) => item.id)
 }
 
-function getUploadedImageUrl(uploadResponse: any) {
+type UploadUrl = string | { url?: string } | undefined
+type UploadData = {
+  url?: UploadUrl
+  image_url?: string
+  secure_url?: string
+  data?: { url?: UploadUrl; image_url?: string; secure_url?: string }
+}
+
+function resolveUrl(value: UploadUrl): string {
+  if (typeof value === 'string') return value
+  return value?.url || ''
+}
+
+function getUploadedImageUrl(uploadResponse: unknown): string {
+  const data = (uploadResponse as { data?: UploadData })?.data
+  if (!data) return ''
   return (
-    uploadResponse.data?.url?.url ||
-    uploadResponse.data?.url ||
-    uploadResponse.data?.data?.url?.url ||
-    uploadResponse.data?.data?.url ||
-    uploadResponse.data?.data?.image_url ||
-    uploadResponse.data?.data?.secure_url ||
-    uploadResponse.data?.image_url ||
-    uploadResponse.data?.secure_url ||
+    resolveUrl(data.url) ||
+    resolveUrl(data.data?.url) ||
+    data.data?.image_url ||
+    data.data?.secure_url ||
+    data.image_url ||
+    data.secure_url ||
     ''
   )
 }
@@ -113,17 +126,17 @@ export default function AdminProductCreatePage() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     formState: { errors, isSubmitting, isValid }
-  } = useForm<CreateProductFormInput, any, CreateProductFormValues>({
+  } = useForm<CreateProductFormInput, unknown, CreateProductFormValues>({
     resolver: zodResolver(createProductSchema),
     mode: 'onChange',
     reValidateMode: 'onChange',
     defaultValues
   })
 
-  const watchedValues = watch()
+  const watchedValues = useWatch({ control })
   const canSubmit = useMemo(() => isValid && !isSubmitting, [isValid, isSubmitting])
 
   useEffect(() => {
@@ -403,7 +416,7 @@ function FormInput({
   placeholder
 }: {
   label: string
-  register: any
+  register: UseFormRegisterReturn
   error?: string
   type?: string
   placeholder?: string

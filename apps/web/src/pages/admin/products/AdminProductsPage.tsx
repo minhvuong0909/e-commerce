@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import { STOCK_BADGE, STOCK_LABEL, STOCK_OPTIONS } from '../../../constants/product'
@@ -33,30 +34,24 @@ function SkeletonRow() {
 }
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [stockFilter, setStockFilter] = useState('all')
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      setError('')
-      const res = await getAllProductsApi(100, 1)
-      const list = res?.data?.result
-      setProducts(Array.isArray(list) ? list : [])
-    } catch (err) {
-      console.error(err)
-      setError('Không tải được danh sách sản phẩm')
-    } finally {
-      setLoading(false)
+  const {
+    data: products = [],
+    isLoading: loading,
+    isError,
+    refetch,
+    isFetching
+  } = useQuery<Product[]>({
+    queryKey: ['admin-products'],
+    queryFn: async () => {
+      const list = (await getAllProductsApi(100, 1))?.data?.result
+      return Array.isArray(list) ? list : []
     }
-  }
+  })
 
-  useEffect(() => {
-    fetchProducts()
-  }, [])
+  const error = isError ? 'Không tải được danh sách sản phẩm' : ''
 
   const filteredProducts = useMemo(() => {
     const kw = search.toLowerCase()
@@ -97,11 +92,11 @@ export default function AdminProductsPage() {
             </div>
 
             <button
-              onClick={fetchProducts}
-              disabled={loading}
+              onClick={() => refetch()}
+              disabled={isFetching}
               className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
             >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
               Reload
             </button>
           </div>

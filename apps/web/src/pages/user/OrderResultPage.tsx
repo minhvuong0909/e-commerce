@@ -1,16 +1,12 @@
-import { useEffect, useState } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, Loader2, ShoppingBag, ArrowLeft } from 'lucide-react'
+import { CheckCircle, XCircle, ShoppingBag, ArrowLeft } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
 
-type ResultStatus = 'loading' | 'success' | 'failed'
-
 export default function OrderResultPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [status, setStatus] = useState<ResultStatus>('loading')
 
   // Lấy thông tin từ URL mà cổng thanh toán redirect về
   const gatewayStatus = searchParams.get('status')
@@ -26,27 +22,12 @@ export default function OrderResultPage() {
   // query orderId
   const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-')[1] || '' : orderId
 
-  useEffect(() => {
-    // resultCode = 0 là thành công, PayPal callback gửi status=success
-    if (resultCode === '0' || gatewayStatus === 'success') {
-      setStatus('success')
-    } else {
-      setStatus('failed')
-    }
-  }, [gatewayStatus, resultCode])
+  // resultCode = 0 là thành công, PayPal callback gửi status=success
+  const status: 'success' | 'failed' = resultCode === '0' || gatewayStatus === 'success' ? 'success' : 'failed'
 
   return (
     <div className='mx-auto max-w-2xl px-4 py-12 md:px-6'>
       <div className='surface-card overflow-hidden rounded-3xl'>
-        {/* Header */}
-        {status === 'loading' && (
-          <div className='flex flex-col items-center gap-4 p-12 text-center'>
-            <Loader2 size={56} className='animate-spin text-slate-400' />
-            <h1 className='text-2xl font-black text-ink-950'>Đang xử lý...</h1>
-            <p className='text-sm text-slate-500'>Vui lòng đợi trong giây lát</p>
-          </div>
-        )}
-
         {status === 'success' && (
           <>
             <div

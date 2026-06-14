@@ -50,7 +50,7 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<any>) => {
+  async (error: AxiosError<{ message?: string }>) => {
     const originalRequest = error.config as RetryRequestConfig
     const isRefreshRequest = originalRequest.url?.includes('/users/refresh-token')
 

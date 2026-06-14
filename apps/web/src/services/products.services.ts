@@ -16,9 +16,9 @@ export interface ProductFilters {
 }
 
 export const getAllProductsApi = (limit: number, page: number, filters: ProductFilters = {}) => {
-  const params: Record<string, any> = { limit, page }
+  const params: Record<string, string | number> = { limit, page }
   for (const [key, value] of Object.entries(filters)) {
-    if (value !== undefined && value !== '') params[key] = value
+    if (value !== undefined && value !== '') params[key] = value as string | number
   }
   return api.get('/products', { params })
 }
@@ -27,7 +27,7 @@ export const createProductApi = (data: CreateProductRequest) => {
   return api.post('/products/create', data)
 }
 
-export const updateProductApi = (id: string, data: Record<string, any>) => {
+export const updateProductApi = (id: string, data: Record<string, unknown>) => {
   return api.put(`/products/update/${id}`, data)
 }
 

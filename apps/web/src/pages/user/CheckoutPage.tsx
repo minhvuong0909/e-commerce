@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
+import { CreditCard, Loader2, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import StatusBadge from '../../components/ui/StatusBadge'
+import ShippingMapPicker from '../../components/checkout/ShippingMapPicker'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
 import { createOrderApi } from '../../services/orders.services'
+import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
 import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
@@ -19,10 +21,13 @@ import { getApiErrorMessage } from '../../utils/apiError'
 type ShippingForm = {
   recipient_name: string
   phone: string
+  note: string
   address_line: string
   city: string
   district: string
 }
+
+type AddressMode = 'manual' | 'map'
 
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
@@ -35,16 +40,23 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  const selectedIds: string[] = location.state?.items || []
+  const selectedIds: string[] = useMemo(() => location.state?.items || [], [location.state])
 
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([])
   const [selectedDelivery, setSelectedDelivery] = useState<string>()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH_ON_DELIVERY)
   const [loading, setLoading] = useState(false)
+  const [addressMode, setAddressMode] = useState<AddressMode>('manual')
+  const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [quote, setQuote] = useState<ShippingQuote | null>(null)
+  const [quoteLoading, setQuoteLoading] = useState(false)
+  const [quoteError, setQuoteError] = useState<string | null>(null)
   const [shipping, setShipping] = useState<ShippingForm>({
     recipient_name: '',
     phone: '',
+    note: '',
     address_line: '',
     city: '',
     district: ''
@@ -59,7 +71,12 @@ export default function CheckoutPage() {
           return
         }
 
-        const cartRes = await getCartApi()
+        const [cartRes, deliveryRes, storeRes] = await Promise.all([
+          getCartApi(),
+          getDeliveryMethodsApi(),
+          getStoreInfoApi()
+        ])
+
         const allItems: CartItem[] = cartRes.data.data.cartItems
         const filtered = allItems.filter((item) => selectedIds.includes(item._id))
 
@@ -70,11 +87,10 @@ export default function CheckoutPage() {
         }
 
         setCartItems(filtered)
+        setStoreInfo(storeRes.data.result)
 
-        const deliveryRes = await getDeliveryMethodsApi()
         const methods: DeliveryMethod[] = deliveryRes.data.result
         const available = methods.filter((m) => m.status === 2)
-
         setDeliveryMethods(available)
 
         if (available.length > 0) {
@@ -86,20 +102,75 @@ export default function CheckoutPage() {
     }
 
     fetchData()
-  }, [])
+  }, [navigate, selectedIds])
 
   const subtotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.product_infor.price * item.quantity, 0),
     [cartItems]
   )
 
-  const shippingFee = useMemo(() => {
-    const method = deliveryMethods.find((m) => m._id === selectedDelivery)
-    if (!method) return 0
-    return method.type === 0 ? 30000 : 50000
-  }, [deliveryMethods, selectedDelivery])
-
+  const shippingFee = quote?.shipping_fee ?? 0
   const total = subtotal + shippingFee
+
+  const fetchQuote = useCallback(async () => {
+    if (!selectedDelivery) return
+
+    const address_line = shipping.address_line.trim()
+    const hasCoords = addressMode === 'map' && coords != null
+
+    if (!hasCoords && !address_line) {
+      setQuote(null)
+      setQuoteError(null)
+      return
+    }
+
+    try {
+      setQuoteLoading(true)
+      setQuoteError(null)
+
+      const res = await getShippingQuoteApi({
+        address_line: address_line || undefined,
+        city: shipping.city.trim() || undefined,
+        district: shipping.district.trim() || undefined,
+        lat: addressMode === 'map' ? coords?.lat : undefined,
+        lng: addressMode === 'map' ? coords?.lng : undefined,
+        delivery_method_id: selectedDelivery
+      })
+
+      setQuote(res.data.result)
+    } catch (err) {
+      setQuote(null)
+      setQuoteError(getApiErrorMessage(err, 'Không thể tính phí giao hàng'))
+    } finally {
+      setQuoteLoading(false)
+    }
+  }, [addressMode, coords, selectedDelivery, shipping.address_line, shipping.city, shipping.district])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchQuote()
+    }, addressMode === 'manual' ? 600 : 200)
+
+    return () => clearTimeout(timer)
+  }, [fetchQuote, addressMode])
+
+  const handleMapPick = async (picked: { lat: number; lng: number }) => {
+    setCoords(picked)
+    setAddressMode('map')
+
+    try {
+      const res = await reverseGeocodeApi(picked.lat, picked.lng)
+      const result = res.data.result
+      setShipping((prev) => ({
+        ...prev,
+        address_line: result.address_line || prev.address_line,
+        city: result.city || prev.city,
+        district: result.district || prev.district
+      }))
+    } catch {
+      // quote vẫn chạy theo tọa độ
+    }
+  }
 
   const handleCheckout = async () => {
     if (!selectedDelivery) {
@@ -120,6 +191,16 @@ export default function CheckoutPage() {
       return
     }
 
+    if (!quote || quoteLoading) {
+      toast.error('Vui lòng chờ hệ thống tính phí giao hàng')
+      return
+    }
+
+    if (quoteError) {
+      toast.error(quoteError)
+      return
+    }
+
     try {
       setLoading(true)
 
@@ -129,18 +210,19 @@ export default function CheckoutPage() {
         delivery_method_id: selectedDelivery,
         recipient_name,
         phone,
+        note: shipping.note.trim() || undefined,
         address_line,
         city: shipping.city.trim() || undefined,
-        district: shipping.district.trim() || undefined
+        district: shipping.district.trim() || undefined,
+        lat: quote.lat,
+        lng: quote.lng,
+        address_source: addressMode
       })
 
       const orderId = res.data?.result?.insertedId as string | undefined
       toast.success('Đặt hàng thành công!')
 
-      if (
-        orderId &&
-        (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.PAYPAL)
-      ) {
+      if (orderId && (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.PAYPAL)) {
         navigate(ROUTE_PATHS.USER_ORDER_DETAIL(orderId))
         return
       }
@@ -159,7 +241,7 @@ export default function CheckoutPage() {
         <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Secure checkout</p>
         <h1 className='text-3xl font-black tracking-tight text-ink-950'>Thanh toán</h1>
         <p className='max-w-2xl text-sm leading-6 text-slate-500'>
-          Xác nhận sản phẩm, chọn giao hàng và phương thức thanh toán trước khi đặt hàng.
+          Nhập địa chỉ hoặc chọn trên bản đồ. Phí ship được tính theo khoảng cách từ cửa hàng (tối đa 25 km).
         </p>
       </div>
 
@@ -211,6 +293,28 @@ export default function CheckoutPage() {
               <h2 className='text-lg font-black text-ink-950'>Địa chỉ nhận hàng</h2>
             </div>
 
+            <div className='mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1'>
+              {([
+                { id: 'manual' as const, label: 'Nhập địa chỉ' },
+                { id: 'map' as const, label: 'Chọn trên bản đồ' }
+              ]).map((tab) => (
+                <button
+                  key={tab.id}
+                  type='button'
+                  onClick={() => {
+                    setAddressMode(tab.id)
+                    if (tab.id === 'manual') setCoords(null)
+                  }}
+                  className={cn(
+                    'rounded-xl px-3 py-2 text-sm font-bold transition',
+                    addressMode === tab.id ? 'bg-white text-ink-950 shadow-sm' : 'text-slate-500 hover:text-ink-950'
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
             <div className='grid gap-4 md:grid-cols-2'>
               <Input
                 label='Họ tên người nhận'
@@ -247,6 +351,46 @@ export default function CheckoutPage() {
                 value={shipping.district}
                 onChange={(e) => setShipping((prev) => ({ ...prev, district: e.target.value }))}
               />
+              <div className='md:col-span-2'>
+                <label className='mb-2 block text-sm font-bold text-ink-900'>Ghi chú giao hàng</label>
+                <textarea
+                  value={shipping.note}
+                  onChange={(e) => setShipping((prev) => ({ ...prev, note: e.target.value }))}
+                  rows={3}
+                  placeholder='Ví dụ: Giao giờ hành chính, gọi trước 15 phút...'
+                  className='w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
+                />
+              </div>
+            </div>
+
+            {addressMode === 'map' && storeInfo ? (
+              <div className='mt-4'>
+                <ShippingMapPicker
+                  storeLat={storeInfo.lat}
+                  storeLng={storeInfo.lng}
+                  value={coords}
+                  onPick={handleMapPick}
+                />
+              </div>
+            ) : null}
+
+            <div className='mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm'>
+              {quoteLoading ? (
+                <span className='inline-flex items-center gap-2 font-semibold text-slate-600'>
+                  <Loader2 size={16} className='animate-spin' />
+                  Đang tính phí giao hàng...
+                </span>
+              ) : quoteError ? (
+                <span className='font-semibold text-rose-600'>{quoteError}</span>
+              ) : quote ? (
+                <div className='space-y-1 font-semibold text-slate-700'>
+                  <div>Khoảng cách: {quote.distance_km} km</div>
+                  <div>Phí cơ bản: {money(quote.base_shipping_fee)}</div>
+                  {quote.express_surcharge > 0 ? <div>Phụ phí hỏa tốc: {money(quote.express_surcharge)}</div> : null}
+                </div>
+              ) : (
+                <span className='font-semibold text-slate-500'>Nhập địa chỉ hoặc chọn trên bản đồ để xem phí ship.</span>
+              )}
             </div>
           </section>
 
@@ -345,8 +489,15 @@ export default function CheckoutPage() {
             </div>
             <div className='flex justify-between text-sm'>
               <span className='text-slate-500'>Phí giao hàng</span>
-              <span className='font-bold text-slate-700'>{shippingFee === 0 ? 'Chưa chọn' : money(shippingFee)}</span>
+              <span className='font-bold text-slate-700'>
+                {quoteLoading ? 'Đang tính...' : quote ? money(shippingFee) : 'Chưa tính'}
+              </span>
             </div>
+            {quote ? (
+              <div className='rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500'>
+                {quote.distance_km} km từ cửa hàng · Giao trong bán kính 25 km
+              </div>
+            ) : null}
           </div>
 
           <div className='my-6 h-px bg-slate-200' />
@@ -356,13 +507,19 @@ export default function CheckoutPage() {
             <span className='text-2xl font-black text-ink-950'>{money(total)}</span>
           </div>
 
-          <Button full className='mt-6' onClick={handleCheckout} loading={loading} disabled={loading}>
+          <Button
+            full
+            className='mt-6'
+            onClick={handleCheckout}
+            loading={loading}
+            disabled={loading || quoteLoading || !quote || Boolean(quoteError)}
+          >
             Xác nhận đặt hàng
           </Button>
 
           <div className='mt-5 flex items-center gap-2 rounded-2xl bg-slate-50 p-3 text-xs font-semibold leading-5 text-slate-500'>
             <ShieldCheck size={16} className='shrink-0 text-mint-600' />
-            Thông tin thanh toán được xử lý qua kết nối bảo mật.
+            Phí ship được tính bằng OpenStreetMap Routing (OSRM) từ 160 Lã Xuân Oai.
           </div>
         </aside>
       </div>

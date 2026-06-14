@@ -189,8 +189,22 @@ export const ORDER_MESSAGES = {
   NO_ORDERS_FOUND: 'No orders found',
   DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found',
   SHIPPING_ADDRESS_REQUIRED: 'Shipping address is required',
+  SHIPPING_COORDINATES_REQUIRED: 'Shipping coordinates are required',
   ORDER_STATUS_IS_INVALID: 'Order status is invalid',
   ORDER_STATUS_TRANSITION_INVALID: 'Cannot change order to this status from its current status'
+} as const
+
+export const SHIPPING_MESSAGES = {
+  GET_STORE_INFO_SUCCESS: 'Get store info success',
+  GET_SHIPPING_QUOTE_SUCCESS: 'Get shipping quote success',
+  REVERSE_GEOCODE_SUCCESS: 'Reverse geocode success',
+  ADDRESS_REQUIRED: 'Delivery address is required',
+  ADDRESS_NOT_FOUND: 'Could not locate this address. Please pick a location on the map.',
+  INVALID_COORDINATES: 'Invalid map coordinates',
+  GEOCODING_FAILED: 'Address lookup service is temporarily unavailable',
+  ROUTING_FAILED: 'Could not calculate delivery route. Please try again.',
+  OUT_OF_DELIVERY_ZONE: 'We only deliver within 25 km from the store',
+  DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found'
 } as const
 
 export const PAYMENT_MESSAGES = {

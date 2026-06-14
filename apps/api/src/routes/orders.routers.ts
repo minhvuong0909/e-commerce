@@ -8,7 +8,7 @@ import {
   getOrderByIdController,
   updateOrderController
 } from '~/controllers/orders.controllers'
-import { accessTokenValidator, checkPermissions } from '~/middlewares/users.middlewares'
+import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 const ordersRouter = Router()
@@ -20,7 +20,13 @@ const ordersRouter = Router()
         payment_method: string,
     }
 */
-ordersRouter.post('/create', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(createOrderController))
+ordersRouter.post(
+  '/create',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
+  wrapAsync(createOrderController)
+)
 
 /*
     description: update order status (duyệt đơn hàng)
@@ -30,6 +36,7 @@ ordersRouter.put(
   '/status/:id',
   accessTokenValidator,
   checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
+  requireVerifiedEmail,
   wrapAsync(updateOrderController)
 )
 
@@ -37,6 +44,7 @@ ordersRouter.patch(
   '/status/:id',
   accessTokenValidator,
   checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
+  requireVerifiedEmail,
   wrapAsync(updateOrderController)
 )
 
@@ -44,7 +52,13 @@ ordersRouter.patch(
     description: delete order (hủy đơn hàng)
     method: DELETE
 */
-ordersRouter.delete('/:id', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(deleteOrderController))
+ordersRouter.delete(
+  '/:id',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
+  wrapAsync(deleteOrderController)
+)
 
 /*
     description: get order by id
@@ -54,6 +68,7 @@ ordersRouter.get(
   '/:id',
   accessTokenValidator,
   checkPermissions(USER_ROLE.User, USER_ROLE.Staff, USER_ROLE.Admin),
+  requireVerifiedEmail,
   wrapAsync(getOrderByIdController)
 )
 
@@ -65,6 +80,7 @@ ordersRouter.get(
   '/me/my-orders',
   accessTokenValidator,
   checkPermissions(USER_ROLE.User),
+  requireVerifiedEmail,
   wrapAsync(getAllMyOrdersController)
 )
 

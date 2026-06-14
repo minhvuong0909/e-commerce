@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Printer, RefreshCw, ChevronLeft, CalendarClock, ReceiptText, User, CreditCard } from 'lucide-react'
 import Button from '../../../components/ui/Button'
 import StatusBadge from '../../../components/ui/StatusBadge'
@@ -7,6 +8,7 @@ import { getOrderStatusMeta } from '../../../constants/order'
 import { getOrderByIdApi, updateOrderStatusApi } from '../../../services/orders.services'
 import money from '../../../utils/money'
 import { toast } from 'react-toastify'
+import { getApiErrorMessage } from '../../../utils/apiError'
 
 type Product = {
   name: string
@@ -56,30 +58,20 @@ function getPaymentStatusLabel(status: number) {
 
 export default function AdminOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [order, setOrder] = useState<OrderUI | null>(null)
-  const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
-  const [error, setError] = useState('')
 
-  const fetchOrder = async () => {
-    if (!id) return
-    try {
-      setLoading(true)
-      setError('')
-      const res = await getOrderByIdApi(id)
-      const data = res?.data?.result
-      setOrder(data)
-    } catch (err: any) {
-      console.error(err)
-      setError(err.response?.data?.message || 'Không tải được chi tiết đơn hàng.')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    data: order = null,
+    isLoading: loading,
+    error: queryError,
+    refetch
+  } = useQuery<OrderUI | null>({
+    queryKey: ['admin-order', id],
+    queryFn: async () => (await getOrderByIdApi(id as string))?.data?.result ?? null,
+    enabled: !!id
+  })
 
-  useEffect(() => {
-    fetchOrder()
-  }, [id])
+  const error = queryError ? getApiErrorMessage(queryError, 'Không tải được chi tiết đơn hàng.') : ''
 
   const handleUpdateStatus = async (status: string) => {
     if (!id) return
@@ -87,10 +79,9 @@ export default function AdminOrderDetailPage() {
       setUpdating(true)
       await updateOrderStatusApi(id, status)
       toast.success('Cập nhật trạng thái thành công!')
-      fetchOrder()
-    } catch (err: any) {
-      console.error(err)
-      toast.error(err.response?.data?.message || 'Cập nhật trạng thái thất bại.')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Cập nhật trạng thái thất bại.'))
     } finally {
       setUpdating(false)
     }

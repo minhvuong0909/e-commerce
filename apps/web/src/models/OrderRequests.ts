@@ -1,9 +1,14 @@
 export interface ShippingAddress {
   recipient_name: string
   phone: string
+  note?: string
   address_line: string
   city?: string
   district?: string
+  lat?: number
+  lng?: number
+  distance_km?: number
+  address_source?: 'manual' | 'map'
 }
 
 export const PaymentMethod = {
@@ -19,6 +24,8 @@ export interface CreateOrderPayload extends ShippingAddress {
   items: string[]
   payment_method: PaymentMethod
   delivery_method_id: string
+  lat: number
+  lng: number
 }
 
 export type OrderApiResponse = {
@@ -33,7 +40,7 @@ export type OrderApiResponse = {
   shipping_address?: ShippingAddress
   created_at: string
   updated_at: string
-  items: any[]
+  items: unknown[]
 }
 export type Status = 'all' | 'processing' | 'shipping' | 'done' | 'cancel'
 
@@ -47,7 +54,7 @@ export type OrderUI = {
   subtotal: number
   shippingFee: number
   shippingAddress?: ShippingAddress
-  items: any[]
+  items: unknown[]
   date?: string
   paymentMethod: string
   rawPaymentMethod?: string

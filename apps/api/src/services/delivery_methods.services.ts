@@ -7,8 +7,8 @@ class DeliveryMethodsService {
       {
         _id: new ObjectId(), // auto id
         type: DeliveryMethodType.STANDARD,
-        name: 'Standard Delivery',
-        description: 'Giao hàng tiêu chuẩn (3-5 ngày)',
+        name: 'Giao hàng tiêu chuẩn',
+        description: 'Giao trong 3-5 ngày, phí ship theo khoảng cách từ cửa hàng',
         status: DeliveryStatus.Pending,
         created_at: new Date(),
         updated_at: new Date()
@@ -16,8 +16,8 @@ class DeliveryMethodsService {
       {
         _id: new ObjectId(),
         type: DeliveryMethodType.EXPRESS,
-        name: 'Express Delivery',
-        description: 'Giao hàng nhanh (1-2 ngày)',
+        name: 'Giao hàng hỏa tốc',
+        description: 'Giao trong 1-2 ngày, phụ phí hỏa tốc + phí ship theo khoảng cách',
         status: DeliveryStatus.Pending,
         created_at: new Date(),
         updated_at: new Date()
