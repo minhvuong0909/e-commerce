@@ -5,18 +5,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/models/Errors'
 import databaseService from './database.service'
 import paymentService from './payment.services'
-
-const getPositiveNumber = (value: string | undefined, fallback: number) => {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
-}
-
-const PAYPAL_CONFIG = {
-  apiUrl: process.env.PAYPAL_API_URL || 'https://api-m.sandbox.paypal.com',
-  returnUrl: process.env.PAYPAL_RETURN_URL || 'http://localhost:3000/payment/paypal/success',
-  cancelUrl: process.env.PAYPAL_CANCEL_URL || 'http://localhost:5173/user/orders',
-  vndPerUsd: getPositiveNumber(process.env.PAYPAL_VND_PER_USD, 25000)
-}
+import { PAYPAL_CONFIG } from '~/config/payment'
 
 type PayPalLink = {
   rel: string
@@ -94,8 +83,8 @@ class PaypalService {
   }
 
   async getAccessToken(): Promise<string> {
-    const clientId = process.env.PAYPAL_CLIENT_ID || ''
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET || ''
+    const clientId = PAYPAL_CONFIG.clientId
+    const clientSecret = PAYPAL_CONFIG.clientSecret
 
     if (!clientId || !clientSecret) {
       throw new ErrorWithStatus({

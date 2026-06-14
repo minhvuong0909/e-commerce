@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { QRCode } from 'antd'
 import { ArrowLeft, CalendarClock, CreditCard, ExternalLink, MapPin, ReceiptText, Smartphone } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import StatusBadge from '../../components/ui/StatusBadge'
-import type { OrderStatus } from '../../constants/order'
+import { getOrderStatusMeta, ORDER_STATUS_CODE } from '../../constants/order'
 import type { OrderApiResponse, OrderUI, PaymentMethod } from '../../models/OrderRequests'
 import { ROUTE_PATHS } from '../../routes/route.paths'
-import { getOrderByIdApi } from '../../services/orders.services'
+import { cancelOrderApi, getOrderByIdApi } from '../../services/orders.services'
 import {
   getMomoPaymentUrlApi,
-  getPaypalPaymentUrlApi,
+  getPaypalPaymentUrlApi
 } from '../../services/payment.services'
 import formatDate from '../../utils/date'
 import money from '../../utils/money'
@@ -25,11 +25,12 @@ type MomoPayment = {
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [order, setOrder] = useState<OrderUI | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [paying, setPaying] = useState(false)
-  const [mocking] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [momoPayment, setMomoPayment] = useState<MomoPayment | null>(null)
 
 
@@ -45,7 +46,7 @@ export default function OrderDetailPage() {
       const deeplink = momoResult?.deeplink
       if (qrCodeUrl) {
         setMomoPayment({ payUrl, qrCodeUrl, deeplink })
-        toast.success('Đã tạo mã QR MoMo sandbox.')
+        toast.success('Đã tạo mã QR MoMo.')
         return
       }
       if (payUrl) {
@@ -87,21 +88,6 @@ export default function OrderDetailPage() {
 
   const createOrderCode = (value: string) => `#${value.slice(-6).toUpperCase()}`
 
-  const mapStatus = (status: number): { status: OrderStatus; statusLabel: string } => {
-    switch (status) {
-      case 0:
-        return { status: 'processing', statusLabel: 'Đang xử lý' }
-      case 1:
-        return { status: 'shipping', statusLabel: 'Đang giao' }
-      case 2:
-        return { status: 'done', statusLabel: 'Hoàn tất' }
-      case 3:
-        return { status: 'cancel', statusLabel: 'Đã hủy' }
-      default:
-        return { status: 'processing', statusLabel: 'Đang xử lý' }
-    }
-  }
-
   const mapPaymentMethod = (method: PaymentMethod | string) => {
     switch (method) {
       case 'CASH_ON_DELIVERY':
@@ -123,6 +109,10 @@ export default function OrderDetailPage() {
         return 'Chưa thanh toán'
       case 1:
         return 'Đã thanh toán'
+      case 2:
+        return 'Thanh toán thất bại'
+      case 3:
+        return 'Đã hoàn tiền'
       default:
         return 'Không xác định'
     }
@@ -148,15 +138,17 @@ export default function OrderDetailPage() {
         }
 
         setMomoPayment(null)
-        const statusInfo = mapStatus(rawOrder.status)
+        const statusInfo = getOrderStatusMeta(rawOrder.status)
 
         const mappedOrder: OrderUI = {
           id: rawOrder._id,
           code: createOrderCode(rawOrder._id),
-          status: statusInfo.status,
-          statusLabel: statusInfo.statusLabel,
+          status: statusInfo.tone,
+          statusLabel: statusInfo.label,
+          rawStatus: rawOrder.status,
           subtotal: rawOrder.total_price - rawOrder.shipping_fee,
           shippingFee: rawOrder.shipping_fee,
+          shippingAddress: rawOrder.shipping_address,
           total: rawOrder.total_price,
           items: rawOrder.items || [],
           paymentMethod: mapPaymentMethod(rawOrder.payment_method),
@@ -180,11 +172,27 @@ export default function OrderDetailPage() {
     fetchOrder()
   }, [id])
 
-  const canCancel = useMemo(() => order?.status === 'processing', [order])
+  const canCancel = useMemo(() => order?.rawStatus === ORDER_STATUS_CODE.PENDING, [order])
+
+  const handleCancelOrder = async () => {
+    if (!order?.id) return
+    const confirmed = window.confirm('Bạn có chắc muốn hủy đơn hàng này? Hành động không thể hoàn tác.')
+    if (!confirmed) return
+    try {
+      setCancelling(true)
+      await cancelOrderApi(order.id)
+      toast.success('Đã hủy đơn hàng.')
+      navigate(ROUTE_PATHS.USER_ORDERS)
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Không thể hủy đơn hàng. Vui lòng thử lại.')
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   const canPayMomo = useMemo(
     () =>
-      order?.status === 'shipping' &&
+      order?.rawStatus === ORDER_STATUS_CODE.PENDING &&
       order?.rawPaymentStatus === 0 &&
       (order?.rawPaymentMethod === 'MOMO' || order?.rawPaymentMethod === '2'),
     [order]
@@ -192,7 +200,7 @@ export default function OrderDetailPage() {
 
   const canPayPaypal = useMemo(
     () =>
-      order?.status === 'shipping' &&
+      order?.rawStatus === ORDER_STATUS_CODE.PENDING &&
       order?.rawPaymentStatus === 0 &&
       (order?.rawPaymentMethod === 'PAYPAL' || order?.rawPaymentMethod === '1'),
     [order]
@@ -280,8 +288,24 @@ export default function OrderDetailPage() {
               </span>
               <h2 className='text-lg font-black text-ink-950'>Thông tin nhận hàng</h2>
             </div>
-            <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500'>
-              Backend hiện chưa trả tên người nhận, số điện thoại và địa chỉ cho đơn hàng này.
+            <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700'>
+              {order.shippingAddress ? (
+                <div className='space-y-1'>
+                  <p>
+                    <span className='font-bold text-ink-950'>{order.shippingAddress.recipient_name}</span>
+                    {' · '}
+                    {order.shippingAddress.phone}
+                  </p>
+                  <p>{order.shippingAddress.address_line}</p>
+                  {(order.shippingAddress.district || order.shippingAddress.city) && (
+                    <p>
+                      {[order.shippingAddress.district, order.shippingAddress.city].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className='text-slate-500'>Đơn hàng này chưa có thông tin địa chỉ giao hàng.</p>
+              )}
             </div>
           </section>
 
@@ -294,11 +318,32 @@ export default function OrderDetailPage() {
             </div>
             <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-500'>
               {order.items?.length > 0 ? (
-                <ul className='list-inside list-disc space-y-1'>
+                <ul className='space-y-3'>
                   {order.items.map((item: any) => (
-                    <li key={item._id}>
-                      <span className='font-bold text-ink-950'>{item.product?.name || 'Sản phẩm'}</span>
-                      <span className='text-slate-500'> (x{item.quantity})</span>
+                    <li
+                      key={item._id}
+                      className='flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3'
+                    >
+                      {item.product?.thumbnail ? (
+                        <img
+                          src={item.product.thumbnail}
+                          alt={item.product?.name || 'Sản phẩm'}
+                          className='h-14 w-14 shrink-0 rounded-xl border border-slate-200 object-cover'
+                        />
+                      ) : (
+                        <div className='grid h-14 w-14 shrink-0 place-items-center rounded-xl border border-slate-200 bg-slate-100 text-slate-400'>
+                          <ReceiptText size={18} />
+                        </div>
+                      )}
+                      <div className='min-w-0 flex-1'>
+                        <div className='truncate font-bold text-ink-950'>{item.product?.name || 'Sản phẩm'}</div>
+                        <div className='text-xs text-slate-500'>
+                          {money(item.price)} × {item.quantity}
+                        </div>
+                      </div>
+                      <div className='shrink-0 text-sm font-black text-ink-950'>
+                        {money(item.price * item.quantity)}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -339,8 +384,14 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {canPayMomo && (
-              <Button full className='mt-6' onClick={handlePayment} loading={paying} disabled={paying || mocking}>
+            {(canPayMomo || canPayPaypal) && (
+              <div className='mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900'>
+                Đơn hàng chưa thanh toán. Vui lòng hoàn tất thanh toán để cửa hàng xử lý đơn.
+              </div>
+            )}
+
+            {canPayMomo && !momoPayment?.qrCodeUrl && (
+              <Button full className='mt-5' onClick={handlePayment} loading={paying} disabled={paying}>
                 Thanh toán qua MoMo
               </Button>
             )}
@@ -348,59 +399,65 @@ export default function OrderDetailPage() {
             {canPayPaypal && (
               <Button
                 full
-                className='mt-6 !bg-amber-500 hover:!bg-amber-600 text-white'
+                className='mt-3 !bg-amber-500 hover:!bg-amber-600 text-white'
                 onClick={handlePayPalPayment}
                 loading={paying}
-                disabled={paying || mocking}
+                disabled={paying}
               >
                 Thanh toán qua PayPal
               </Button>
             )}
 
-            {/* {(canPayMomo || canPayPaypal) && (
-              <Button
-                full
-                variant='secondary'
-                className='mt-3'
-                onClick={handleMockPayment}
-                loading={mocking}
-                disabled={paying || mocking}
-              >
-                Giả lập thanh toán thành công (Test Free)
-              </Button>
-            )} */}
-
             {momoPayment?.qrCodeUrl && (
-              <div className='mt-4 rounded-2xl border border-slate-200 bg-white p-4 text-center'>
-                <div className='mx-auto inline-flex rounded-xl bg-white p-2 shadow-sm'>
-                  <QRCode value={momoPayment.qrCodeUrl} size={220} bordered={false} />
+              <div className='mt-5 overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-b from-pink-50 to-white'>
+                <div className='border-b border-pink-100 px-4 py-3 text-center'>
+                  <p className='text-xs font-bold uppercase tracking-[0.14em] text-pink-600'>Thanh toán MoMo</p>
+                  <p className='mt-1 text-lg font-black text-ink-950'>{money(order.total)}</p>
+                  <p className='mt-0.5 text-xs text-slate-500'>Đơn {order.code}</p>
                 </div>
-                <p className='mt-3 text-sm font-black text-ink-950'>Quét mã bằng MoMo Test app</p>
-                <p className='mt-1 text-xs leading-5 text-slate-500'>
-                  QR sandbox cho đơn {order.code}. Nếu app báo hết hạn, bấm thanh toán để tạo mã mới.
-                </p>
 
-                <div className='mt-4 grid gap-2'>
-                  {momoPayment.deeplink && (
-                    <a
-                      href={momoPayment.deeplink}
-                      className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-ink-950 px-4 text-sm font-bold text-white transition hover:bg-brand-600'
-                    >
-                      <Smartphone size={16} />
-                      Mở app MoMo
-                    </a>
-                  )}
-                  {momoPayment.payUrl && (
-                    <a
-                      href={momoPayment.payUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-ink-950 transition hover:border-slate-300 hover:bg-slate-50'
-                    >
-                      <ExternalLink size={16} />
-                      Mở trang thanh toán
-                    </a>
-                  )}
+                <div className='px-4 py-5 text-center'>
+                  <div className='mx-auto inline-flex rounded-2xl border border-slate-200 bg-white p-3 shadow-sm'>
+                    <QRCode value={momoPayment.qrCodeUrl} size={200} bordered={false} />
+                  </div>
+                  <p className='mt-4 text-sm font-bold text-ink-950'>Quét mã QR bằng ứng dụng MoMo</p>
+                  <p className='mt-1 text-xs leading-5 text-slate-500'>
+                    Mã có thời hạn ngắn. Sau khi thanh toán, trạng thái đơn sẽ được cập nhật tự động.
+                  </p>
+
+                  <div className='mt-4 grid gap-2'>
+                    {momoPayment.deeplink && (
+                      <a
+                        href={momoPayment.deeplink}
+                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-[#a50064] px-4 text-sm font-bold text-white transition hover:bg-[#8e0056]'
+                      >
+                        <Smartphone size={16} />
+                        Mở ứng dụng MoMo
+                      </a>
+                    )}
+                    {momoPayment.payUrl && (
+                      <a
+                        href={momoPayment.payUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-ink-950 transition hover:border-slate-300 hover:bg-slate-50'
+                      >
+                        <ExternalLink size={16} />
+                        Thanh toán trên trình duyệt
+                      </a>
+                    )}
+                  </div>
+
+                  <Button
+                    full
+                    variant='outline'
+                    className='mt-3'
+                    onClick={handlePayment}
+                    loading={paying}
+                    disabled={paying}
+                  >
+                    Tạo mã QR mới
+                  </Button>
                 </div>
               </div>
             )}
@@ -411,7 +468,9 @@ export default function OrderDetailPage() {
               <p className='mb-4 text-sm leading-6 text-rose-900'>
                 Bạn chỉ có thể hủy đơn khi đơn hàng đang ở trạng thái xử lý.
               </p>
-              <Button variant='danger'>Hủy đơn hàng</Button>
+              <Button variant='danger' full onClick={handleCancelOrder} loading={cancelling} disabled={cancelling}>
+                Hủy đơn hàng
+              </Button>
             </div>
           ) : (
             <Alert

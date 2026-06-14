@@ -1,9 +1,7 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { refreshTokenApi } from '../services/auths.services'
-
-const ACCESS_TOKEN_KEY = 'access_token'
-const REFRESH_TOKEN_KEY = 'refresh_token'
+import { clearAuth, getRefreshToken, getToken, setAuthTokens } from '../utils/authSession'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL_API,
@@ -23,8 +21,7 @@ let isRefreshing = false
 let failedQueue: RefreshQueueItem[] = []
 
 const clearAuthAndRedirect = () => {
-  localStorage.removeItem(ACCESS_TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
+  clearAuth()
   window.location.href = ROUTE_PATHS.AUTH_LOGIN
 }
 
@@ -42,7 +39,7 @@ const processQueue = (error: unknown, token: string | null = null) => {
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(ACCESS_TOKEN_KEY)
+    const token = getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -78,7 +75,7 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+        const refreshToken = getRefreshToken()
         if (!refreshToken) {
           throw new Error('No refresh token available')
         }
@@ -87,8 +84,7 @@ api.interceptors.response.use(
         const accessToken = res.data.result.tokens.access_token
         const newRefreshToken = res.data.result.tokens.refresh_token
 
-        localStorage.setItem(ACCESS_TOKEN_KEY, accessToken)
-        localStorage.setItem(REFRESH_TOKEN_KEY, newRefreshToken)
+        setAuthTokens(accessToken, newRefreshToken)
         processQueue(null, accessToken)
 
         return api(originalRequest)

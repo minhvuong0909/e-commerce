@@ -107,24 +107,24 @@ export const getCategoriesController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const page = Number(req.query.body) || 1
-  const limit = Number(req.query.limit) || 10
+  const page = Math.max(1, Number(req.query.page) || 1)
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 100))
   const categories = await databaseService.categories
     .find()
-    .sort({ createdAt: -1 }) // sort desc
+    .sort({ created_at: -1 }) // sort desc
     .skip((page - 1) * limit)
     .limit(limit)
     .toArray()
 
-  const totalPage = await databaseService.categories.countDocuments()
+  const totalItems = await databaseService.categories.countDocuments()
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.GET_CATEGORIES_SUCCESS,
     data: categories,
     pagination: {
       page,
       limit,
-      totalItems: totalPage,
-      totalPages: Math.ceil(totalPage / limit)
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit)
     }
   })
 }

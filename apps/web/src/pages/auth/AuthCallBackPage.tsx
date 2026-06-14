@@ -5,6 +5,8 @@ import { toast } from 'sonner'
 import { supabase } from '../../configs/config'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import { loginWithGoogleApi } from '../../services/auths.services'
+import { persistAuthSession } from '../../utils/persistAuthSession'
+import { getHomePathForRole } from '../../utils/authSession'
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
@@ -38,13 +40,15 @@ export default function AuthCallbackPage() {
         const res = await loginWithGoogleApi(data.session.access_token)
         const { access_token, refresh_token } = res.data.result.tokens
 
-        localStorage.setItem('access_token', access_token)
-        localStorage.setItem('refresh_token', refresh_token)
+        const user = await persistAuthSession(access_token, refresh_token)
 
         toast.success('Đăng nhập Google thành công!')
-        navigate(ROUTE_PATHS.USER_HOME, { replace: true })
-      } catch {
-        toast.error('Xác thực với server thất bại.')
+        navigate(getHomePathForRole(user?.role), { replace: true })
+      } catch (err: unknown) {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          'Xác thực với server thất bại.'
+        toast.error(message)
         navigate(ROUTE_PATHS.AUTH_LOGIN, { replace: true })
       }
     }

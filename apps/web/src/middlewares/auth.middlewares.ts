@@ -10,7 +10,10 @@ export const registerSchema = z
 
     confirm_password: z.string(),
 
-    date_of_birth: z.string().min(1, 'Vui lòng chọn ngày sinh')
+    date_of_birth: z
+      .string()
+      .min(1, 'Vui lòng chọn ngày sinh')
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh không hợp lệ')
   })
   .refine((data) => data.password === data.confirm_password, {
     message: 'Mật khẩu không khớp',

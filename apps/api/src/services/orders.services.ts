@@ -8,6 +8,7 @@ import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Order from '~/models/schemas/Orders.schema'
 import { CreateOrderReqBody } from '~/models/requests/Orders.requests'
 import { Request } from 'express'
+import { canTransitionOrderStatus, isValidOrderStatus } from '~/utils/orderStatus'
 class OrdersService {
   async createOrderItem({
     user_id,
@@ -82,16 +83,34 @@ class OrdersService {
     }
     // tính shipping fee và total price
     const shipping_fee = delivery_method.type === DeliveryMethodType.STANDARD ? 30000 : 50000
+
+    const recipient_name = payload.recipient_name?.trim()
+    const phone = payload.phone?.trim()
+    const address_line = payload.address_line?.trim()
+    if (!recipient_name || !phone || !address_line) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.SHIPPING_ADDRESS_REQUIRED,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
     // tạo order
     const order = await databaseService.orders.insertOne(
       new Order({
         user_id: new ObjectId(user_id),
         total_price: total_price + shipping_fee,
-        payment_method: payload.payment_method as any,
+        payment_method: payload.payment_method,
         payment_status: PaymentStatus.PENDING,
         delivery_method_id: delivery_method._id,
         shipping_fee: shipping_fee,
-        status: OrderStatus.Pending
+        status: OrderStatus.Pending,
+        shipping_address: {
+          recipient_name,
+          phone,
+          address_line,
+          city: payload.city?.trim(),
+          district: payload.district?.trim()
+        }
       })
     )
     // đặt hàng thành công thì tạo order items và trừ quantity trong products
@@ -115,32 +134,64 @@ class OrdersService {
     })    
     return order
   }
-  // cập nhật trạng thái đơn hàng
-  async updateOrderStatus({ user_id, order_id }: { user_id: string; order_id: string }) {
+  // hoàn kho khi đơn bị hủy: cộng lại quantity và trừ soldNumber
+  private async restockOrderItems(order_id: ObjectId) {
+    const items = await databaseService.order_items.find({ order_id }).toArray()
+    for (const item of items) {
+      await databaseService.products.updateOne(
+        { _id: item.product_id },
+        { $inc: { quantity: item.quantity, soldNumber: -item.quantity } }
+      )
+    }
+  }
+
+  // cập nhật trạng thái đơn hàng theo trạng thái đích, có validate luồng chuyển trạng thái
+  async updateOrderStatus({ user_id, order_id, status }: { user_id: string; order_id: string; status: number }) {
+    if (!isValidOrderStatus(status)) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_STATUS_IS_INVALID,
+        status: HTTP_STATUS.UNPROCESSABLE_ENTITY
+      })
+    }
+
     const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
     const isStaffOrAdmin = user && (user.role === USER_ROLE.Admin || user.role === USER_ROLE.Staff)
 
-    const filter: any = { _id: new ObjectId(order_id), status: OrderStatus.Pending }
+    const filter: any = { _id: new ObjectId(order_id) }
     if (!isStaffOrAdmin) {
       filter.user_id = new ObjectId(user_id)
     }
 
-    const order = await databaseService.orders.findOneAndUpdate(
-      filter,
-      {
-        $set: {
-          status: OrderStatus.Confirmed,
-          updated_at: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    )
-    if (!order) {
+    const currentOrder = await databaseService.orders.findOne(filter)
+    if (!currentOrder) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.ORDER_NOT_FOUND,
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+
+    if (!canTransitionOrderStatus(currentOrder.status, status)) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_STATUS_TRANSITION_INVALID,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    // hủy đơn thì hoàn kho lại
+    if (status === OrderStatus.Cancelled) {
+      await this.restockOrderItems(currentOrder._id)
+    }
+
+    const order = await databaseService.orders.findOneAndUpdate(
+      { _id: currentOrder._id },
+      {
+        $set: {
+          status,
+          updated_at: new Date()
+        }
+      },
+      { returnDocument: 'after' }
+    )
     return order
   }
 
@@ -166,6 +217,8 @@ class OrdersService {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+    // hoàn kho cho đơn vừa hủy
+    await this.restockOrderItems(order._id)
   }
 
   async getOrderById({ user_id, order_id }: { user_id: string; order_id: string }) {
@@ -230,6 +283,7 @@ class OrdersService {
           payment_status: { $first: '$payment_status' },
           delivery_method_id: { $first: '$delivery_method_id' },
           shipping_fee: { $first: '$shipping_fee' },
+          shipping_address: { $first: '$shipping_address' },
           status: { $first: '$status' },
           created_at: { $first: '$created_at' },
           updated_at: { $first: '$updated_at' },
@@ -269,16 +323,11 @@ class OrdersService {
   }
 
   async getAllMyOrders({ user_id }: { user_id: string }) {
+    // list endpoint: luôn trả về mảng (rỗng nếu chưa có đơn) thay vì 404
     const orders = (await databaseService.orders
       .aggregate([{ $match: { user_id: new ObjectId(user_id) } }, { $sort: { created_at: -1 } }])
       .toArray()) as Order[]
 
-    if (!orders.length) {
-      throw new ErrorWithStatus({
-        message: ORDER_MESSAGES.NO_ORDERS_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
-    }
     return orders
   }
 
@@ -286,6 +335,7 @@ class OrdersService {
     const page = Number(req.query.page) || 1
     const limit = Number(req.query.limit) || 10
 
+    // list endpoint: luôn trả về mảng (rỗng nếu chưa có đơn) thay vì 404
     const orders = (await databaseService.orders
       .aggregate([
         {
@@ -299,13 +349,6 @@ class OrdersService {
         }
       ])
       .toArray()) as Order[]
-
-    if (orders.length === 0) {
-      throw new ErrorWithStatus({
-        message: ORDER_MESSAGES.NO_ORDERS_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
-    }
 
     return orders
   }

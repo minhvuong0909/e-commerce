@@ -38,8 +38,8 @@ class BrandsService {
   }
 
   async deleteBrand(brand_id: string) {
-    // check product có tồn tại trong brand ?
-    const hasProduct = await databaseService.products.findOne({ _id: new ObjectId(brand_id) })
+    // check brand có sản phẩm liên kết không (quan hệ 1 - N)
+    const hasProduct = await databaseService.products.findOne({ brand_id: new ObjectId(brand_id) })
     // nếu có thì kh cho xóa brand vì mqh 1 - N
     if (hasProduct) {
       throw new ErrorWithStatus({

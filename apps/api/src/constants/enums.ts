@@ -48,10 +48,10 @@ export enum CartStatus {
 }
 
 export enum PaymentMethod {
-  CREDIT_CARD, // thanh toán qua thẻ tín dụng
-  PAYPAL, // thanh toán qua Paypal,
-  MOMO, // thanh toán qua Momo
-  CASH_ON_DELIVERY // thanh toán tiền mặt khi nhận hàng
+  CREDIT_CARD = 'CREDIT_CARD', // thanh toán qua thẻ tín dụng
+  PAYPAL = 'PAYPAL', // thanh toán qua Paypal,
+  MOMO = 'MOMO', // thanh toán qua Momo
+  CASH_ON_DELIVERY = 'CASH_ON_DELIVERY' // thanh toán tiền mặt khi nhận hàng
 }
 
 export enum PaymentStatus {

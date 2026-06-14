@@ -32,6 +32,7 @@ import {
 } from '~/middlewares/users.middlewares'
 import { UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { wrapAsync } from '~/utils/handlers'
+import { authLimiter, forgotPasswordLimiter } from '~/middlewares/rateLimit.middlewares'
 
 // chia dự án thành nhìu router
 const userRouter = express.Router()
@@ -46,7 +47,7 @@ const userRouter = express.Router()
   }
 
 */
-userRouter.post('/login', loginValidator, wrapAsync(loginController))
+userRouter.post('/login', authLimiter, loginValidator, wrapAsync(loginController))
 
 /*
   description: register
@@ -102,7 +103,7 @@ gửi lên email
   body: {email: string}
   method: POST
 */
-userRouter.post('/forgot-password', forgotPasswordValidator, wrapAsync(forgotPasswordController))
+userRouter.post('/forgot-password', forgotPasswordLimiter, forgotPasswordValidator, wrapAsync(forgotPasswordController))
 
 /*
   desc: Verify link in email to reset password

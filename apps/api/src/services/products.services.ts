@@ -8,6 +8,12 @@ import { BRANDS_MESSAGES, CATEGORY_MESSAGES, PRODUCT_MESSAGES, USERS_MESSAGES } 
 import HTTP_STATUS from '~/constants/httpStatus'
 import ProductMedia from '~/models/schemas/ProductImages.schema'
 import { Request } from 'express'
+import {
+  buildProductMatchStage,
+  buildProductSortStage,
+  parsePagination,
+  ProductQueryParams
+} from '~/utils/productQuery'
 
 class ProductServices {
   // create
@@ -151,55 +157,71 @@ class ProductServices {
   }
 
   async getProducts(req: Request) {
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 10
-    const products = await databaseService.products
-      .aggregate([
-        {
-          $skip: (page - 1) * limit //cập nhật
-        },
-        {
-          $limit: limit // cập nhật
-        },
-        {
-          $lookup: {
-            from: 'product_medias',
-            localField: '_id',
-            foreignField: 'product_id',
-            as: 'medias_infor'
+    const match = buildProductMatchStage(req.query as ProductQueryParams)
+    const sortStage = buildProductSortStage(req.query.sort as string | undefined)
+    const { page, limit, skip } = parsePagination(
+      req.query.page as string | undefined,
+      req.query.limit as string | undefined
+    )
+
+    const [products, totalItems] = await Promise.all([
+      databaseService.products
+        .aggregate([
+          { $match: match },
+          { $sort: sortStage },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $lookup: {
+              from: 'product_medias',
+              localField: '_id',
+              foreignField: 'product_id',
+              as: 'medias_infor'
+            }
+          },
+          {
+            $project: {
+              medias: {
+                $map: {
+                  input: '$medias_infor',
+                  as: 'media',
+                  in: '$$media.media'
+                }
+              },
+              _id: 1,
+              name: 1,
+              quantity: 1,
+              price: 1,
+              description: 1,
+              rating_number: 1,
+              brand_id: 1,
+              origin: 1,
+              volume: 1,
+              weight: 1,
+              height: 1,
+              width: 1,
+              soldNumber: 1,
+              status: 1,
+              category_id: 1,
+              ship_category_id: 1,
+              thumbnail: 1,
+              created_at: 1
+            }
           }
-        },
-        {
-          $project: {
-            medias: {
-              $map: {
-                input: '$medias_infor',
-                as: 'media',
-                in: '$$media.media'
-              }
-            },
-            _id: 1,
-            name: 1,
-            quantity: 1,
-            price: 1,
-            description: 1,
-            rating_number: 1,
-            brand_id: 1,
-            origin: 1,
-            volume: 1,
-            weight: 1,
-            height: 1,
-            width: 1,
-            sold: 1,
-            status: 1,
-            category_id: 1,
-            ship_category_id: 1
-          }
-        }
-      ])
-      .sort({ created_at: -1 })
-      .toArray()
-    return products
+        ])
+        .toArray(),
+      databaseService.products.countDocuments(match)
+    ])
+
+    return {
+      products,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit)
+      }
+    }
   }
 }
 

@@ -79,8 +79,8 @@ class CategoryService {
   }
 
   async deleteCategory(category_id: string) {
-    // check category có trong product ?
-    const hasProduct = await databaseService.products.findOne({ _id: new ObjectId(category_id) })
+    // check category có sản phẩm liên kết không (quan hệ 1 - N)
+    const hasProduct = await databaseService.products.findOne({ category_id: new ObjectId(category_id) })
     // nếu co product trong cate thì kh cho xóa
     if (hasProduct) {
       throw new ErrorWithStatus({

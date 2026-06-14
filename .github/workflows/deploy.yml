@@ -56,7 +56,7 @@ jobs:
             MAX_RETRIES=10
             until [ $RETRIES -ge $MAX_RETRIES ]; do
               if wget -q --spider http://localhost:3000/products 2>/dev/null; then
-                echo "✅ API health check passed!"
+                echo "API health check passed!"
                 break
               fi
               RETRIES=$((RETRIES + 1))
@@ -65,11 +65,11 @@ jobs:
             done
 
             if [ $RETRIES -ge $MAX_RETRIES ]; then
-              echo "❌ API health check failed! Kiểm tra logs:"
+              echo "API health check failed! Kiểm tra logs:"
               docker compose logs --tail=30 api
               exit 1
             fi
 
             # Dọn dẹp toàn bộ tài nguyên Docker không dùng (images, volumes, networks)
             docker system prune -f --volumes
-            echo "🚀 Deploy thành công!"
+            echo "Deploy thành công!"

@@ -87,24 +87,19 @@ export const getBrandController = async (req: Request<ParamsDictionary>, res: Re
 }
 
 export const getBrandsController = async (req: Request, res: Response, next: NextFunction) => {
-  const page = Number(req.query.body) || 1
-  const limit = Number(req.query.body) || 10
-  const brands = await databaseService.brands
-    .find()
-    .sort({ created_at: -1 })
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .toArray()
+  const page = Math.max(1, Number(req.query.page) || 1)
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 100))
+  const brands = await brandsService.getBrands(limit, page)
 
-  const totalPage = await databaseService.brands.countDocuments()
+  const totalItems = await databaseService.brands.countDocuments()
   res.status(HTTP_STATUS.OK).json({
     message: BRANDS_MESSAGES.GET_BRANDS_SUCCESS,
     data: brands,
     pagination: {
       page,
       limit,
-      totalItems: totalPage,
-      totalPages: Math.ceil(totalPage / limit)
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit)
     }
   })
 }

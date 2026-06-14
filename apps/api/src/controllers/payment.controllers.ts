@@ -5,14 +5,15 @@ import { PAYMENT_MESSAGES } from '~/constants/messages'
 import paymentService from '~/services/payment.services'
 import paypalService from '~/services/paypal.services'
 
-const FRONTEND_URL = process.env.FRONTEND_URL 
+const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
+const CLIENT_URL = stripEnv(process.env.CLIENT_URL) || 'http://localhost:5173'
 
 const getPayPalCaptureId = (captureResult: any, fallbackId: string) =>
   captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || fallbackId
 
 const redirectToOrderResult = (res: Response, params: Record<string, string>) => {
   const query = new URLSearchParams(params)
-  return res.redirect(`${FRONTEND_URL}/user/order-result?${query.toString()}`)
+  return res.redirect(`${CLIENT_URL}/user/order-result?${query.toString()}`)
 }
 
 export const createMoMoPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
@@ -32,6 +33,27 @@ export const createMoMoPaymentController = async (req: Request<ParamsDictionary>
 export const momoWebhookController = async (req: Request, res: Response) => {
   await paymentService.handleMoMoWebhook(req.body)
   res.sendStatus(HTTP_STATUS.NO_CONTENT)
+}
+
+export const momoReturnController = async (req: Request, res: Response) => {
+  try {
+    const result = await paymentService.handleMoMoReturn(req.query as Record<string, unknown>)
+    return redirectToOrderResult(res, {
+      resultCode: result.resultCode,
+      orderId: `ORDER-${result.order_id}`,
+      amount: result.amount,
+      transId: result.transId,
+      message: result.gatewayMessage,
+      paymentMethod: 'MOMO'
+    })
+  } catch (error: any) {
+    console.error('MoMo return error:', error?.message || error)
+    return redirectToOrderResult(res, {
+      resultCode: '1',
+      message: error?.message || 'Xac thuc thanh toan MoMo that bai.',
+      paymentMethod: 'MOMO'
+    })
+  }
 }
 
 export const createPayPalPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import AuthLayout from './layouts/AuthLayout'
@@ -29,12 +30,33 @@ import AdminCategoryEditPage from './pages/admin/categories/AdminCategoryUpdateP
 import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
 import ProfilePage from './pages/user/GetProfile'
+import ChangePasswordPage from './pages/user/ChangePasswordPage'
 import AuthCallbackPage from './pages/auth/AuthCallBackPage'
+import RequireAuth from './components/auth/RequireAuth'
+import RequireRole from './components/auth/RequireRole'
+import { getRole, getToken, normalizeRole, setUserRole, USER_ROLE } from './utils/authSession'
+import { getMeApi } from './services/auths.services'
 import { ROUTE_PATHS, ROUTE_SEGMENTS } from './routes/route.paths'
+
+function AuthBootstrap() {
+  useEffect(() => {
+    if (!getToken() || getRole() !== null) return
+    getMeApi()
+      .then((res) => {
+        const role = normalizeRole(res.data.result?.role)
+        if (role !== null) setUserRole(role)
+      })
+      .catch(() => {
+        // token hết hạn sẽ được xử lý bởi api interceptor
+      })
+  }, [])
+  return null
+}
 
 export default function App() {
   return (
     <BrowserRouter>
+      <AuthBootstrap />
       <Toaster richColors position='top-right' />
       <Routes>
         <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
@@ -54,16 +76,73 @@ export default function App() {
           <Route index element={<HomePage />} />
           <Route path={ROUTE_SEGMENTS.USER_HOME} element={<HomePage />} />
           <Route path={`${ROUTE_SEGMENTS.USER_PRODUCTS}/${ROUTE_SEGMENTS.ID}`} element={<ProductDetailPage />} />
-          <Route path={ROUTE_SEGMENTS.USER_CART} element={<CartPage />} />
-          <Route path={ROUTE_SEGMENTS.USER_CHECKOUT} element={<CheckoutPage />} />
-          <Route path={ROUTE_SEGMENTS.USER_ORDERS} element={<MyOrdersPage />} />
-          <Route path={`${ROUTE_SEGMENTS.USER_ORDERS}/${ROUTE_SEGMENTS.ID}`} element={<OrderDetailPage />} />
-          <Route path={ROUTE_SEGMENTS.USER_ORDER_RESULT} element={<OrderResultPage />} />
-          <Route path={ROUTE_SEGMENTS.USER_PROFILE} element={<ProfilePage />} />
+          <Route
+            path={ROUTE_SEGMENTS.USER_CART}
+            element={
+              <RequireAuth>
+                <CartPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.USER_CHECKOUT}
+            element={
+              <RequireAuth>
+                <CheckoutPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.USER_ORDERS}
+            element={
+              <RequireAuth>
+                <MyOrdersPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={`${ROUTE_SEGMENTS.USER_ORDERS}/${ROUTE_SEGMENTS.ID}`}
+            element={
+              <RequireAuth>
+                <OrderDetailPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.USER_ORDER_RESULT}
+            element={
+              <RequireAuth>
+                <OrderResultPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.USER_PROFILE}
+            element={
+              <RequireAuth>
+                <ProfilePage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path={ROUTE_SEGMENTS.USER_CHANGE_PASSWORD}
+            element={
+              <RequireAuth>
+                <ChangePasswordPage />
+              </RequireAuth>
+            }
+          />
         </Route>
 
         {/* ================= ADMIN ================= */}
-        <Route path={ROUTE_PATHS.ADMIN} element={<AdminLayout />}>
+        <Route
+          path={ROUTE_PATHS.ADMIN}
+          element={
+            <RequireRole roles={[USER_ROLE.Admin, USER_ROLE.Staff]}>
+              <AdminLayout />
+            </RequireRole>
+          }
+        >
           <Route index element={<AdminDashboardPage />} />
 
           {/* products */}

@@ -28,10 +28,14 @@ export default function Input({
   ...props
 }: InputProps) {
   const id = useId()
+  const errorId = `${id}-error`
+  const helperId = `${id}-helper`
   const [showPass, setShowPass] = useState(false)
 
   const isPassword = type === 'password'
   const finalType = isPassword ? (showPass ? 'text' : 'password') : type
+
+  const describedBy = error ? errorId : helperText ? helperId : undefined
 
   return (
     <div className='space-y-1.5'>
@@ -42,7 +46,9 @@ export default function Input({
       ) : null}
 
       <div className='relative'>
-        {leftIcon ? <div className='absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'>{leftIcon}</div> : null}
+        {leftIcon ? (
+          <div className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'>{leftIcon}</div>
+        ) : null}
 
         <input
           id={id}
@@ -51,6 +57,8 @@ export default function Input({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
             'premium-input',
             leftIcon ? 'pl-11' : '',
@@ -66,8 +74,10 @@ export default function Input({
           <button
             type='button'
             onClick={() => setShowPass((s) => !s)}
-            className='absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-ink-950'
+            className='absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-ink-950 focus:outline-none focus:ring-2 focus:ring-brand-500/40'
             aria-label={showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            aria-pressed={showPass}
+            tabIndex={-1}
           >
             {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
@@ -77,9 +87,13 @@ export default function Input({
       </div>
 
       {error ? (
-        <p className='text-xs font-semibold text-rose-600'>{error}</p>
+        <p id={errorId} role='alert' className='text-xs font-semibold text-rose-600'>
+          {error}
+        </p>
       ) : helperText ? (
-        <p className='text-xs font-medium text-slate-500'>{helperText}</p>
+        <p id={helperId} className='text-xs font-medium text-slate-500'>
+          {helperText}
+        </p>
       ) : null}
     </div>
   )

@@ -5,8 +5,10 @@ import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import PasswordStrength from '../../components/ui/PasswordStrength'
 import { ROUTES } from '../../routes/route.paths'
 import { resetPasswordApi } from '../../services/auths.services'
+import { getApiErrorMessage } from '../../utils/apiError'
 
 export default function ResetPasswordPage() {
   const [sp] = useSearchParams()
@@ -18,6 +20,17 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({})
+
+  const validate = () => {
+    const next: { password?: string; confirmPassword?: string } = {}
+    if (!password) next.password = 'Vui lòng nhập mật khẩu mới'
+    else if (password.length < 8) next.password = 'Mật khẩu tối thiểu 8 ký tự'
+    if (!confirmPassword) next.confirmPassword = 'Vui lòng nhập lại mật khẩu'
+    else if (password !== confirmPassword) next.confirmPassword = 'Mật khẩu xác nhận không khớp'
+    setErrors(next)
+    return Object.keys(next).length === 0
+  }
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -26,16 +39,7 @@ export default function ResetPasswordPage() {
       toast.error('Token không hợp lệ hoặc đã hết hạn.')
       return
     }
-
-    if (!password || !confirmPassword) {
-      toast.error('Vui lòng nhập đầy đủ thông tin.')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      toast.error('Mật khẩu xác nhận không khớp.')
-      return
-    }
+    if (!validate()) return
 
     try {
       setLoading(true)
@@ -48,8 +52,8 @@ export default function ResetPasswordPage() {
 
       toast.success('Đặt lại mật khẩu thành công!')
       navigate(ROUTES.AUTH + ROUTES.LOGIN)
-    } catch (error: any) {
-      toast.error(error?.response?.data?.message || 'Token không hợp lệ hoặc đã hết hạn.')
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Token không hợp lệ hoặc đã hết hạn.'))
     } finally {
       setLoading(false)
     }
@@ -73,23 +77,36 @@ export default function ResetPasswordPage() {
         />
       )}
 
-      <form className='mt-4 space-y-4' onSubmit={handleSubmit}>
-        <Input
-          label='Mật khẩu mới'
-          type='password'
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder='Tối thiểu 8 ký tự'
-          disabled={!hasToken}
-        />
+      <form className='mt-4 space-y-4' onSubmit={handleSubmit} noValidate>
+        <div className='space-y-2'>
+          <Input
+            label='Mật khẩu mới'
+            type='password'
+            autoComplete='new-password'
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setErrors((prev) => ({ ...prev, password: undefined }))
+            }}
+            placeholder='Tối thiểu 8 ký tự'
+            disabled={!hasToken}
+            error={errors.password}
+          />
+          <PasswordStrength password={password} />
+        </div>
 
         <Input
           label='Xác nhận mật khẩu'
           type='password'
+          autoComplete='new-password'
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value)
+            setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
+          }}
           placeholder='Nhập lại mật khẩu'
           disabled={!hasToken}
+          error={errors.confirmPassword}
         />
 
         <Button full type='submit' loading={loading} disabled={!hasToken || loading}>

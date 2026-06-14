@@ -422,7 +422,8 @@ export const checkPermissions =
     const { user_id } = req.decode_authorization as TokenPayload
     const user = await usersService.findUserById(user_id)
 
-    if (!user.role || !allowedRoles.includes(user.role)) {
+    const role = user.role
+    if (role === undefined || role === null || !allowedRoles.includes(role)) {
       return res.status(HTTP_STATUS.FORBIDDEN).json({
         message: USERS_MESSAGES.PERMISSION_DENIED
       })

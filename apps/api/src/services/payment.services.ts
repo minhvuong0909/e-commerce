@@ -6,48 +6,22 @@ import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { PAYMENT_MESSAGES } from '~/constants/messages'
 import databaseService from './database.service'
-import nodemailer from 'nodemailer'
+import { createMailTransporter } from '~/config/mail'
+import { assertMoMoProductionReady, MOMO_CONFIG } from '~/config/payment'
 
-// Tái sử dụng cùng cấu hình Gmail SMTP đã có sẵn trong dự án
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-})
-
-// Đăng ký tại: https://business.momo.vn/
-const MOMO_SANDBOX_CONFIG = {
-  partnerCode: 'MOMO',
-  accessKey: 'F8BBA842ECF85',
-  secretKey: 'K951B6PE1waDMi640xX08PD3vg6EkVlz',
-  endpoint: 'https://test-payment.momo.vn/v2/gateway/api/create'
-}
-
-const MOMO_ENDPOINT = process.env.MOMO_ENDPOINT || MOMO_SANDBOX_CONFIG.endpoint
-const isMoMoSandbox = MOMO_ENDPOINT.includes('test-payment.momo.vn')
-
-const MOMO_CONFIG = {
-  partnerCode: isMoMoSandbox
-    ? MOMO_SANDBOX_CONFIG.partnerCode
-    : process.env.MOMO_PARTNER_CODE || MOMO_SANDBOX_CONFIG.partnerCode,
-  accessKey: isMoMoSandbox
-    ? MOMO_SANDBOX_CONFIG.accessKey
-    : process.env.MOMO_ACCESS_KEY || MOMO_SANDBOX_CONFIG.accessKey,
-  secretKey: isMoMoSandbox
-    ? MOMO_SANDBOX_CONFIG.secretKey
-    : process.env.MOMO_SECRET_KEY || MOMO_SANDBOX_CONFIG.secretKey,
-  endpoint: MOMO_ENDPOINT,
-  ipnUrl: process.env.MOMO_IPN_URL || 'https://rented-skirt-giddy.ngrok-free.dev/payment/momo/webhook',
-  redirectUrl: process.env.MOMO_REDIRECT_URL || 'http://localhost:5173/user/order-result'
-}
+const transporter = createMailTransporter()
 
 class PaymentService {
   // Tạo URL thanh toán MoMo (QR Code / App)
   async createMoMoPaymentUrl(order_id: string) {
+    try {
+      assertMoMoProductionReady()
+    } catch (err) {
+      throw new ErrorWithStatus({
+        message: err instanceof Error ? err.message : 'Cau hinh MoMo chua hop le.',
+        status: HTTP_STATUS.INTERNAL_SERVER_ERROR
+      })
+    }
     // 1. Lấy thông tin đơn hàng từ DB
     const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
     if (!order) {
@@ -132,6 +106,15 @@ class PaymentService {
 
   // Xử lý Webhook MoMo gọi về sau khi khách hàng thanh toán
   async handleMoMoWebhook(webhookData: any) {
+    return this.processMoMoPaymentResult(webhookData)
+  }
+
+  // MoMo redirect user về sau khi thanh toán (sandbox/local không cần IPN public)
+  async handleMoMoReturn(returnData: Record<string, unknown>) {
+    return this.processMoMoPaymentResult(returnData)
+  }
+
+  private async processMoMoPaymentResult(paymentData: any) {
     const {
       orderId,
       resultCode,
@@ -143,23 +126,29 @@ class PaymentService {
       transId,
       message,
       extraData
-    } = webhookData
+    } = paymentData
 
-    // 1. Xác minh chữ ký từ MoMo để đảm bảo dữ liệu không bị giả mạo
+    if (!orderId || momoSignature === undefined) {
+      throw new ErrorWithStatus({
+        message: 'Du lieu tra ve tu MoMo khong hop le.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
     const rawSignature = [
       `accessKey=${MOMO_CONFIG.accessKey}`,
       `amount=${amount}`,
-      `extraData=${extraData}`,
-      `message=${message}`,
+      `extraData=${extraData ?? ''}`,
+      `message=${message ?? ''}`,
       `orderId=${orderId}`,
-      `orderInfo=${orderInfo}`,
-      `orderType=${webhookData.orderType}`,
+      `orderInfo=${orderInfo ?? ''}`,
+      `orderType=${paymentData.orderType ?? ''}`,
       `partnerCode=${partnerCode}`,
-      `payType=${webhookData.payType}`,
+      `payType=${paymentData.payType ?? ''}`,
       `requestId=${requestId}`,
-      `responseTime=${webhookData.responseTime}`,
+      `responseTime=${paymentData.responseTime ?? ''}`,
       `resultCode=${resultCode}`,
-      `transId=${transId}`
+      `transId=${transId ?? ''}`
     ].join('&')
 
     const expectedSignature = crypto.createHmac('sha256', MOMO_CONFIG.secretKey).update(rawSignature).digest('hex')
@@ -171,44 +160,60 @@ class PaymentService {
       })
     }
 
-    // 2. Trích xuất order_id từ orderId của MoMo
-    const parts = orderId.split('-')
-    const order_id = parts[1] // lấy phần ID thật
+    const parts = String(orderId).split('-')
+    const order_id = parts[1]
+    if (!order_id || !ObjectId.isValid(order_id)) {
+      throw new ErrorWithStatus({
+        message: 'Khong tim thay ma don hang tu MoMo.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
 
-    // 3. Cập nhật trạng thái đơn hàng và giao dịch dựa trên kết quả từ MoMo
-    if (resultCode === 0) {
-      // Thanh toán thành công
-      await databaseService.orders.updateOne(
-        { _id: new ObjectId(order_id) },
-        {
-          $set: {
-            payment_status: PaymentStatus.COMPLETED,
-            updated_at: new Date()
+    const orderObjectId = new ObjectId(order_id)
+    const existingOrder = await databaseService.orders.findOne({ _id: orderObjectId })
+    if (!existingOrder) {
+      throw new ErrorWithStatus({
+        message: PAYMENT_MESSAGES.PAYMENT_ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const isSuccess = Number(resultCode) === 0
+
+    if (isSuccess) {
+      if (existingOrder.payment_status !== PaymentStatus.COMPLETED) {
+        await databaseService.orders.updateOne(
+          { _id: orderObjectId },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              updated_at: new Date()
+            }
           }
-        }
-      )
+        )
 
-      await databaseService.payments.updateOne(
-        { order_id: new ObjectId(order_id), payment_method: 'MOMO' },
-        {
-          $set: {
-            payment_status: PaymentStatus.COMPLETED,
-            gateway_trans_id: transId,
-            raw_gateway_response: webhookData,
-            updated_at: new Date()
-          }
-        }
-      )
-      console.log(`Đơn hàng ${order_id} đã thanh toán thành công qua MoMo. MoMo TransId: ${transId}`)
+        await databaseService.payments.updateOne(
+          { order_id: orderObjectId, payment_method: 'MOMO' },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              gateway_trans_id: transId,
+              raw_gateway_response: paymentData,
+              updated_at: new Date()
+            }
+          },
+          { upsert: false }
+        )
 
-      // 4. Gửi email xác nhận thanh toán thành công cho khách hàng
-      this.sendPaymentConfirmationEmail(order_id, amount, transId, 'Ví MoMo', 'MoMo').catch((err) =>
-        console.error('Gửi email xác nhận thanh toán thất bại:', err)
-      )
-    } else {
-      // Thanh toán thất bại
+        console.log(`Đơn hàng ${order_id} đã thanh toán thành công qua MoMo. MoMo TransId: ${transId}`)
+
+        this.sendPaymentConfirmationEmail(order_id, String(amount), transId, 'Ví MoMo', 'MoMo').catch((err) =>
+          console.error('Gửi email xác nhận thanh toán thất bại:', err)
+        )
+      }
+    } else if (existingOrder.payment_status === PaymentStatus.PENDING) {
       await databaseService.orders.updateOne(
-        { _id: new ObjectId(order_id) },
+        { _id: orderObjectId },
         {
           $set: {
             payment_status: PaymentStatus.FAILED,
@@ -218,12 +223,12 @@ class PaymentService {
       )
 
       await databaseService.payments.updateOne(
-        { order_id: new ObjectId(order_id), payment_method: 'MOMO' },
+        { order_id: orderObjectId, payment_method: 'MOMO' },
         {
           $set: {
             payment_status: PaymentStatus.FAILED,
             gateway_trans_id: transId,
-            raw_gateway_response: webhookData,
+            raw_gateway_response: paymentData,
             updated_at: new Date()
           }
         }
@@ -231,7 +236,14 @@ class PaymentService {
       console.log(`❌ Đơn hàng ${order_id} thanh toán thất bại. Mã lỗi: ${resultCode} - ${message}`)
     }
 
-    return { message: PAYMENT_MESSAGES.MOMO_WEBHOOK_SUCCESS }
+    return {
+      message: PAYMENT_MESSAGES.MOMO_WEBHOOK_SUCCESS,
+      order_id,
+      resultCode: String(resultCode),
+      amount: String(amount ?? ''),
+      transId: String(transId ?? ''),
+      gatewayMessage: String(message ?? '')
+    }
   }
 
   // -------------------------------------------------------

@@ -17,6 +17,10 @@ export const resetPasswordApi = (payload: ResetPasswordPayload) => {
   return api.post('/users/reset-password', payload)
 }
 
+export const resendVerifyEmailApi = () => {
+  return api.post('/users/resend-verify-email')
+}
+
 export const getMeApi = () => {
   return api.post('/users/me')
 }
@@ -35,9 +39,10 @@ export const refreshTokenApi = (refresh_token: string) => {
   return api.post('/users/refresh-token', { refresh_token })
 }
 
-// login with google
+export const changePasswordApi = (payload: { old_password: string; password: string; confirm_password: string }) => {
+  return api.put('/users/change-password', payload)
+}
+
 export const loginWithGoogleApi = (token: string) => {
   return api.post('/users/login-with-google', { token })
 }
-
-

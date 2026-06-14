@@ -43,7 +43,7 @@ export default function AdminProductsPage() {
     try {
       setLoading(true)
       setError('')
-      const res = await getAllProductsApi(0, 0)
+      const res = await getAllProductsApi(100, 1)
       const list = res?.data?.result
       setProducts(Array.isArray(list) ? list : [])
     } catch (err) {

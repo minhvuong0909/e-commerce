@@ -51,6 +51,7 @@ export const updateOrderController = async (
   const order = await ordersService.updateOrderStatus({
     user_id: user_id,
     order_id: ((req.params as any).id as string),
+    status: Number(req.body.status)
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.UPDATE_ORDER_SUCCESS,

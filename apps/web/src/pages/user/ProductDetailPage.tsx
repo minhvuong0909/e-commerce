@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, Heart, Minus, PackageCheck, Plus, ShieldCheck, ShoppingCart, Star, Truck } from 'lucide-react'
@@ -6,6 +6,7 @@ import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import { useProductDetail } from '../../hooks/useProductDetail'
 import { useCartActions } from '../../hooks/useCartActions'
+import cn from '../../utils/cn'
 import money from '../../utils/money'
 
 export default function ProductDetailPage() {
@@ -15,6 +16,14 @@ export default function ProductDetailPage() {
   const { addToCart, isAdding: adding } = useCartActions()
 
   const [qty, setQty] = useState(1)
+  const [activeImageIndex, setActiveImageIndex] = useState(0)
+
+  const images = useMemo(
+    () => (product?.medias ?? []).map((media) => media.url).filter(Boolean),
+    [product?.medias]
+  )
+
+  const activeImage = images[activeImageIndex] ?? images[0]
 
   const handleAddToCart = useCallback(() => {
     if (!product) return
@@ -53,7 +62,6 @@ export default function ProductDetailPage() {
 
   const outOfStock = product.quantity <= 0
   const overStock = qty > product.quantity
-  const mainImage = product.medias?.[0]?.url
 
   return (
     <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
@@ -71,24 +79,37 @@ export default function ProductDetailPage() {
         <div className='space-y-4'>
           <div className='surface-card relative overflow-hidden rounded-3xl'>
             <div className='aspect-square bg-slate-100'>
-              {mainImage ? (
-                <motion.img
-                  src={mainImage}
-                  alt={product.name}
-                  className='h-full w-full object-cover'
-                  initial={{ opacity: 0, scale: 1.02 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.035 }}
-                  transition={{ duration: 0.35 }}
-                />
+              {activeImage ? (
+                <img src={activeImage} alt={product.name} className='h-full w-full object-cover' loading='eager' decoding='async' />
               ) : (
-                <div className='grid h-full place-items-center text-sm font-bold text-slate-400'>No image</div>
+                <div className='grid h-full place-items-center text-sm font-bold text-slate-400'>Chưa có ảnh</div>
               )}
             </div>
+
             <span className='absolute left-4 top-4 rounded-full bg-white/95 px-4 py-2 text-xs font-black text-brand-700 shadow-sm'>
               Hàng chính hãng
             </span>
           </div>
+
+          {images.length > 1 ? (
+            <div className='flex gap-3 overflow-x-auto pb-1'>
+              {images.map((url, index) => (
+                <button
+                  key={`${url}-${index}`}
+                  type='button'
+                  onClick={() => setActiveImageIndex(index)}
+                  aria-label={`Xem ảnh ${index + 1}`}
+                  aria-pressed={activeImageIndex === index}
+                  className={cn(
+                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition',
+                    activeImageIndex === index ? 'border-brand-600 ring-2 ring-brand-500/20' : 'border-slate-200 hover:border-slate-300'
+                  )}
+                >
+                  <img src={url} alt='' className='h-full w-full object-cover' loading='lazy' decoding='async' />
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <div className='grid gap-3 sm:grid-cols-3'>
             {[Truck, ShieldCheck, PackageCheck].map((Icon, index) => (
@@ -165,6 +186,7 @@ export default function ProductDetailPage() {
               </Button>
 
               <button
+                type='button'
                 className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
                 aria-label='Lưu sản phẩm'
               >

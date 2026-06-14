@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BadgeCheck, Globe2, LogOut, Mail, MapPin, PenLine, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import type { User } from '../../models/AuthRequests'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import { getMeApi, logoutApi, updateMeApi } from '../../services/auths.services'
+import { clearAuth, getRefreshToken } from '../../utils/authSession'
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -56,12 +57,11 @@ export default function ProfilePage() {
   const formatDate = (date: string) => new Date(date).toLocaleDateString('vi-VN')
 
   const handleLogout = async () => {
-    const refresh_token = localStorage.getItem('refresh_token')
+    const refresh_token = getRefreshToken()
     if (refresh_token) {
       await logoutApi(refresh_token)
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
     }
+    clearAuth()
     toast.success('Đăng xuất thành công!')
     navigate(ROUTE_PATHS.AUTH_LOGIN)
   }
@@ -125,6 +125,12 @@ export default function ProfilePage() {
                 <PenLine size={17} />
                 {updating ? 'Đang cập nhật...' : 'Chỉnh sửa'}
               </Button>
+
+              <Link to={ROUTE_PATHS.USER_CHANGE_PASSWORD}>
+                <Button variant='secondary' className='w-full sm:w-auto'>
+                  Đổi mật khẩu
+                </Button>
+              </Link>
 
               <Button variant='danger' onClick={handleLogout}>
                 <LogOut size={17} />

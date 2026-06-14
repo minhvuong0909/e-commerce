@@ -30,7 +30,7 @@ const allowedOrigins = [...defaultOrigins, ...envOrigins]
 app.use(
   cors({
     origin: (origin: any, callback: any) => {
-      // Cho phép request không có origin (ví dụ: curl, postman, mobile app)
+      // Cho phép request không có origin 
       if (!origin) return callback(null, true)
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = 'CORS policy does not allow access from the specified Origin.'

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { USER_ROLE } from '~/constants/enums'
 import {
+  clearCartController,
   createCartController,
   deleteCartItemController,
   getCartItemsController,
@@ -50,6 +51,13 @@ cartsRouter.delete(
   checkPermissions(USER_ROLE.User),
   wrapAsync(deleteCartItemController)
 )
+
+/*
+    Description: clear all items in the user's active cart
+    method: DELETE
+    path: /carts/clear
+*/
+cartsRouter.delete('/clear', accessTokenValidator, checkPermissions(USER_ROLE.User), wrapAsync(clearCartController))
 
 /* 
 

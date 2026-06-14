@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { Printer, RefreshCw, ChevronLeft, CalendarClock, ReceiptText, User, CreditCard } from 'lucide-react'
 import Button from '../../../components/ui/Button'
 import StatusBadge from '../../../components/ui/StatusBadge'
+import { getOrderStatusMeta } from '../../../constants/order'
 import { getOrderByIdApi, updateOrderStatusApi } from '../../../services/orders.services'
 import money from '../../../utils/money'
 import { toast } from 'react-toastify'
@@ -36,23 +37,6 @@ type OrderUI = {
     email: string
   }
   items: OrderItem[]
-}
-
-function mapStatus(status: number) {
-  switch (status) {
-    case 0:
-      return { tone: 'processing' as const, label: 'Đang xử lý' }
-    case 1:
-      return { tone: 'shipping' as const, label: 'Đã xác nhận' }
-    case 2:
-      return { tone: 'done' as const, label: 'Đang giao hàng' }
-    case 3:
-      return { tone: 'done' as const, label: 'Đã nhận hàng' }
-    case 4:
-      return { tone: 'cancel' as const, label: 'Đã hủy' }
-    default:
-      return { tone: 'info' as const, label: 'Không rõ' }
-  }
 }
 
 function getPaymentStatusLabel(status: number) {
@@ -136,7 +120,7 @@ export default function AdminOrderDetailPage() {
     )
   }
 
-  const statusInfo = mapStatus(order.status)
+  const statusInfo = getOrderStatusMeta(order.status)
   const totalItemsPrice = order.items.reduce((sum, item) => sum + item.quantity * item.price, 0)
 
   return (

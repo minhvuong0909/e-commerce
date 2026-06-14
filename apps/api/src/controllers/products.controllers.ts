@@ -85,10 +85,11 @@ export const deleteProductController = async (
 }
 
 export const getProductsController = async (req: Request, res: Response, next: NextFunction) => {
-  const result = await productsService.getProducts(req)
+  const { products, pagination } = await productsService.getProducts(req)
 
   res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.GET_PRODUCTS_SUCCESS,
-    result
+    result: products,
+    pagination
   })
 }

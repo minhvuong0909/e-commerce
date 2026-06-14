@@ -1,13 +1,23 @@
 import { useQuery } from '@tanstack/react-query'
-import { getAllProductsApi } from '../services/products.services'
+import { getAllProductsApi, type ProductFilters } from '../services/products.services'
 import type { Product } from '../models/ProductRequests'
 
-export const useProducts = (page: number, limit: number) => {
+export interface ProductPagination {
+  page: number
+  limit: number
+  totalItems: number
+  totalPages: number
+}
+
+export const useProducts = (page: number, limit: number, filters: ProductFilters = {}) => {
   return useQuery({
-    queryKey: ['products', page, limit],
+    queryKey: ['products', page, limit, filters],
     queryFn: async () => {
-      const res = await getAllProductsApi(limit, page)
-      return res.data.result as Product[]
+      const res = await getAllProductsApi(limit, page, filters)
+      return {
+        products: (res.data.result ?? []) as Product[],
+        pagination: res.data.pagination as ProductPagination | undefined
+      }
     }
   })
 }

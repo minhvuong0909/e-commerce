@@ -1,6 +1,14 @@
 import { ObjectId } from 'mongodb'
 import { OrderStatus, PaymentMethod, PaymentStatus } from '~/constants/enums'
 
+export interface ShippingAddress {
+  recipient_name: string
+  phone: string
+  address_line: string
+  city?: string
+  district?: string
+}
+
 interface OrderType {
   _id?: ObjectId
   user_id: ObjectId
@@ -10,6 +18,7 @@ interface OrderType {
   total_price: number
   shipping_fee: number
   status: OrderStatus
+  shipping_address?: ShippingAddress
   created_at?: Date
   updated_at?: Date
 }
@@ -23,6 +32,7 @@ export default class Order {
   total_price: number
   shipping_fee: number
   status: OrderStatus
+  shipping_address?: ShippingAddress
   created_at: Date
   updated_at: Date
   constructor(order: OrderType) {
@@ -35,6 +45,7 @@ export default class Order {
     this.total_price = order.total_price
     this.shipping_fee = order.shipping_fee
     this.status = order.status
+    this.shipping_address = order.shipping_address
     this.created_at = order.created_at || date
     this.updated_at = order.updated_at || date
   }

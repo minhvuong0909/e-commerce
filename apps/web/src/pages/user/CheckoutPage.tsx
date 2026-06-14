@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CreditCard, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
+import { CreditCard, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
 import StatusBadge from '../../components/ui/StatusBadge'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
@@ -13,6 +14,15 @@ import { PaymentMethod } from '../../models/OrderRequests'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
+import { getApiErrorMessage } from '../../utils/apiError'
+
+type ShippingForm = {
+  recipient_name: string
+  phone: string
+  address_line: string
+  city: string
+  district: string
+}
 
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
@@ -32,6 +42,13 @@ export default function CheckoutPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<string>()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.CASH_ON_DELIVERY)
   const [loading, setLoading] = useState(false)
+  const [shipping, setShipping] = useState<ShippingForm>({
+    recipient_name: '',
+    phone: '',
+    address_line: '',
+    city: '',
+    district: ''
+  })
 
   useEffect(() => {
     const fetchData = async () => {
@@ -95,19 +112,42 @@ export default function CheckoutPage() {
       return
     }
 
+    const recipient_name = shipping.recipient_name.trim()
+    const phone = shipping.phone.trim()
+    const address_line = shipping.address_line.trim()
+    if (!recipient_name || !phone || !address_line) {
+      toast.error('Vui lòng nhập đầy đủ thông tin nhận hàng')
+      return
+    }
+
     try {
       setLoading(true)
 
-      await createOrderApi({
+      const res = await createOrderApi({
         items: selectedIds,
         payment_method: paymentMethod,
-        delivery_method_id: selectedDelivery
+        delivery_method_id: selectedDelivery,
+        recipient_name,
+        phone,
+        address_line,
+        city: shipping.city.trim() || undefined,
+        district: shipping.district.trim() || undefined
       })
-      // Dù là thanh toán MoMo hay COD → đều chuyển về trang đơn hàng chờ duyệt
-      toast.success('Đặt hàng thành công! Đang chờ duyệt.')
+
+      const orderId = res.data?.result?.insertedId as string | undefined
+      toast.success('Đặt hàng thành công!')
+
+      if (
+        orderId &&
+        (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.PAYPAL)
+      ) {
+        navigate(ROUTE_PATHS.USER_ORDER_DETAIL(orderId))
+        return
+      }
+
       navigate(ROUTE_PATHS.USER_ORDERS)
-    } catch {
-      toast.error('Đặt hàng thất bại')
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Đặt hàng thất bại'))
     } finally {
       setLoading(false)
     }
@@ -160,6 +200,53 @@ export default function CheckoutPage() {
                   </div>
                 )
               })}
+            </div>
+          </section>
+
+          <section className='surface-card rounded-3xl p-5 md:p-6'>
+            <div className='mb-5 flex items-center gap-3'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-mint-50 text-mint-700'>
+                <MapPin size={18} />
+              </span>
+              <h2 className='text-lg font-black text-ink-950'>Địa chỉ nhận hàng</h2>
+            </div>
+
+            <div className='grid gap-4 md:grid-cols-2'>
+              <Input
+                label='Họ tên người nhận'
+                name='recipient_name'
+                value={shipping.recipient_name}
+                onChange={(e) => setShipping((prev) => ({ ...prev, recipient_name: e.target.value }))}
+                required
+              />
+              <Input
+                label='Số điện thoại'
+                name='phone'
+                value={shipping.phone}
+                onChange={(e) => setShipping((prev) => ({ ...prev, phone: e.target.value }))}
+                required
+              />
+              <div className='md:col-span-2'>
+                <Input
+                  label='Địa chỉ chi tiết'
+                  name='address_line'
+                  value={shipping.address_line}
+                  onChange={(e) => setShipping((prev) => ({ ...prev, address_line: e.target.value }))}
+                  required
+                />
+              </div>
+              <Input
+                label='Thành phố'
+                name='city'
+                value={shipping.city}
+                onChange={(e) => setShipping((prev) => ({ ...prev, city: e.target.value }))}
+              />
+              <Input
+                label='Quận / Huyện'
+                name='district'
+                value={shipping.district}
+                onChange={(e) => setShipping((prev) => ({ ...prev, district: e.target.value }))}
+              />
             </div>
           </section>
 

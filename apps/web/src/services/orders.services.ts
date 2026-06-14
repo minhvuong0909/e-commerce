@@ -1,6 +1,8 @@
 import api from '../configs/api'
 
-export const createOrderApi = (data: Record<string, any>) => {
+import type { CreateOrderPayload } from '../models/OrderRequests'
+
+export const createOrderApi = (data: CreateOrderPayload) => {
   return api.post('/orders/create', data)
 }
 
@@ -23,4 +25,8 @@ export const getAllOrdersApi = (limit: number, page: number) => {
 
 export const updateOrderStatusApi = (orderId: string, status: string) => {
   return api.patch(`/orders/status/${orderId}`, { status })
+}
+
+export const cancelOrderApi = (orderId: string) => {
+  return api.delete(`/orders/${orderId}`)
 }

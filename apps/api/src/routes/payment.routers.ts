@@ -2,12 +2,14 @@ import { Router } from 'express'
 import {
   createMoMoPaymentController,
   momoWebhookController,
+  momoReturnController,
   createPayPalPaymentController,
   paypalSuccessController,
   mockMoMoPaymentSuccessController
 } from '~/controllers/payment.controllers'
 import { accessTokenValidator } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
+import { isMoMoSandboxMode } from '~/config/payment'
 
 const paymentRouter = Router()
 
@@ -31,6 +33,13 @@ paymentRouter.post('/momo/:order_id', accessTokenValidator, wrapAsync(createMoMo
 paymentRouter.post('/momo/webhook', wrapAsync(momoWebhookController))
 
 /*
+    description: MoMo redirect user ve sau khi thanh toan
+    method: GET
+    path: /payment/momo/return
+*/
+paymentRouter.get('/momo/return', wrapAsync(momoReturnController))
+
+/*
     description: Tạo đơn hàng thanh toán PayPal
     method: POST
     path: /payment/paypal/create/:order_id
@@ -45,12 +54,12 @@ paymentRouter.post('/paypal/create/:order_id', accessTokenValidator, wrapAsync(c
 */
 paymentRouter.get('/paypal/success', wrapAsync(paypalSuccessController))
 
-// /*
-//     description: Giả lập thanh toán MoMo thành công 
-//     method: POST
-//     path: /payment/momo/mock-success/:order_id
-//     headers: { Authorization: Bearer <access_token> }
-// */
-// paymentRouter.post('/momo/mock-success/:order_id', accessTokenValidator, wrapAsync(mockMoMoPaymentSuccessController))
+if (isMoMoSandboxMode) {
+  paymentRouter.post(
+    '/momo/mock-success/:order_id',
+    accessTokenValidator,
+    wrapAsync(mockMoMoPaymentSuccessController)
+  )
+}
 
 export default paymentRouter

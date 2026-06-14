@@ -10,19 +10,10 @@ import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { REGEX_USERNAME } from '~/constants/regex'
-import nodemailer from 'nodemailer'
+import { createMailTransporter, getApiBaseUrl } from '~/config/mail'
 import { supabaseConfig } from '~/config/config'
 
-console.log('PASS LENGTH:', process.env.GMAIL_PASS?.length)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASS
-  }
-})
+const transporter = createMailTransporter()
 
 class UserServices {
   // kí access_token bằng jwt
@@ -219,6 +210,7 @@ class UserServices {
         email,
         name,
         avatar,
+        supabase_user_id,
         password: passwordHashed,
         verify_status: UserVerifyStatus.Verified,
         role: USER_ROLE.User,
@@ -328,7 +320,7 @@ class UserServices {
     // sau khi insert vào db thì sign token cho nó
     const tokens = await this.signAccessAndRefreshTokens(user_id.toString())
     // check có đúng email verify token gửi lên không
-    const apiBaseUrl = process.env.HOST || 'http://localhost:3000'
+    const apiBaseUrl = getApiBaseUrl()
     const uri = `${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}`
     try {
       await this.sendEmail(
@@ -382,7 +374,7 @@ class UserServices {
     const email_verify_token = await this.signEmailVerifyToken(user_id)
     // tìm user đúng id
     const user = await this.findUserById(user_id)
-    const apiBaseUrl = process.env.HOST || 'http://localhost:3000'
+    const apiBaseUrl = getApiBaseUrl()
     const uri = `${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}`
     await this.sendEmail(
       user.email,
@@ -572,8 +564,6 @@ class UserServices {
     old_password: string
     password: string
   }) {
-    console.log('vào chưa')
-
     const user = await databaseService.users.findOne({
       _id: new ObjectId(user_id)
     })
@@ -609,6 +599,8 @@ class UserServices {
         }
       }
     )
+    // thu hồi toàn bộ refresh token cũ để buộc đăng nhập lại trên mọi thiết bị
+    await databaseService.refreshTokens.deleteMany({ user_id: new ObjectId(user_id) })
     return user
   }
 

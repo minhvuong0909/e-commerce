@@ -3,24 +3,10 @@ import { Link } from 'react-router-dom'
 import { RefreshCw, Search } from 'lucide-react'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import StatusBadge from '../../../components/ui/StatusBadge'
+import { getOrderStatusMeta } from '../../../constants/order'
 import type { OrderApiResponse } from '../../../models/OrderRequests'
 import { getAllOrdersApi } from '../../../services/orders.services'
 import money from '../../../utils/money'
-
-function mapStatus(status: number) {
-  switch (status) {
-    case 0:
-      return { tone: 'processing' as const, label: 'Đang xử lý' }
-    case 1:
-      return { tone: 'shipping' as const, label: 'Đang giao' }
-    case 2:
-      return { tone: 'done' as const, label: 'Hoàn tất' }
-    case 3:
-      return { tone: 'cancel' as const, label: 'Đã hủy' }
-    default:
-      return { tone: 'info' as const, label: 'Không rõ' }
-  }
-}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<OrderApiResponse[]>([])
@@ -70,6 +56,8 @@ export default function AdminOrdersPage() {
               className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'
             />
             <input
+              type='search'
+              aria-label='Tìm đơn hàng theo mã, khách hàng hoặc thanh toán'
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder='Tìm theo mã đơn, khách hàng, thanh toán...'
@@ -148,7 +136,7 @@ export default function AdminOrdersPage() {
 
               {!loading
                 ? filteredOrders.map((order) => {
-                    const status = mapStatus(order.status)
+                    const status = getOrderStatusMeta(order.status)
                     return (
                       <tr
                         key={order._id}

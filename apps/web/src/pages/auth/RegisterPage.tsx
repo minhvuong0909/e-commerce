@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
 import { toast } from 'sonner'
@@ -8,9 +8,11 @@ import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
 import DatePicker from '../../components/ui/DatePicker'
 import Input from '../../components/ui/Input'
+import PasswordStrength from '../../components/ui/PasswordStrength'
 import { registerSchema, type RegisterFormValues } from '../../middlewares/auth.middlewares'
 import { ROUTES } from '../../routes/route.paths'
 import { registerApi } from '../../services/auths.services'
+import { parseLocalDateString } from '../../utils/date'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -24,6 +26,8 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     mode: 'onChange'
   })
+
+  const passwordValue = useWatch({ control, name: 'password' }) || ''
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
@@ -47,38 +51,54 @@ export default function RegisterPage() {
 
       <Alert variant='info' title='Lưu ý xác minh email' desc='Sau khi đăng ký, bạn cần xác minh email để sử dụng đầy đủ tính năng.' />
 
-      <form className='mt-4 space-y-4' onSubmit={handleSubmit(onSubmit)}>
-        <Input label='Họ và tên' placeholder='Nguyễn Văn A' {...register('name')} error={errors.name?.message} />
-
-        <Input label='Email' type='email' placeholder='example@email.com' {...register('email')} error={errors.email?.message} />
-
-        <div>
-          <Controller
-            name='date_of_birth'
-            control={control}
-            render={({ field }) => (
-              <DatePicker
-                label='Ngày sinh'
-                value={field.value ? new Date(field.value) : null}
-                onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-              />
-            )}
-          />
-          {errors.date_of_birth ? <p className='mt-1 text-xs font-semibold text-rose-600'>{errors.date_of_birth.message}</p> : null}
-        </div>
+      <form className='mt-4 space-y-4' onSubmit={handleSubmit(onSubmit)} noValidate>
+        <Input
+          label='Họ và tên'
+          placeholder='Nguyễn Văn A'
+          autoComplete='name'
+          {...register('name')}
+          error={errors.name?.message}
+        />
 
         <Input
-          label='Mật khẩu'
-          type='password'
-          placeholder='Tối thiểu 8 ký tự'
-          {...register('password')}
-          error={errors.password?.message}
+          label='Email'
+          type='email'
+          placeholder='example@email.com'
+          autoComplete='email'
+          {...register('email')}
+          error={errors.email?.message}
         />
+
+        <Controller
+          name='date_of_birth'
+          control={control}
+          render={({ field }) => (
+            <DatePicker
+              label='Ngày sinh'
+              value={parseLocalDateString(field.value)}
+              onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
+              error={errors.date_of_birth?.message}
+            />
+          )}
+        />
+
+        <div className='space-y-2'>
+          <Input
+            label='Mật khẩu'
+            type='password'
+            placeholder='Tối thiểu 8 ký tự'
+            autoComplete='new-password'
+            {...register('password')}
+            error={errors.password?.message}
+          />
+          <PasswordStrength password={passwordValue} />
+        </div>
 
         <Input
           label='Nhập lại mật khẩu'
           type='password'
           placeholder='Nhập lại mật khẩu'
+          autoComplete='new-password'
           {...register('confirm_password')}
           error={errors.confirm_password?.message}
         />

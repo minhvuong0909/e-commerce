@@ -46,7 +46,13 @@ export const loginController = async (
 }
 
 export const loginWithGoogleController = async (req: Request, res: Response, next: NextFunction) => {
-  const { access_token } = req.body
+  const access_token = req.body.token ?? req.body.access_token
+  if (!access_token) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.BAD_REQUEST,
+      message: USERS_MESSAGES.ACCESS_TOKEN_IS_REQUIRED
+    })
+  }
   const result = await usersService.loginWithGoogle(access_token)
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.LOGIN_SUCCESS,

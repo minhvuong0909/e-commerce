@@ -174,7 +174,8 @@ export const CART_MESSAGES = {
   UPDATE_CART_ITEM_SUCCESS: 'Update cart item success',
   DELETE_CART_ITEM_SUCCESS: 'Delete cart item success',
   GET_CART_ITEMS_SUCCESS: 'Get cart items success',
-  NO_SELECTED_CART_ITEMS: 'No selected cart items for order'
+  NO_SELECTED_CART_ITEMS: 'No selected cart items for order',
+  CLEAR_CART_SUCCESS: 'Clear cart success'
 } as const
 
 export const ORDER_MESSAGES = {
@@ -186,7 +187,10 @@ export const ORDER_MESSAGES = {
   DELETE_ORDER_SUCCESS: 'Cancel order success',
   GET_ALL_ORDERS_SUCCESS: 'Get all orders success',
   NO_ORDERS_FOUND: 'No orders found',
-  DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found'
+  DELIVERY_METHOD_NOT_FOUND: 'Delivery method not found',
+  SHIPPING_ADDRESS_REQUIRED: 'Shipping address is required',
+  ORDER_STATUS_IS_INVALID: 'Order status is invalid',
+  ORDER_STATUS_TRANSITION_INVALID: 'Cannot change order to this status from its current status'
 } as const
 
 export const PAYMENT_MESSAGES = {

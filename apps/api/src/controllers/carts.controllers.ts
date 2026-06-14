@@ -78,6 +78,26 @@ export const deleteCartItemController = async (
   })
 }
 
+export const clearCartController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayload
+  const user = await usersService.findUserById(user_id)
+  if (user.verify_status !== UserVerifyStatus.Verified) {
+    throw new ErrorWithStatus({
+      status: HTTP_STATUS.UNAUTHORIZED,
+      message: USERS_MESSAGES.EMAIL_HAS_BEEN_UNVERIFIED
+    })
+  }
+  const result = await cartsService.clearCart({ user_id })
+  res.status(HTTP_STATUS.OK).json({
+    message: CART_MESSAGES.CLEAR_CART_SUCCESS,
+    result
+  })
+}
+
 export const getCartItemsController = async (
   req: Request<ParamsDictionary, any, any>,
   res: Response,

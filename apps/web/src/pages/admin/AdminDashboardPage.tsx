@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, ArrowRight, Package2, ShoppingBag, TrendingUp, Wallet } from 'lucide-react'
 import StatusBadge from './../../components/ui/AdminDashBoardStatusBadge'
-import { TABS } from './../../constants/order'
+import { getOrderStatusMeta } from './../../constants/order'
 import { LOW_STOCK_THRESHOLD, ORDER_LIMIT, PAGE, PRODUCT_LIMIT } from '../../configs/config'
 import type { OrderApiResponse } from './../../models/OrderRequests'
 import type { Product } from './../../models/ProductRequests'
@@ -25,8 +25,8 @@ export default function AdminDashboardPage() {
         setLoading(true)
         setError(null)
         const [ordersRes, productsRes] = await Promise.all([
-          getAllOrdersApi(PAGE, ORDER_LIMIT),
-          getAllProductsApi(PAGE, PRODUCT_LIMIT)
+          getAllOrdersApi(ORDER_LIMIT, PAGE),
+          getAllProductsApi(PRODUCT_LIMIT, PAGE)
         ])
         if (!isMounted) return
         setOrders(ordersRes?.data?.result ?? [])
@@ -162,7 +162,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               recentOrders.map((order) => {
-                const statusInfo = TABS.find((tab) => tab.key === order.status)
+                const statusInfo = getOrderStatusMeta(order.status)
                 return (
                   <div
                     key={order._id}
@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
                         <span className='font-mono text-sm font-black tracking-widest text-ink-950'>
                           #{order._id.slice(-6).toUpperCase()}
                         </span>
-                        <StatusBadge status={statusInfo?.value ?? 'processing'} label={statusInfo?.label ?? 'Đang xử lý'} />
+                        <StatusBadge status={statusInfo.tone} label={statusInfo.label} />
                       </div>
                       <p className='font-mono text-xs font-semibold text-slate-500'>{formatDate(order.created_at)}</p>
                     </div>

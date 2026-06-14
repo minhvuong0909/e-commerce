@@ -151,6 +151,18 @@ class CartsService {
     return await databaseService.cart_items.deleteOne({ _id: new ObjectId(cart_item_id) })
   }
 
+  async clearCart({ user_id }: { user_id: string }) {
+    const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
+    if (!cart) {
+      throw new ErrorWithStatus({
+        message: CART_MESSAGES.CART_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    const result = await databaseService.cart_items.deleteMany({ cart_id: cart._id })
+    return { deletedCount: result.deletedCount }
+  }
+
   async getCartItemsByUserId({ user_id }: { user_id: string }) {
     // lấy cart của user
     const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
