@@ -352,7 +352,7 @@ export const banUserController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { user_id } = req.params
+  const user_id = req.params.user_id as string
   const result = await usersService.setUserBanned(user_id, true)
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.BAN_USER_SUCCESS,
@@ -365,7 +365,7 @@ export const unbanUserController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { user_id } = req.params
+  const user_id = req.params.user_id as string
   const result = await usersService.setUserBanned(user_id, false)
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.UNBAN_USER_SUCCESS,
