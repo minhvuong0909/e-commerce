@@ -30,7 +30,7 @@
     "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.0",
+    "@supabase/supabase-js": "^2.108.1",
     "antd": "^6.1.1",
     "cookie-parser": "^1.4.7",
     "jose": "^6.2.2",
