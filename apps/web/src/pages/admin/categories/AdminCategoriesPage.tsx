@@ -1,9 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search } from 'lucide-react'
+import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
-import { getCategoriesApi } from '../../../services/categories.services'
+import PaginationBar from '../../../components/ui/PaginationBar'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
+import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
+import { deleteCategoryApi, getCategoriesApi } from '../../../services/categories.services'
+import { getApiErrorMessage } from '../../../utils/apiError'
 
 type Category = {
   _id?: string
@@ -15,48 +20,46 @@ type Category = {
   productsCount?: number
 }
 
-function extractList(response: unknown): Category[] {
-  if (Array.isArray(response)) return response as Category[]
-  if (!response || typeof response !== 'object') return []
-
-  const obj = response as Record<string, unknown>
-  const candidates = [obj.data, obj.result, obj.items, obj.categories]
-
-  for (const candidate of candidates) {
-    const list = extractList(candidate)
-    if (list.length) return list
-  }
-
-  return []
-}
-
 export default function AdminCategoriesPage() {
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search)
 
   const {
-    data: categories = [],
+    data,
     isLoading: loading,
     isError,
     refetch,
     isFetching
-  } = useQuery<Category[]>({
-    queryKey: ['admin-categories'],
-    queryFn: async () => extractList(await getCategoriesApi())
+  } = useQuery({
+    queryKey: ['admin-categories', page, debouncedSearch],
+    queryFn: async () => {
+      const res = await getCategoriesApi(page, ADMIN_LIST_LIMIT, debouncedSearch)
+      return {
+        categories: (res.data.data ?? []) as Category[],
+        pagination: res.data.pagination
+      }
+    }
   })
 
+  const categories = data?.categories ?? []
+  const pagination = data?.pagination
   const error = isError ? 'Không tải được danh sách danh mục' : ''
 
-  const filteredCategories = useMemo(() => {
-    const kw = search.trim().toLowerCase()
-    if (!kw) return categories
-
-    return categories.filter((category) => {
-      const id = String(category._id || category.id || '')
-      const name = category.name || category.title || ''
-      const desc = category.desc || category.description || ''
-      return id.toLowerCase().includes(kw) || name.toLowerCase().includes(kw) || desc.toLowerCase().includes(kw)
-    })
-  }, [categories, search])
+  const handleDelete = async (categoryId: string) => {
+    if (!window.confirm('Xóa danh mục này? Hành động không thể hoàn tác.')) return
+    try {
+      setDeletingId(categoryId)
+      await deleteCategoryApi(categoryId)
+      toast.success('Đã xóa danh mục')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể xóa danh mục'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <AdminTableShell
@@ -71,7 +74,10 @@ export default function AdminCategoriesPage() {
             <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               placeholder='Tìm theo tên danh mục, mô tả, ID...'
               className='premium-input pl-10'
             />
@@ -112,7 +118,7 @@ export default function AdminCategoriesPage() {
                 ))
               ) : null}
 
-              {!loading && filteredCategories.length === 0 ? (
+              {!loading && categories.length === 0 ? (
                 <tr>
                   <td colSpan={4} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
                     Không tìm thấy danh mục nào.
@@ -121,7 +127,7 @@ export default function AdminCategoriesPage() {
               ) : null}
 
               {!loading
-                ? filteredCategories.map((category) => {
+                ? categories.map((category) => {
                     const id = String(category._id || category.id || '')
                     const productCount = Number(category.productsCount || 0)
 
@@ -145,10 +151,12 @@ export default function AdminCategoriesPage() {
                               Sửa
                             </Link>
                             <button
-                              disabled={productCount > 0}
+                              type='button'
+                              disabled={productCount > 0 || !id || deletingId === id}
+                              onClick={() => id && handleDelete(id)}
                               className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-45'
                             >
-                              Xóa
+                              {deletingId === id ? 'Đang xóa...' : 'Xóa'}
                             </button>
                           </div>
                         </td>
@@ -159,6 +167,16 @@ export default function AdminCategoriesPage() {
             </tbody>
           </table>
         </div>
+
+        {pagination ? (
+          <PaginationBar
+            pagination={pagination}
+            page={page}
+            onPageChange={setPage}
+            isLoading={isFetching}
+            itemLabel='danh mục'
+          />
+        ) : null}
       </div>
     </AdminTableShell>
   )

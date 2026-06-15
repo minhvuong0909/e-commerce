@@ -1,10 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search } from 'lucide-react'
+import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
+import PaginationBar from '../../../components/ui/PaginationBar'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import type { Brand } from '../../../models/BrandRequests'
-import { getBrandsApi } from '../../../services/brands.services'
+import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
+import { deleteBrandApi, getBrandsApi } from '../../../services/brands.services'
+import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
 
 function SkeletonRow() {
@@ -21,40 +26,44 @@ function SkeletonRow() {
 
 export default function AdminBrandsPage() {
   const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search)
 
   const {
-    data: brands = [],
+    data,
     isLoading: loading,
     isError,
     refetch,
     isFetching
-  } = useQuery<Brand[]>({
-    queryKey: ['admin-brands'],
+  } = useQuery({
+    queryKey: ['admin-brands', page, debouncedSearch],
     queryFn: async () => {
-      const res = await getBrandsApi()
-      const list = Array.isArray(res) ? res : res?.data?.data
-      return Array.isArray(list) ? list : []
+      const res = await getBrandsApi(page, ADMIN_LIST_LIMIT, debouncedSearch)
+      return {
+        brands: res.data.data ?? [],
+        pagination: res.data.pagination
+      }
     }
   })
 
+  const brands = (data?.brands ?? []) as Brand[]
+  const pagination = data?.pagination
   const error = isError ? 'Không tải được danh sách thương hiệu' : ''
 
-  const filteredBrands = useMemo(() => {
-    const kw = search.trim().toLowerCase()
-    if (!kw) return brands
-
-    return brands.filter((brand) => {
-      const brandId = brand._id || ''
-
-      return (
-        brand.name?.toLowerCase().includes(kw) ||
-        brand.desc?.toLowerCase().includes(kw) ||
-        brand.hotline?.toLowerCase().includes(kw) ||
-        brand.address?.toLowerCase().includes(kw) ||
-        brandId.toLowerCase().includes(kw)
-      )
-    })
-  }, [brands, search])
+  const handleDelete = async (brandId: string) => {
+    if (!window.confirm('Xóa thương hiệu này? Hành động không thể hoàn tác.')) return
+    try {
+      setDeletingId(brandId)
+      await deleteBrandApi(brandId)
+      toast.success('Đã xóa thương hiệu')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể xóa thương hiệu'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <AdminTableShell
@@ -67,10 +76,12 @@ export default function AdminBrandsPage() {
         <div className='surface-card flex flex-col gap-3 rounded-3xl p-4 md:flex-row md:items-center md:justify-between'>
           <div className='relative w-full md:max-w-sm'>
             <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
-
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               placeholder='Tìm theo tên, hotline, địa chỉ, ID...'
               className='premium-input pl-10'
             />
@@ -103,7 +114,7 @@ export default function AdminBrandsPage() {
             <tbody>
               {loading ? Array.from({ length: 5 }).map((_, index) => <SkeletonRow key={index} />) : null}
 
-              {!loading && filteredBrands.length === 0 ? (
+              {!loading && brands.length === 0 ? (
                 <tr>
                   <td colSpan={5} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
                     Không tìm thấy thương hiệu nào.
@@ -112,9 +123,8 @@ export default function AdminBrandsPage() {
               ) : null}
 
               {!loading
-                ? filteredBrands.map((brand) => {
+                ? brands.map((brand) => {
                     const brandId = brand._id
-
                     return (
                       <tr key={brandId} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
                         <td className='px-5 py-4'>
@@ -127,28 +137,29 @@ export default function AdminBrandsPage() {
                             ) : null}
                           </div>
                         </td>
-
                         <td className='max-w-[360px] px-5 py-4'>
                           <p className='line-clamp-2 text-sm leading-6 text-slate-500'>{brand.desc || 'Chưa cập nhật'}</p>
                         </td>
-
                         <td className='px-5 py-4'>
                           <span className='rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-black text-brand-700'>
                             {brand.hotline || 'N/A'}
                           </span>
                         </td>
-
                         <td className='max-w-[360px] px-5 py-4'>
                           <p className='line-clamp-2 text-sm leading-6 text-slate-500'>{brand.address || 'Chưa cập nhật'}</p>
                         </td>
-
                         <td className='px-5 py-4 text-right'>
                           <div className='flex items-center justify-end gap-2'>
                             <Link to={`/admin/brands/${brandId}/edit`} className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
                               Sửa
                             </Link>
-                            <button className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100'>
-                              Xóa
+                            <button
+                              type='button'
+                              disabled={deletingId === brandId}
+                              onClick={() => brandId && handleDelete(brandId)}
+                              className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-50'
+                            >
+                              {deletingId === brandId ? 'Đang xóa...' : 'Xóa'}
                             </button>
                           </div>
                         </td>
@@ -158,13 +169,17 @@ export default function AdminBrandsPage() {
                 : null}
             </tbody>
           </table>
-
-          {!loading && filteredBrands.length > 0 ? (
-            <div className='border-t border-slate-100 px-5 py-3 text-xs font-bold text-slate-500'>
-              Hiển thị {filteredBrands.length} / {brands.length} thương hiệu
-            </div>
-          ) : null}
         </div>
+
+        {pagination ? (
+          <PaginationBar
+            pagination={pagination}
+            page={page}
+            onPageChange={setPage}
+            isLoading={isFetching}
+            itemLabel='thương hiệu'
+          />
+        ) : null}
       </div>
     </AdminTableShell>
   )

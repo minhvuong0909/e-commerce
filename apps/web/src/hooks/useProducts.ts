@@ -1,13 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { getAllProductsApi, type ProductFilters } from '../services/products.services'
 import type { Product } from '../models/ProductRequests'
+import type { PaginationMeta } from '../models/Pagination'
 
-export interface ProductPagination {
-  page: number
-  limit: number
-  totalItems: number
-  totalPages: number
-}
+export type ProductPagination = PaginationMeta
 
 export const useProducts = (page: number, limit: number, filters: ProductFilters = {}) => {
   return useQuery({

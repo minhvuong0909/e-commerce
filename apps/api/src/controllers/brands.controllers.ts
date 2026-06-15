@@ -7,7 +7,6 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { CreateBrandReqBody } from '~/models/requests/Brands.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import brandsService from '~/services/brands.services'
-import databaseService from '~/services/database.service'
 import usersService from '~/services/users.services'
 
 export const createBrandController = async (
@@ -88,18 +87,13 @@ export const getBrandController = async (req: Request<ParamsDictionary>, res: Re
 
 export const getBrandsController = async (req: Request, res: Response, next: NextFunction) => {
   const page = Math.max(1, Number(req.query.page) || 1)
-  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 100))
-  const brands = await brandsService.getBrands(limit, page)
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10))
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined
+  const { brands, pagination } = await brandsService.getBrandsList({ page, limit, search })
 
-  const totalItems = await databaseService.brands.countDocuments()
   res.status(HTTP_STATUS.OK).json({
     message: BRANDS_MESSAGES.GET_BRANDS_SUCCESS,
     data: brands,
-    pagination: {
-      page,
-      limit,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit)
-    }
+    pagination
   })
 }

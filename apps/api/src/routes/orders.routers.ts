@@ -6,6 +6,7 @@ import {
   getAllMyOrdersController,
   getAllOrdersController,
   getOrderByIdController,
+  refundOrderController,
   updateOrderController
 } from '~/controllers/orders.controllers'
 import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
@@ -93,6 +94,14 @@ ordersRouter.get(
   accessTokenValidator,
   checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
   wrapAsync(getAllOrdersController)
+)
+
+ordersRouter.post(
+  '/:id/refund',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Admin),
+  requireVerifiedEmail,
+  wrapAsync(refundOrderController)
 )
 
 export default ordersRouter

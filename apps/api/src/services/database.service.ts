@@ -12,6 +12,7 @@ import Order from '~/models/schemas/Orders.schema'
 import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Delivery from '~/models/schemas/Deliverys.schema'
 import Payment from '~/models/schemas/Payments.schema'
+import UserAddress from '~/models/schemas/UserAddresses.schema'
 
 dotenv.config()
 
@@ -97,6 +98,10 @@ class DatabaseService {
   // instance của payment
   get payments(): Collection<Payment> {
     return this.db.collection(process.env.DB_PAYMENTS_COLLECTION as string)
+  }
+
+  get user_addresses(): Collection<UserAddress> {
+    return this.db.collection(process.env.DB_USER_ADDRESSES_COLLECTION as string || 'user_addresses')
   }
 }
 

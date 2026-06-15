@@ -1,33 +1,48 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowRight, BadgeCheck, ChevronLeft, ChevronRight, PackageCheck, Search, ShieldCheck, Sparkles, Truck } from 'lucide-react'
+import {
+  ArrowRight,
+  Droplets,
+  Flower2,
+  Heart,
+  Leaf,
+  MapPin,
+  RefreshCw,
+  ShieldCheck,
+  Sparkles,
+  Sun
+} from 'lucide-react'
 import ProductCard from '../../components/ui/ProductCard'
 import SectionHeader from '../../components/ui/SectionHeader'
 import Button from '../../components/ui/Button'
-import { fadeUpItem, hoverLift, panelMotion, staggerContainer } from '../../constants/motion'
+import { fadeUpItem, staggerContainer } from '../../constants/motion'
 import { useProducts } from '../../hooks/useProducts'
 import type { ProductFilters } from '../../services/products.services'
-import { getBrandsApi } from '../../services/brands.services'
 import { getCategoriesApi } from '../../services/categories.services'
+import cn from '../../utils/cn'
 
-const LIMIT = 12
-
-const SORT_OPTIONS: { value: NonNullable<ProductFilters['sort']>; label: string }[] = [
-  { value: 'newest', label: 'Mới nhất' },
-  { value: 'price_asc', label: 'Giá tăng dần' },
-  { value: 'price_desc', label: 'Giá giảm dần' },
-  { value: 'best_selling', label: 'Bán chạy' }
-]
+const GRID_LIMIT = 8
+const SEARCH_LIMIT = 12
 
 type FilterOption = { id: string; name: string }
 
-function extractList(res: { data?: unknown }): FilterOption[] {
+const COSMETIC_CHIP_HINTS = [
+  'Skincare',
+  'Makeup',
+  'Cleansing',
+  'Sunscreen',
+  'Serum',
+  'Lip Care',
+  'Body Care'
+]
+
+function extractCategories(res: { data?: unknown }): FilterOption[] {
   const findArray = (value: unknown): unknown[] => {
     if (Array.isArray(value)) return value
     if (!value || typeof value !== 'object') return []
     const obj = value as Record<string, unknown>
-    for (const key of ['data', 'result', 'items', 'brands', 'categories']) {
+    for (const key of ['data', 'result', 'items', 'categories']) {
       const nested = obj[key]
       if (Array.isArray(nested)) return nested
       if (nested && typeof nested === 'object') {
@@ -49,306 +64,430 @@ function extractList(res: { data?: unknown }): FilterOption[] {
     .filter((item): item is FilterOption => Boolean(item))
 }
 
+function orderCategoriesForChips(categories: FilterOption[]): FilterOption[] {
+  if (categories.length === 0) return []
+
+  const ranked = [...categories].sort((a, b) => {
+    const ai = COSMETIC_CHIP_HINTS.findIndex((hint) => a.name.toLowerCase().includes(hint.toLowerCase()))
+    const bi = COSMETIC_CHIP_HINTS.findIndex((hint) => b.name.toLowerCase().includes(hint.toLowerCase()))
+    const aRank = ai === -1 ? 99 : ai
+    const bRank = bi === -1 ? 99 : bi
+    return aRank - bRank
+  })
+
+  return ranked.slice(0, 8)
+}
+
+function ProductGridSkeleton() {
+  return (
+    <div className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'>
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} className='h-72 animate-pulse rounded-lg border border-[#eaded8] bg-white/80 p-3'>
+          <div className='h-40 rounded-md bg-[#f5ebe6]' />
+          <div className='mt-3 h-3 w-3/4 rounded bg-[#f0e4de]' />
+          <div className='mt-2 h-3 w-1/2 rounded bg-[#f0e4de]' />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function HomePage() {
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
-  const [sort, setSort] = useState<NonNullable<ProductFilters['sort']>>('newest')
-  const [page, setPage] = useState(1)
-  const [categoryId, setCategoryId] = useState('')
-  const [brandId, setBrandId] = useState('')
-  const [minPrice, setMinPrice] = useState('')
-  const [maxPrice, setMaxPrice] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlSearch = searchParams.get('search') ?? ''
+  const categoryId = searchParams.get('category') ?? ''
   const [categories, setCategories] = useState<FilterOption[]>([])
-  const [brands, setBrands] = useState<FilterOption[]>([])
+
+  const setCategoryId = (id: string) => {
+    const next = new URLSearchParams(searchParams)
+    if (id) next.set('category', id)
+    else next.delete('category')
+    setSearchParams(next, { replace: true })
+  }
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setSearch(searchInput.trim())
-      setPage(1)
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [searchInput])
-
-  useEffect(() => {
-    const loadFilters = async () => {
-      try {
-        const [categoriesRes, brandsRes] = await Promise.all([getCategoriesApi(), getBrandsApi()])
-        setCategories(extractList(categoriesRes))
-        setBrands(extractList(brandsRes))
-      } catch {
-        // catalog vẫn hoạt động nếu filter metadata lỗi
-      }
-    }
-    loadFilters()
+    getCategoriesApi(1, 100)
+      .then((res) => setCategories(orderCategoriesForChips(extractCategories(res))))
+      .catch(() => setCategories([]))
   }, [])
 
-  const filters = useMemo<ProductFilters>(
-    () => ({
-      search: search || undefined,
-      sort,
-      category_id: categoryId || undefined,
-      brand_id: brandId || undefined,
-      minPrice: minPrice ? Number(minPrice) : undefined,
-      maxPrice: maxPrice ? Number(maxPrice) : undefined
-    }),
-    [search, sort, categoryId, brandId, minPrice, maxPrice]
-  )
-
-  const { data, isLoading: loading } = useProducts(page, LIMIT, filters)
-  const products = data?.products ?? []
-  const pagination = data?.pagination
-  const isFiltering =
-    search !== '' ||
-    sort !== 'newest' ||
-    Boolean(categoryId) ||
-    Boolean(brandId) ||
-    Boolean(minPrice) ||
-    Boolean(maxPrice)
-
-  const catalogProducts = products
-
-  const handleFilterChange = () => setPage(1)
-
   return (
-    <div className='pb-12'>
-      <section className='mx-auto max-w-7xl px-4 pt-6 md:px-6'>
-        <div className='relative overflow-hidden rounded-3xl border border-brand-100 bg-brand-50 text-ink-900 shadow-lift'>
-          <div className='absolute inset-0 bg-[linear-gradient(90deg,rgba(253,250,246,0.96),rgba(253,250,246,0.82),rgba(226,240,229,0.4))]' />
+    <div className='home-cosmetics pb-14 [--home-blush:#fdf2f0]'>
+      <HomeHero />
+      <CategoryChips categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
+      {urlSearch ? (
+        <SearchResultsSection key={`${urlSearch}-${categoryId}`} initialSearch={urlSearch} categoryId={categoryId} />
+      ) : null}
+      <ProductShowcase
+        id='new-arrivals'
+        eyebrow='Mới về'
+        title='New Arrivals'
+        desc='Công thức mới, texture mềm mại — cập nhật routine làm đẹp của bạn.'
+        sort='newest'
+        categoryId={categoryId}
+      />
+      <BrandStory />
+      <PromoStrip />
+    </div>
+  )
+}
 
-          <div className='relative px-5 py-10 md:px-10 md:py-14'>
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className='max-w-3xl'>
-              <div className='inline-flex items-center gap-2 rounded-full border border-mint-500/30 bg-mint-50/60 px-4 py-2 text-sm font-bold text-mint-600 backdrop-blur-md shadow-sm'>
-                <BadgeCheck size={16} className='text-mint-500' />
-                Chiết xuất thiên nhiên, an toàn tuyệt đối
-              </div>
+function HomeHero() {
+  return (
+    <section className='mx-auto max-w-7xl px-4 pt-5 md:px-6 md:pt-8'>
+      <div className='relative overflow-hidden rounded-lg border border-[#eaded8]'>
+        <div className='absolute inset-0 bg-[linear-gradient(125deg,#fff9f7_0%,#fdf2f0_42%,#faf6f1_100%)]' />
+        <div className='absolute -right-16 top-8 h-56 w-56 rounded-full bg-[#f5d5cf]/30 blur-3xl' />
+        <div className='absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[#e8f0ea]/40 blur-2xl' />
 
-              <h1 className='mt-6 text-4xl font-bold leading-tight tracking-tight text-ink-900 md:text-5xl'>
-                Vẻ đẹp tinh khiết từ tự nhiên.
-              </h1>
-
-              <p className='mt-4 max-w-2xl text-base leading-7 text-ink-500 md:text-lg'>
-                Khám phá bộ sưu tập chăm sóc da organic lành tính, được chiết xuất từ thiên nhiên giúp nuôi dưỡng làn da khỏe mạnh từ sâu bên trong.
-              </p>
-
-              <div className='mt-8 flex flex-col gap-3 sm:flex-row'>
-                <a
-                  href='#featured-products'
-                  className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-brand-600 px-6 text-sm font-bold text-white shadow-xl transition hover:-translate-y-0.5 hover:bg-brand-900'
-                >
-                  Khám phá ngay <ArrowRight size={18} />
-                </a>
-                <Link
-                  to='/user/orders'
-                  className='inline-flex h-12 items-center justify-center rounded-2xl border border-ink-200 bg-white/50 px-6 text-sm font-bold text-ink-700 backdrop-blur transition hover:-translate-y-0.5 hover:bg-white'
-                >
-                  Đơn hàng của bạn
-                </Link>
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      <section className='mx-auto grid max-w-7xl gap-3 px-4 py-6 md:grid-cols-3 md:px-6'>
-        {[
-          { icon: Truck, title: 'Giao nhanh', desc: 'Tối ưu vận chuyển cho từng đơn hàng.' },
-          { icon: ShieldCheck, title: 'Bảo hành rõ ràng', desc: 'Chính sách minh bạch, dễ tra cứu.' },
-          { icon: PackageCheck, title: 'Sản phẩm chọn lọc', desc: 'Danh mục được kiểm soát chất lượng.' }
-        ].map(({ icon: Icon, title, desc }) => (
-          <motion.div
-            key={title}
-            whileHover={hoverLift}
-            className='premium-panel interactive-lift flex items-start gap-4 rounded-3xl p-5'
-          >
-            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-100 text-brand-600'>
-              <Icon size={20} />
-            </span>
-            <span>
-              <span className='block font-bold text-ink-900'>{title}</span>
-              <span className='mt-1 block text-sm leading-6 text-ink-500'>{desc}</span>
-            </span>
+        <div className='relative grid gap-8 px-5 py-10 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-10 md:py-14'>
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <p className='inline-flex items-center gap-2 rounded-full border border-[#e8c4bc]/60 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-[#a66b62]'>
+              <Sparkles size={14} />
+              Skincare &amp; Cosmetics
+            </p>
+            <h1 className='mt-5 text-3xl font-semibold leading-[1.15] tracking-tight text-[#3d3330] md:text-5xl'>
+              Làn da dịu nhẹ,
+              <span className='block text-[#b07a72]'>vẻ đẹp tự nhiên.</span>
+            </h1>
+            <p className='mt-4 max-w-lg text-sm leading-7 text-[#6b5f59] md:text-base'>
+              Công thức lành tính lấy cảm hứng từ thiên nhiên — serum, sữa rửa mặt và makeup nhẹ nhàng cho mọi routine.
+            </p>
+            <div className='mt-7 flex flex-wrap gap-3'>
+              <a
+                href='#new-arrivals'
+                className='inline-flex h-11 items-center gap-2 rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
+              >
+                Khám phá sản phẩm <ArrowRight size={16} />
+              </a>
+              <a
+                href='#new-arrivals'
+                className='inline-flex h-11 items-center rounded-md border border-[#dccbc4] bg-white/80 px-5 text-sm font-semibold text-[#4a403c] transition hover:bg-white'
+              >
+                Xem hàng mới
+              </a>
+            </div>
           </motion.div>
-        ))}
-      </section>
 
-      <section id='featured-products' className='mx-auto max-w-7xl px-4 py-6 md:px-6'>
-        <SectionHeader
-          eyebrow='Nổi bật'
-          title={isFiltering ? 'Kết quả tìm kiếm' : 'Best Sellers'}
-          desc={
-            isFiltering
-              ? 'Danh sách sản phẩm theo bộ lọc bạn chọn.'
-              : 'Khám phá những sản phẩm chăm sóc da được yêu thích nhất từ thiên nhiên.'
-          }
-          action={
-            <Link to='/user/home' className='inline-flex items-center gap-2 text-sm font-bold text-brand-600 hover:text-brand-900'>
-              Xem bộ sưu tập <ArrowRight size={16} />
-            </Link>
-          }
-        />
-
-        <div className='mt-6 grid gap-3 lg:grid-cols-[1.4fr_1fr_1fr_1fr]'>
-          <div className='relative lg:col-span-1'>
-            <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400' size={18} />
-            <input
-              type='search'
-              aria-label='Tìm sản phẩm theo tên'
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder='Tìm sản phẩm theo tên...'
-              className='h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
-            />
-          </div>
-          <select
-            aria-label='Danh mục'
-            value={categoryId}
-            onChange={(e) => {
-              setCategoryId(e.target.value)
-              handleFilterChange()
-            }}
-            className='h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.45, delay: 0.08 }}
+            className='relative mx-auto w-full max-w-md rounded-lg border border-[#eaded8] bg-white/75 p-5 md:max-w-none'
           >
-            <option value=''>Tất cả danh mục</option>
-            {categories.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label='Thương hiệu'
-            value={brandId}
-            onChange={(e) => {
-              setBrandId(e.target.value)
-              handleFilterChange()
-            }}
-            className='h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
-          >
-            <option value=''>Tất cả thương hiệu</option>
-            {brands.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-          <select
-            aria-label='Sắp xếp sản phẩm'
-            value={sort}
-            onChange={(e) => {
-              setSort(e.target.value as NonNullable<ProductFilters['sort']>)
-              handleFilterChange()
-            }}
-            className='h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className='mt-3 grid gap-3 sm:grid-cols-2'>
-          <input
-            type='number'
-            min={0}
-            aria-label='Giá tối thiểu'
-            value={minPrice}
-            onChange={(e) => {
-              setMinPrice(e.target.value)
-              handleFilterChange()
-            }}
-            placeholder='Giá từ (VNĐ)'
-            className='h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
-          />
-          <input
-            type='number'
-            min={0}
-            aria-label='Giá tối đa'
-            value={maxPrice}
-            onChange={(e) => {
-              setMaxPrice(e.target.value)
-              handleFilterChange()
-            }}
-            placeholder='Giá đến (VNĐ)'
-            className='h-12 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
-          />
-        </div>
-
-        <div className='mt-6'>
-          {loading ? (
-            <div className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div key={index} className='h-80 animate-pulse rounded-3xl border border-slate-200 bg-white p-3 shadow-sm'>
-                  <div className='h-44 rounded-2xl bg-slate-100' />
-                  <div className='mt-4 h-4 w-3/4 rounded bg-slate-100' />
-                  <div className='mt-3 h-4 w-1/2 rounded bg-slate-100' />
+            <div className='grid grid-cols-2 gap-3'>
+              {[
+                { label: 'Serum', tone: 'bg-[#fdf2f0]' },
+                { label: 'Cleanser', tone: 'bg-[#f7f3ee]' },
+                { label: 'SPF', tone: 'bg-[#eef4ef]' },
+                { label: 'Lip', tone: 'bg-[#faf0ee]' }
+              ].map(({ label, tone }) => (
+                <div key={label} className={cn('flex aspect-square flex-col justify-end rounded-md p-3', tone)}>
+                  <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>{label}</span>
+                  <span className='mt-1 text-sm font-semibold text-[#3d3330]'>Routine essentials</span>
                 </div>
               ))}
             </div>
-          ) : catalogProducts.length === 0 ? (
-            <div className='rounded-3xl border border-dashed border-slate-200 bg-white p-10 text-center text-sm font-semibold text-slate-500'>
-              Không tìm thấy sản phẩm phù hợp{search ? ` với "${search}"` : ''}.
-            </div>
-          ) : (
-            <motion.div variants={staggerContainer} initial='hidden' animate='show' className='grid grid-cols-2 gap-4 lg:grid-cols-4'>
-              {catalogProducts.map((product) => (
-                <motion.div key={product._id} variants={fadeUpItem}>
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </div>
-
-        {pagination && pagination.totalPages > 1 ? (
-          <div className='mt-6 flex flex-col items-center justify-between gap-3 sm:flex-row'>
-            <p className='text-sm font-semibold text-slate-500'>
-              Trang {pagination.page} / {pagination.totalPages} · {pagination.totalItems} sản phẩm
+            <p className='mt-4 text-center text-xs font-medium text-[#8a7a74]'>
+              Ảnh sản phẩm thật hiển thị tại các mục bên dưới
             </p>
-            <div className='flex items-center gap-2'>
-              <Button
-                variant='secondary'
-                disabled={page <= 1 || loading}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              >
-                <ChevronLeft size={16} />
-                Trước
-              </Button>
-              <Button
-                variant='secondary'
-                disabled={page >= pagination.totalPages || loading}
-                onClick={() => setPage((prev) => prev + 1)}
-              >
-                Sau
-                <ChevronRight size={16} />
-              </Button>
-            </div>
-          </div>
-        ) : null}
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  )
+}
 
-        <motion.div {...panelMotion} className='surface-card mt-8 rounded-3xl p-5 md:p-6'>
-          <div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-            <div className='flex items-start gap-3'>
-              <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-brand-50 text-brand-600 shadow-sm'>
-                <Sparkles size={20} />
-              </span>
-              <div>
-                <div className='font-bold text-ink-900'>Bí quyết chăm sóc da dành riêng cho bạn</div>
-                <p className='mt-1 text-sm leading-6 text-ink-500'>
-                  Đăng nhập để nhận lộ trình chăm sóc da cá nhân hóa và các ưu đãi đặc quyền.
-                </p>
-              </div>
-            </div>
-            <Link
-              to='/auth/login'
-              className='inline-flex h-11 shrink-0 items-center justify-center rounded-2xl bg-brand-600 px-5 text-sm font-bold text-white shadow-md transition hover:bg-brand-900'
+function CategoryChips({
+  categories,
+  selectedId,
+  onSelect
+}: {
+  categories: FilterOption[]
+  selectedId: string
+  onSelect: (id: string) => void
+}) {
+  const chips = categories.length > 0 ? categories : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', name }))
+
+  return (
+    <section className='mx-auto max-w-7xl px-4 pt-6 md:px-6' aria-label='Danh mục mỹ phẩm'>
+      <div className='flex items-center justify-between gap-3'>
+        <h2 className='text-sm font-semibold text-[#5c504a]'>Mua theo danh mục</h2>
+        {selectedId ? (
+          <button
+            type='button'
+            onClick={() => onSelect('')}
+            className='text-xs font-semibold text-[#b07a72] hover:underline'
+          >
+            Xóa bộ lọc
+          </button>
+        ) : null}
+      </div>
+      <div className='mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+        <button
+          type='button'
+          onClick={() => onSelect('')}
+          className={cn(
+            'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition',
+            !selectedId
+              ? 'border-[#3d3330] bg-[#3d3330] text-white'
+              : 'border-[#e5d5ce] bg-white text-[#5c504a] hover:border-[#cbb8af]'
+          )}
+        >
+          Tất cả
+        </button>
+        {chips.map((chip) => {
+          const isActive = Boolean(chip.id) && chip.id === selectedId
+          const isStatic = !chip.id
+          return (
+            <button
+              key={chip.id || chip.name}
+              type='button'
+              disabled={isStatic}
+              onClick={() => chip.id && onSelect(isActive ? '' : chip.id)}
+              className={cn(
+                'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition',
+                isActive
+                  ? 'border-[#3d3330] bg-[#3d3330] text-white'
+                  : 'border-[#e5d5ce] bg-white text-[#5c504a]',
+                isStatic ? 'cursor-default opacity-60' : 'hover:border-[#cbb8af]'
+              )}
             >
-              Đăng nhập
+              {chip.name}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function ProductShowcase({
+  id,
+  eyebrow,
+  title,
+  desc,
+  sort,
+  categoryId
+}: {
+  id: string
+  eyebrow: string
+  title: string
+  desc: string
+  sort: NonNullable<ProductFilters['sort']>
+  categoryId: string
+}) {
+  const filters = useMemo<ProductFilters>(
+    () => ({
+      sort,
+      category_id: categoryId || undefined
+    }),
+    [sort, categoryId]
+  )
+
+  const { data, isLoading } = useProducts(1, GRID_LIMIT, filters)
+  const products = data?.products ?? []
+
+  return (
+    <section id={id} className='mx-auto max-w-7xl scroll-mt-28 px-4 py-8 md:px-6'>
+      <SectionHeader eyebrow={eyebrow} title={title} desc={desc} />
+      <div className='mt-6'>
+        {isLoading ? (
+          <ProductGridSkeleton />
+        ) : products.length === 0 ? (
+          <div className='rounded-lg border border-dashed border-[#dccbc4] bg-white/70 p-10 text-center text-sm font-medium text-[#8a7a74]'>
+            Chưa có sản phẩm trong danh mục này.
+          </div>
+        ) : (
+          <motion.div
+            variants={staggerContainer}
+            initial='hidden'
+            whileInView='show'
+            viewport={{ once: true, margin: '-40px' }}
+            className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
+          >
+            {products.map((product) => (
+              <motion.div key={product._id} variants={fadeUpItem}>
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: string; categoryId: string }) {
+  const [page, setPage] = useState(1)
+
+  const filters = useMemo<ProductFilters>(
+    () => ({
+      search: initialSearch || undefined,
+      sort: 'newest',
+      category_id: categoryId || undefined
+    }),
+    [initialSearch, categoryId]
+  )
+
+  const { data, isLoading } = useProducts(page, SEARCH_LIMIT, filters)
+  const products = data?.products ?? []
+  const pagination = data?.pagination
+
+  return (
+    <section id='featured-products' className='mx-auto max-w-7xl scroll-mt-28 px-4 py-6 md:px-6'>
+      <SectionHeader
+        eyebrow='Tìm kiếm'
+        title={`Kết quả cho "${initialSearch}"`}
+        desc='Lọc thêm bằng category chips phía trên nếu cần.'
+      />
+      <div className='mt-6'>
+        {isLoading ? (
+          <ProductGridSkeleton />
+        ) : products.length === 0 ? (
+          <div className='rounded-lg border border-dashed border-[#dccbc4] bg-white/70 p-10 text-center text-sm font-medium text-[#8a7a74]'>
+            Không tìm thấy sản phẩm phù hợp.
+          </div>
+        ) : (
+          <motion.div
+            variants={staggerContainer}
+            initial='hidden'
+            animate='show'
+            className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
+          >
+            {products.map((product) => (
+              <motion.div key={product._id} variants={fadeUpItem}>
+                <ProductCard product={product} />
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </div>
+      {pagination && pagination.totalPages > 1 ? (
+        <div className='mt-6 flex items-center justify-between gap-3'>
+          <p className='text-sm font-medium text-[#8a7a74]'>
+            Trang {pagination.page}/{pagination.totalPages}
+          </p>
+          <div className='flex gap-2'>
+            <Button variant='secondary' disabled={page <= 1 || isLoading} onClick={() => setPage((p) => p - 1)}>
+              Trước
+            </Button>
+            <Button
+              variant='secondary'
+              disabled={page >= pagination.totalPages || isLoading}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Sau
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  )
+}
+
+function BrandStory() {
+  const pillars = [
+    {
+      icon: Leaf,
+      title: 'Thành phần tự nhiên',
+      desc: 'Chiết xuất thực vật, ưu tiên công thức tối giản và dịu cho da nhạy cảm.'
+    },
+    {
+      icon: Heart,
+      title: 'Cruelty-free',
+      desc: 'Cam kết không thử nghiệm trên động vật — làm đẹp có trách nhiệm.'
+    },
+    {
+      icon: Droplets,
+      title: 'Công thức dịu nhẹ',
+      desc: 'Texture mỏng nhẹ, thấm nhanh — phù hợp routine hằng ngày.'
+    }
+  ]
+
+  return (
+    <section className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
+      <div className='overflow-hidden rounded-lg border border-[#eaded8] bg-[linear-gradient(180deg,#fffcfb,#faf6f2)]'>
+        <div className='grid gap-8 p-6 md:grid-cols-2 md:p-10'>
+          <div>
+            <p className='text-xs font-bold uppercase tracking-[0.16em] text-[#b07a72]'>Our story</p>
+            <h2 className='mt-2 text-2xl font-semibold tracking-tight text-[#3d3330] md:text-3xl'>
+              Vibrant Mart — làn da khỏe từ những điều giản dị
+            </h2>
+            <p className='mt-4 text-sm leading-7 text-[#6b5f59] md:text-base'>
+              Chúng tôi chọn lọc mỹ phẩm chăm sóc da và trang điểm nhẹ nhàng, lấy cảm hứng từ thiên nhiên và khoa học
+              làm đẹp hiện đại. Mỗi sản phẩm đều hướng tới sự an toàn, minh bạch và cảm giác thoải mái trên da.
+            </p>
+            <Link
+              to='/user/home#new-arrivals'
+              className='mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#b07a72] hover:text-[#8f5f58]'
+            >
+              Khám phá bộ sưu tập <ArrowRight size={16} />
             </Link>
           </div>
-        </motion.div>
-      </section>
-    </div>
+          <div className='space-y-3'>
+            {pillars.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className='flex gap-4 rounded-lg border border-[#eaded8]/80 bg-white/80 p-4'>
+                <span className='grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#fdf2f0] text-[#b07a72]'>
+                  <Icon size={18} />
+                </span>
+                <div>
+                  <h3 className='font-semibold text-[#3d3330]'>{title}</h3>
+                  <p className='mt-1 text-sm leading-6 text-[#6b5f59]'>{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function PromoStrip() {
+  const items = [
+    { icon: MapPin, title: 'Giao trong 25km', desc: 'Phí ship tính theo khoảng cách, minh bạch.' },
+    { icon: ShieldCheck, title: 'Hàng chính hãng', desc: 'Nguồn gốc rõ ràng, kiểm soát chất lượng.' },
+    { icon: RefreshCw, title: 'Đổi trả minh bạch', desc: 'Chính sách hỗ trợ sau bán hàng rõ ràng.' },
+    { icon: Flower2, title: 'Tư vấn làm đẹp', desc: 'Gợi ý routine phù hợp loại da của bạn.' }
+  ]
+
+  return (
+    <section className='mx-auto max-w-7xl px-4 pb-2 md:px-6' aria-label='Cam kết dịch vụ'>
+      <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
+        {items.map(({ icon: Icon, title, desc }) => (
+          <div
+            key={title}
+            className='flex gap-3 rounded-lg border border-[#eaded8] bg-white/85 p-4 transition hover:border-[#dccbc4]'
+          >
+            <span className='grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#f7f3ee] text-[#7a6a62]'>
+              <Icon size={18} />
+            </span>
+            <div>
+              <h3 className='text-sm font-semibold text-[#3d3330]'>{title}</h3>
+              <p className='mt-1 text-xs leading-5 text-[#8a7a74]'>{desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className='mt-6 flex flex-col items-start justify-between gap-4 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-5 md:flex-row md:items-center'>
+        <div className='flex items-start gap-3'>
+          <span className='grid h-10 w-10 place-items-center rounded-md bg-white text-[#b07a72] shadow-sm'>
+            <Sun size={18} />
+          </span>
+          <div>
+            <p className='font-semibold text-[#3d3330]'>Đăng nhập để lưu routine &amp; theo dõi đơn hàng</p>
+            <p className='mt-1 text-sm text-[#8a7a74]'>Ưu đãi dành riêng cho thành viên Vibrant Mart.</p>
+          </div>
+        </div>
+        <Link
+          to='/auth/login'
+          className='inline-flex h-10 items-center rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
+        >
+          Đăng nhập
+        </Link>
+      </div>
+    </section>
   )
 }

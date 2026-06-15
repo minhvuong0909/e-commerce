@@ -7,7 +7,6 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { CreateCategoryReqBody } from '~/models/requests/Categories.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import categoryServices from '~/services/categories.services'
-import databaseService from '~/services/database.service'
 import usersService from '~/services/users.services'
 
 export const createCategoryController = async (
@@ -108,23 +107,13 @@ export const getCategoriesController = async (
   next: NextFunction
 ) => {
   const page = Math.max(1, Number(req.query.page) || 1)
-  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 100))
-  const categories = await databaseService.categories
-    .find()
-    .sort({ created_at: -1 }) // sort desc
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .toArray()
+  const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10))
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined
+  const { categories, pagination } = await categoryServices.getCategoriesList({ page, limit, search })
 
-  const totalItems = await databaseService.categories.countDocuments()
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.GET_CATEGORIES_SUCCESS,
     data: categories,
-    pagination: {
-      page,
-      limit,
-      totalItems,
-      totalPages: Math.ceil(totalItems / limit)
-    }
+    pagination
   })
 }

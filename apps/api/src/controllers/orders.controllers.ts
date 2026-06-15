@@ -89,9 +89,24 @@ export const getAllOrdersController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const orders = await ordersService.getAllOrders(req)
+  const { orders, pagination } = await ordersService.getAllOrders(req)
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.GET_ALL_ORDERS_SUCCESS,
-    result: orders
+    result: orders,
+    pagination
+  })
+}
+
+export const refundOrderController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const order = await ordersService.refundOrder({
+    order_id: (req.params as { id: string }).id
+  })
+  res.status(HTTP_STATUS.OK).json({
+    message: ORDER_MESSAGES.REFUND_ORDER_SUCCESS,
+    result: order
   })
 }

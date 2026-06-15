@@ -6,6 +6,11 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { CATEGORY_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ObjectId } from 'mongodb'
+import {
+  buildCategorySearchFilter,
+  buildPaginatedFacetStages,
+  extractFacetResult
+} from '~/utils/listQuery'
 
 class CategoryService {
   // create category
@@ -108,6 +113,47 @@ class CategoryService {
       })
     }
     return result
+  }
+
+  async getCategoriesList({ page, limit, search }: { page: number; limit: number; search?: string }) {
+    const skip = (page - 1) * limit
+    const match = buildCategorySearchFilter(search)
+    const hasMatch = Object.keys(match).length > 0
+
+    const pipeline: Record<string, unknown>[] = [
+      ...(hasMatch ? [{ $match: match }] : []),
+      {
+        $lookup: {
+          from: 'products',
+          let: { categoryId: '$_id' },
+          pipeline: [{ $match: { $expr: { $eq: ['$category_id', '$$categoryId'] } } }, { $count: 'count' }],
+          as: 'productsCountData'
+        }
+      },
+      {
+        $addFields: {
+          productsCount: { $ifNull: [{ $arrayElemAt: ['$productsCountData.count', 0] }, 0] }
+        }
+      },
+      { $project: { productsCountData: 0 } },
+      { $sort: { created_at: -1 } },
+      buildPaginatedFacetStages(skip, limit)
+    ]
+
+    const [facetResult] = await databaseService.categories.aggregate(pipeline).toArray()
+    const { data: categories, totalItems } = extractFacetResult(
+      facetResult as { data?: unknown[]; meta?: Array<{ totalItems: number }> }
+    )
+
+    return {
+      categories,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.max(1, Math.ceil(totalItems / limit))
+      }
+    }
   }
 }
 

@@ -12,9 +12,11 @@ import {
   registerController,
   resendEmailVerifyController,
   resetPasswordController,
+  unbanUserController,
   updateProfileController,
   verifyEmailController,
-  verifyForgotPasswordTokenController
+  verifyForgotPasswordTokenController,
+  banUserController
 } from '~/controllers/users.controllers'
 import { filterMiddleware } from '~/middlewares/common.middlewares'
 import {
@@ -33,6 +35,7 @@ import {
 import { UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { wrapAsync } from '~/utils/handlers'
 import { authLimiter, forgotPasswordLimiter } from '~/middlewares/rateLimit.middlewares'
+import userAddressesRouter from './user_addresses.routers'
 
 // chia dự án thành nhìu router
 const userRouter = express.Router()
@@ -204,6 +207,20 @@ userRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenC
 */
 userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(getUsers))
 
+userRouter.patch(
+  '/:user_id/ban',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Admin),
+  wrapAsync(banUserController)
+)
+
+userRouter.patch(
+  '/:user_id/unban',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Admin),
+  wrapAsync(unbanUserController)
+)
+
 /*
   desc: login with google
   path: users/login-with-google
@@ -213,4 +230,7 @@ userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrap
   }
 */
 userRouter.post('/login-with-google', wrapAsync(loginWithGoogleController))
+
+userRouter.use('/addresses', userAddressesRouter)
+
 export default userRouter

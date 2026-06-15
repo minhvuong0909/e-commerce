@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Printer, RefreshCw, ChevronLeft, CalendarClock, ReceiptText, User, CreditCard } from 'lucide-react'
+import { Printer, RefreshCw, ChevronLeft, CalendarClock, ReceiptText, User, CreditCard, RotateCcw } from 'lucide-react'
 import Button from '../../../components/ui/Button'
 import StatusBadge from '../../../components/ui/StatusBadge'
 import { getOrderStatusMeta } from '../../../constants/order'
-import { getOrderByIdApi, updateOrderStatusApi } from '../../../services/orders.services'
+import { getOrderByIdApi, refundOrderApi, updateOrderStatusApi } from '../../../services/orders.services'
 import money from '../../../utils/money'
-import { toast } from 'react-toastify'
+import { toast } from 'sonner'
 import { getApiErrorMessage } from '../../../utils/apiError'
+import { getRole, USER_ROLE } from '../../../utils/authSession'
 
 type Product = {
   name: string
@@ -59,6 +60,8 @@ function getPaymentStatusLabel(status: number) {
 export default function AdminOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [updating, setUpdating] = useState(false)
+  const [refunding, setRefunding] = useState(false)
+  const isAdmin = getRole() === USER_ROLE.Admin
 
   const {
     data: order = null,
@@ -89,6 +92,21 @@ export default function AdminOrderDetailPage() {
 
   const handlePrint = () => {
     window.print()
+  }
+
+  const handleRefund = async () => {
+    if (!id) return
+    if (!window.confirm('Hoàn tiền cho đơn này? Tồn kho sẽ được cộng lại và đơn chuyển sang trạng thái đã hủy.')) return
+    try {
+      setRefunding(true)
+      await refundOrderApi(id)
+      toast.success('Đã hoàn tiền thành công')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể hoàn tiền đơn hàng'))
+    } finally {
+      setRefunding(false)
+    }
   }
 
   if (loading) {
@@ -259,6 +277,12 @@ export default function AdminOrderDetailPage() {
                   <Button full onClick={() => handleUpdateStatus('3')} loading={updating} disabled={updating}>
                     <RefreshCw size={16} className={updating ? 'animate-spin' : ''} />
                     Đã giao thành công
+                  </Button>
+                )}
+                {isAdmin && order.payment_status === 1 && (
+                  <Button full variant='danger' onClick={handleRefund} loading={refunding} disabled={refunding || updating}>
+                    <RotateCcw size={16} />
+                    Hoàn tiền
                   </Button>
                 )}
                 <Button full variant='secondary' onClick={handlePrint}>

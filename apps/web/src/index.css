@@ -120,6 +120,134 @@
   .glass-line {
     border-color: rgba(148, 163, 184, 0.22);
   }
+
+  /* Admin: calmer cosmetics palette (blush accent, no storefront green) */
+  .admin-theme {
+    --admin-bg: #f7f4f1;
+    --admin-surface: #ffffff;
+    --admin-border: #eaded8;
+    --admin-text: #3d3330;
+    --admin-muted: #8a7a74;
+    --admin-accent: #b07a72;
+    --admin-accent-hover: #8f5f58;
+    --admin-accent-soft: #fdf8f6;
+    --admin-ink: #3d3330;
+
+    background-color: var(--admin-bg);
+    color: var(--admin-text);
+  }
+
+  .admin-theme .surface-card {
+    border: 1px solid var(--admin-border);
+    background: var(--admin-surface);
+    box-shadow: 0 1px 2px rgba(61, 51, 48, 0.05), 0 8px 24px rgba(61, 51, 48, 0.06);
+    backdrop-filter: none;
+  }
+
+  .admin-theme .surface-strong {
+    border: 1px solid var(--admin-border);
+    background: linear-gradient(180deg, #ffffff 0%, #fdf8f6 100%);
+    box-shadow: 0 1px 2px rgba(61, 51, 48, 0.06), 0 12px 32px rgba(61, 51, 48, 0.08);
+  }
+
+  .admin-theme .surface-muted {
+    border: 1px solid var(--admin-border);
+    background: var(--admin-accent-soft);
+  }
+
+  .admin-theme .premium-input {
+    border-color: var(--admin-border);
+    color: var(--admin-text);
+    border-radius: 0.5rem;
+  }
+
+  .admin-theme .premium-input::placeholder {
+    color: #a89890;
+  }
+
+  .admin-theme .premium-input:focus {
+    border-color: rgba(176, 122, 114, 0.55);
+    box-shadow: 0 0 0 3px rgba(245, 213, 207, 0.45);
+  }
+
+  .admin-theme .interactive-lift:hover {
+    box-shadow: 0 12px 28px rgba(61, 51, 48, 0.1);
+  }
+
+  .admin-theme .bg-brand-50 {
+    background-color: var(--admin-accent-soft) !important;
+  }
+
+  .admin-theme .text-brand-600,
+  .admin-theme .text-brand-700 {
+    color: var(--admin-accent) !important;
+  }
+
+  .admin-theme .hover\:text-brand-900:hover {
+    color: var(--admin-accent-hover) !important;
+  }
+
+  .admin-theme .hover\:bg-brand-600:hover {
+    background-color: var(--admin-accent-hover) !important;
+  }
+
+  .admin-theme .bg-ink-950 {
+    background-color: var(--admin-ink) !important;
+  }
+
+  .admin-theme .text-ink-950,
+  .admin-theme .text-ink-900 {
+    color: var(--admin-text) !important;
+  }
+
+  .admin-theme .hover\:text-ink-950:hover {
+    color: var(--admin-text) !important;
+  }
+
+  .admin-theme .border-slate-100,
+  .admin-theme .border-slate-200,
+  .admin-theme .border-slate-300\/60 {
+    border-color: var(--admin-border) !important;
+  }
+
+  .admin-theme .bg-slate-50 {
+    background-color: var(--admin-accent-soft) !important;
+  }
+
+  .admin-theme .bg-slate-100 {
+    background-color: #f5ebe6 !important;
+  }
+
+  .admin-theme .text-slate-400,
+  .admin-theme .text-slate-500,
+  .admin-theme .text-slate-600 {
+    color: var(--admin-muted) !important;
+  }
+
+  .admin-theme .focus\:border-brand-500\/50:focus {
+    border-color: rgba(176, 122, 114, 0.5) !important;
+  }
+
+  .admin-theme .focus\:ring-brand-500\/10:focus {
+    --tw-ring-color: rgba(176, 122, 114, 0.12) !important;
+  }
+
+  .admin-theme .hover\:border-brand-300:hover,
+  .admin-theme .hover\:border-brand-500\/50:hover {
+    border-color: rgba(176, 122, 114, 0.45) !important;
+  }
+
+  .admin-theme .hover\:bg-brand-50:hover {
+    background-color: var(--admin-accent-soft) !important;
+  }
+
+  .admin-theme .focus\:ring-brand-500\/15:focus {
+    --tw-ring-color: rgba(176, 122, 114, 0.15) !important;
+  }
+
+  .admin-theme .shadow-card {
+    box-shadow: 0 1px 2px rgba(61, 51, 48, 0.06), 0 8px 20px rgba(61, 51, 48, 0.08) !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,6 +1,9 @@
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios'
+import { toast } from 'sonner'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { refreshTokenApi } from '../services/auths.services'
+import { parseApiError } from '../utils/apiError'
+import { AUTH_MESSAGES, setAuthNotice } from '../utils/authNotice'
 import { clearAuth, getRefreshToken, getToken, setAuthTokens } from '../utils/authSession'
 
 const api = axios.create({
@@ -20,9 +23,34 @@ type RefreshQueueItem = {
 let isRefreshing = false
 let failedQueue: RefreshQueueItem[] = []
 
-const clearAuthAndRedirect = () => {
+const clearAuthAndRedirect = (message = AUTH_MESSAGES.sessionExpired) => {
+  setAuthNotice({ kind: 'session_expired', message })
   clearAuth()
   window.location.href = ROUTE_PATHS.AUTH_LOGIN
+}
+
+const skipTokenRefresh = (error: AxiosError<{ message?: string }>) => {
+  const kind = parseApiError(error).kind
+  return kind === 'verify' || kind === 'banned'
+}
+
+const notifyNonRefreshAuthError = (error: AxiosError<{ message?: string }>) => {
+  const parsed = parseApiError(error)
+  if (parsed.kind === 'verify') {
+    toast.error(parsed.message, {
+      duration: 6000,
+      action: {
+        label: 'Xác thực email',
+        onClick: () => {
+          window.location.href = ROUTE_PATHS.AUTH_RESEND_VERIFY
+        }
+      }
+    })
+    return
+  }
+  if (parsed.kind === 'banned' || parsed.kind === 'forbidden') {
+    toast.error(parsed.message)
+  }
 }
 
 const processQueue = (error: unknown, token: string | null = null) => {
@@ -60,6 +88,11 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      if (skipTokenRefresh(error)) {
+        notifyNonRefreshAuthError(error)
+        return Promise.reject(error)
+      }
+
       if (isRefreshing) {
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -95,6 +128,10 @@ api.interceptors.response.use(
       } finally {
         isRefreshing = false
       }
+    }
+
+    if (error.response?.status === 403) {
+      toast.error(parseApiError(error).message)
     }
 
     return Promise.reject(error)

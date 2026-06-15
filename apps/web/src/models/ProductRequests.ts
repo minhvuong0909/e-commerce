@@ -10,6 +10,8 @@ export interface Product {
     type: number
   }[]
   origin: string
+  soldNumber?: number
+  created_at?: string
 }
 
 export interface CreateProductRequest extends Omit<Product, '_id' | 'rating_number'> {

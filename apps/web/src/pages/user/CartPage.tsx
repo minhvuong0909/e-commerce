@@ -1,24 +1,89 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Minus, PackageOpen, Plus, ShoppingBag, Trash2, Truck } from 'lucide-react'
+import { Check, Minus, PackageOpen, Plus, Sparkles, Tag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
-import Button from '../../components/ui/Button'
 import EmptyState from '../../components/ui/EmptyState'
 import { CART_QUERY_KEY, useCart } from '../../hooks/useCart'
+import { useCartActions } from '../../hooks/useCartActions'
+import { useProducts } from '../../hooks/useProducts'
 import { clearCartApi, removeCartItemApi, updateCartItemApi } from '../../services/carts.services'
 import type { CartItem } from '../../models/CartRequests'
+import type { Product } from '../../models/ProductRequests'
 import { getApiErrorMessage } from '../../utils/apiError'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
 
+const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
+
 function CartListSkeleton() {
   return (
-    <div className='space-y-4' aria-busy='true' aria-label='Đang tải giỏ hàng'>
+    <div className='space-y-3' aria-busy='true' aria-label='Đang tải giỏ hàng'>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className='h-36 animate-pulse rounded-3xl border border-slate-200 bg-white' />
+        <div key={index} className={cn(panelClass, 'h-32 animate-pulse bg-[#fdf8f6]')} />
       ))}
+    </div>
+  )
+}
+
+function CartAddOns({ cartProductIds }: { cartProductIds: Set<string> }) {
+  const { data, isLoading } = useProducts(1, 8, { sort: 'best_selling' })
+  const { addToCart, isAdding, addingProductId } = useCartActions()
+
+  const addons = useMemo(
+    () => (data?.products ?? []).filter((p) => !cartProductIds.has(p._id)).slice(0, 4),
+    [data?.products, cartProductIds]
+  )
+
+  if (isLoading || addons.length === 0) return null
+
+  return (
+    <section className='mt-8'>
+      <h2 className='text-sm font-semibold text-[#3d3330]'>Gợi ý thêm cho routine</h2>
+      <p className='mt-1 text-xs text-[#8a7a74]'>Son dưỡng, sữa rửa mặt, kem chống nắng — thêm nhanh vào giỏ.</p>
+      <div className='mt-4 grid gap-3 sm:grid-cols-2'>
+        {addons.map((product) => (
+          <CartAddOnRow
+            key={product._id}
+            product={product}
+            onAdd={() => addToCart({ product_id: product._id, quantity: 1, redirect: false })}
+            loading={isAdding && addingProductId === product._id}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CartAddOnRow({
+  product,
+  onAdd,
+  loading
+}: {
+  product: Product
+  onAdd: () => void
+  loading: boolean
+}) {
+  const image = product.medias?.[0]?.url
+
+  return (
+    <div className={cn(panelClass, 'flex items-center gap-3 p-3')}>
+      <div className='h-16 w-14 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6]'>
+        {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
+      </div>
+      <div className='min-w-0 flex-1'>
+        <p className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</p>
+        <p className='mt-0.5 text-sm font-bold text-[#3d3330]'>{money(product.price)}</p>
+      </div>
+      <button
+        type='button'
+        onClick={onAdd}
+        disabled={loading || product.quantity <= 0}
+        className='shrink-0 rounded-md border border-[#3d3330] px-3 py-1.5 text-xs font-semibold text-[#3d3330] transition hover:bg-[#3d3330] hover:text-white disabled:opacity-50'
+      >
+        {loading ? '...' : 'Thêm'}
+      </button>
     </div>
   )
 }
@@ -28,14 +93,19 @@ export default function CartPage() {
   const queryClient = useQueryClient()
   const { data: cartItems = [], isLoading, isFetching } = useCart()
 
-  // theo dõi các item bị bỏ chọn — mặc định mọi item trong giỏ đều được chọn
   const [deselectedIds, setDeselectedIds] = useState<Set<string>>(new Set())
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
 
   const selectedItems = useMemo(
     () => cartItems.filter((item) => !deselectedIds.has(item._id)).map((item) => item._id),
     [cartItems, deselectedIds]
+  )
+
+  const cartProductIds = useMemo(
+    () => new Set(cartItems.map((item) => item.product_infor._id)),
+    [cartItems]
   )
 
   const invalidateCart = () => queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY })
@@ -122,6 +192,15 @@ export default function CartPage() {
     navigate('/user/checkout', { state: { items: selectedItems } })
   }
 
+  const handleApplyPromo = (e: FormEvent) => {
+    e.preventDefault()
+    if (!promoCode.trim()) {
+      toast.error('Vui lòng nhập mã giảm giá')
+      return
+    }
+    toast.message('Mã giảm giá sắp ra mắt — chưa áp dụng vào tổng tiền.')
+  }
+
   const showEmpty = !isLoading && cartItems.length === 0
 
   if (showEmpty) {
@@ -130,11 +209,11 @@ export default function CartPage() {
         <EmptyState
           icon={<PackageOpen size={26} />}
           title='Giỏ hàng trống'
-          desc='Khám phá sản phẩm nổi bật và thêm những món phù hợp vào giỏ hàng.'
+          desc='Khám phá sản phẩm skincare và thêm vào giỏ để bắt đầu routine làm đẹp.'
           action={
             <Link
               to='/user/home'
-              className='inline-flex min-h-12 items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white transition hover:bg-brand-600'
+              className='inline-flex min-h-11 items-center justify-center rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
             >
               Bắt đầu mua sắm
             </Link>
@@ -148,23 +227,23 @@ export default function CartPage() {
     <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
       <div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
         <div>
-          <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Shopping bag</p>
-          <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>Giỏ hàng</h1>
-          <p className='mt-2 text-sm text-slate-500'>
-            {isLoading ? 'Đang tải...' : `${cartItems.length} sản phẩm trong giỏ của bạn`}
+          <p className='text-xs font-semibold uppercase tracking-[0.14em] text-[#b07a72]'>Your bag</p>
+          <h1 className='mt-1 text-3xl font-semibold tracking-tight text-[#3d3330]'>Giỏ hàng</h1>
+          <p className='mt-2 text-sm text-[#8a7a74]'>
+            {isLoading ? 'Đang tải...' : `${cartItems.length} sản phẩm`}
           </p>
         </div>
 
         {!isLoading && cartItems.length > 0 ? (
-          <div className='flex items-center gap-4'>
-            <button type='button' onClick={toggleAll} className='text-sm font-black text-brand-600 transition hover:text-brand-900'>
+          <div className='flex items-center gap-4 text-sm font-semibold'>
+            <button type='button' onClick={toggleAll} className='text-[#b07a72] hover:text-[#8f5f58]'>
               {selectedItems.length === cartItems.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
             </button>
             <button
               type='button'
               onClick={handleClearCart}
               disabled={clearing || isFetching}
-              className='inline-flex items-center gap-1.5 text-sm font-black text-rose-600 transition hover:text-rose-700 disabled:opacity-50'
+              className='inline-flex items-center gap-1.5 text-rose-600 hover:text-rose-700 disabled:opacity-50'
             >
               <Trash2 size={15} />
               Xóa tất cả
@@ -179,12 +258,12 @@ export default function CartPage() {
         </div>
       ) : null}
 
-      <div className='grid gap-8 lg:grid-cols-[1.6fr_0.86fr]'>
+      <div className='grid gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px]'>
         <div>
           {isLoading ? (
             <CartListSkeleton />
           ) : (
-            <div className='space-y-4'>
+            <div className='space-y-3'>
               {cartItems.map((item) => {
                 const product = item.product_infor
                 const image = product.medias?.[0]?.url
@@ -194,62 +273,60 @@ export default function CartPage() {
                   <label
                     key={item._id}
                     className={cn(
-                      'surface-card grid cursor-pointer gap-4 rounded-3xl border p-4 transition sm:grid-cols-[auto_112px_1fr_auto] sm:items-center',
-                      isSelected ? 'border-brand-500/45 ring-2 ring-brand-500/10' : 'border-slate-200 hover:border-slate-300'
+                      panelClass,
+                      'grid cursor-pointer gap-4 p-4 transition sm:grid-cols-[auto_96px_1fr_auto] sm:items-center',
+                      isSelected ? 'border-[#3d3330] ring-1 ring-[#3d3330]/10' : 'hover:border-[#cbb8af]'
                     )}
                   >
                     <input type='checkbox' checked={isSelected} onChange={() => toggleItem(item._id)} className='sr-only' />
 
                     <span
                       className={cn(
-                        'grid h-6 w-6 place-items-center rounded-full border transition',
-                        isSelected ? 'border-brand-600 bg-brand-600 text-white' : 'border-slate-300 bg-white text-transparent'
+                        'grid h-5 w-5 place-items-center rounded border transition',
+                        isSelected ? 'border-[#3d3330] bg-[#3d3330] text-white' : 'border-[#dccbc4] bg-white text-transparent'
                       )}
                     >
-                      <Check size={14} strokeWidth={3} />
+                      <Check size={12} strokeWidth={3} />
                     </span>
 
-                    <div className='h-28 w-full overflow-hidden rounded-2xl bg-slate-100 sm:h-28 sm:w-28'>
+                    <div className='aspect-[4/5] w-full overflow-hidden rounded-md bg-[#f5ebe6] sm:w-24'>
                       {image ? (
-                        <img src={image} alt={product.name} loading='lazy' decoding='async' className='h-full w-full object-cover' />
+                        <img src={image} alt={product.name} loading='lazy' className='h-full w-full object-cover' />
                       ) : null}
                     </div>
 
                     <div className='min-w-0'>
-                      <div className='line-clamp-2 text-base font-black text-ink-950'>{product.name}</div>
-                      <div className='mt-3 flex items-center gap-3'>
-                        <div className='inline-flex items-center rounded-2xl border border-slate-200 bg-white p-1' onClick={(e) => e.preventDefault()}>
-                          <button
-                            type='button'
-                            aria-label='Giảm số lượng'
-                            disabled={mutatingId === item._id || item.quantity <= 1}
-                            onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                            className='grid h-9 w-9 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40'
-                          >
-                            <Minus size={16} />
-                          </button>
-                          <span className='w-10 text-center text-sm font-black'>{item.quantity}</span>
-                          <button
-                            type='button'
-                            aria-label='Tăng số lượng'
-                            disabled={mutatingId === item._id || item.quantity >= product.quantity}
-                            onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                            className='grid h-9 w-9 place-items-center rounded-xl text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40'
-                          >
-                            <Plus size={16} />
-                          </button>
-                        </div>
-                        <span className='text-sm font-semibold text-slate-500'>{money(product.price)} / sp</span>
-                      </div>
-                      <div className='mt-3 inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-bold text-slate-500'>
-                        <Truck size={14} />
-                        Còn {product.quantity} trong kho
+                      {product.origin ? (
+                        <p className='text-[10px] font-semibold uppercase tracking-wider text-[#b07a72]'>{product.origin}</p>
+                      ) : null}
+                      <div className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</div>
+                      <p className='mt-1 text-xs text-[#8a7a74]'>{money(product.price)} / sản phẩm</p>
+
+                      <div className='mt-3 inline-flex items-center rounded-md border border-[#eaded8]' onClick={(e) => e.preventDefault()}>
+                        <button
+                          type='button'
+                          aria-label='Giảm số lượng'
+                          disabled={mutatingId === item._id || item.quantity <= 1}
+                          onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
+                          className='grid h-8 w-8 place-items-center text-[#5c504a] hover:bg-[#fdf8f6] disabled:opacity-40'
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className='w-8 text-center text-sm font-semibold'>{item.quantity}</span>
+                        <button
+                          type='button'
+                          aria-label='Tăng số lượng'
+                          disabled={mutatingId === item._id || item.quantity >= product.quantity}
+                          onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
+                          className='grid h-8 w-8 place-items-center text-[#5c504a] hover:bg-[#fdf8f6] disabled:opacity-40'
+                        >
+                          <Plus size={14} />
+                        </button>
                       </div>
                     </div>
 
-                    <div className='text-left sm:text-right'>
-                      <div className='text-xs font-bold uppercase tracking-[0.12em] text-slate-400'>Thành tiền</div>
-                      <div className='mt-1 text-xl font-black text-ink-950'>{money(product.price * item.quantity)}</div>
+                    <div className='flex flex-col items-start sm:items-end'>
+                      <p className='text-base font-bold text-[#3d3330]'>{money(product.price * item.quantity)}</p>
                       <button
                         type='button'
                         onClick={(e) => {
@@ -258,9 +335,9 @@ export default function CartPage() {
                           handleRemoveItem(item._id)
                         }}
                         disabled={mutatingId === item._id}
-                        className='mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-rose-500 transition hover:text-rose-700 disabled:opacity-50'
+                        className='mt-2 inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50'
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                         Xóa
                       </button>
                     </div>
@@ -269,40 +346,72 @@ export default function CartPage() {
               })}
             </div>
           )}
+
+          <CartAddOns cartProductIds={cartProductIds} />
         </div>
 
-        <aside className='surface-strong h-fit rounded-3xl p-6 lg:sticky lg:top-28'>
-          <div className='flex items-center gap-3'>
-            <span className='grid h-11 w-11 place-items-center rounded-2xl bg-ink-950 text-white'>
-              <ShoppingBag size={19} />
+        <aside className={cn(panelClass, 'h-fit p-5 lg:sticky lg:top-28')}>
+          <div className='flex items-center gap-2'>
+            <span className='grid h-9 w-9 place-items-center rounded-md bg-[#3d3330] text-white'>
+              <Sparkles size={16} />
             </span>
             <div>
-              <div className='text-lg font-black text-ink-950'>Tóm tắt thanh toán</div>
-              <div className='text-sm font-semibold text-slate-500'>{selectedItems.length} sản phẩm đã chọn</div>
+              <p className='font-semibold text-[#3d3330]'>Tóm tắt đơn</p>
+              <p className='text-xs text-[#8a7a74]'>{selectedItems.length} sản phẩm đã chọn</p>
             </div>
           </div>
 
-          <div className='mt-6 space-y-3'>
-            <div className='flex justify-between text-sm'>
-              <span className='text-slate-500'>Tạm tính</span>
-              <span className='font-bold text-ink-950'>{money(subtotal)}</span>
+          <form onSubmit={handleApplyPromo} className='mt-5'>
+            <label className='text-xs font-semibold text-[#6b5f59]'>Mã giảm giá</label>
+            <div className='mt-2 flex gap-2'>
+              <div className='relative min-w-0 flex-1'>
+                <Tag className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a89890]' size={15} />
+                <input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder='Nhập mã'
+                  className='h-10 w-full rounded-md border border-[#eaded8] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#cbb8af] focus:ring-2 focus:ring-[#f5d5cf]/50'
+                />
+              </div>
+              <button
+                type='submit'
+                className='shrink-0 rounded-md border border-[#3d3330] px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
+              >
+                Áp dụng
+              </button>
             </div>
-            <div className='flex justify-between text-sm'>
-              <span className='text-slate-500'>Phí vận chuyển</span>
-              <span className='font-bold text-mint-600'>Tính ở bước sau</span>
+          </form>
+
+          <div className='mt-5 space-y-2 text-sm'>
+            <div className='flex justify-between'>
+              <span className='text-[#8a7a74]'>Tạm tính</span>
+              <span className='font-semibold text-[#3d3330]'>{money(subtotal)}</span>
+            </div>
+            <div className='flex justify-between'>
+              <span className='text-[#8a7a74]'>Phí vận chuyển</span>
+              <span className='font-medium text-[#b07a72]'>Tính ở checkout</span>
             </div>
           </div>
 
-          <div className='my-6 h-px bg-slate-200' />
+          <div className='my-4 h-px bg-[#f0e4de]' />
 
-          <div className='flex items-end justify-between gap-4'>
-            <span className='text-sm font-bold text-slate-500'>Thanh toán</span>
-            <span className='text-2xl font-black text-ink-950'>{money(subtotal)}</span>
+          <div className='flex items-end justify-between'>
+            <span className='text-sm text-[#8a7a74]'>Tổng tạm tính</span>
+            <span className='text-xl font-bold text-[#3d3330]'>{money(subtotal)}</span>
           </div>
 
-          <Button full className='mt-6' disabled={isLoading || selectedItems.length === 0 || stockFail} onClick={handleCheckout}>
+          <button
+            type='button'
+            disabled={isLoading || selectedItems.length === 0 || stockFail}
+            onClick={handleCheckout}
+            className='mt-5 flex h-11 w-full items-center justify-center rounded-md bg-[#3d3330] text-sm font-semibold text-white transition hover:bg-[#2a2421] disabled:opacity-50'
+          >
             Thanh toán ({selectedItems.length})
-          </Button>
+          </button>
+
+          <p className='mt-3 text-center text-[11px] leading-5 text-[#8a7a74]'>
+            Hàng chính hãng · Thanh toán bảo mật · Giao trong bán kính 25km
+          </p>
         </aside>
       </div>
     </div>

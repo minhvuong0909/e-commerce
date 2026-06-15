@@ -16,8 +16,31 @@ const TEXT_STYLES: Record<number, string> = {
   4: 'text-emerald-700'
 }
 
-export default function PasswordStrength({ password }: { password: string }) {
+const BAR_STYLES_COSMETICS: Record<number, string> = {
+  1: 'bg-rose-400',
+  2: 'bg-[#d4a574]',
+  3: 'bg-[#b07a72]',
+  4: 'bg-[#6b8f71]'
+}
+
+const TEXT_STYLES_COSMETICS: Record<number, string> = {
+  1: 'text-rose-600',
+  2: 'text-[#a67c52]',
+  3: 'text-[#8f5f58]',
+  4: 'text-[#6b8f71]'
+}
+
+type PasswordStrengthProps = {
+  password: string
+  variant?: 'default' | 'cosmetics'
+}
+
+export default function PasswordStrength({ password, variant = 'default' }: PasswordStrengthProps) {
   const { score, label } = useMemo(() => evaluatePasswordStrength(password), [password])
+  const isCosmetics = variant === 'cosmetics'
+  const barStyles = isCosmetics ? BAR_STYLES_COSMETICS : BAR_STYLES
+  const textStyles = isCosmetics ? TEXT_STYLES_COSMETICS : TEXT_STYLES
+  const emptyBar = isCosmetics ? 'bg-[#eaded8]' : 'bg-slate-200'
 
   if (!password) return null
 
@@ -29,13 +52,13 @@ export default function PasswordStrength({ password }: { password: string }) {
             key={level}
             className={cn(
               'h-1.5 flex-1 rounded-full transition-colors',
-              level <= score ? BAR_STYLES[score] : 'bg-slate-200'
+              level <= score ? barStyles[score] : emptyBar
             )}
           />
         ))}
       </div>
-      <p className={cn('text-xs font-semibold', TEXT_STYLES[score])}>
-        Độ mạnh mật khẩu: <span className='font-black'>{label}</span>
+      <p className={cn('text-xs font-semibold', textStyles[score])}>
+        Độ mạnh mật khẩu: <span className='font-bold'>{label}</span>
       </p>
     </div>
   )

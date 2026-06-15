@@ -5,6 +5,11 @@ import { ObjectId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
 import { BRANDS_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
+import {
+  buildBrandSearchFilter,
+  buildPaginatedFacetStages,
+  extractFacetResult
+} from '~/utils/listQuery'
 
 class BrandsService {
   // create
@@ -67,64 +72,49 @@ class BrandsService {
     return brand
   }
 
-  async getBrands(limit: number = 10, page: number = 1) {
+  async getBrandsList({ page, limit, search }: { page: number; limit: number; search?: string }) {
     const skip = (page - 1) * limit
+    const match = buildBrandSearchFilter(search)
+    const hasMatch = Object.keys(match).length > 0
 
-    const brands = await databaseService.brands
-      .aggregate([
-        {
-          $lookup: {
-            from: 'products',
-            let: {
-              brandId: '$_id'
-            },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $eq: ['$brand_id', '$$brandId']
-                  }
-                }
-              },
-              {
-                $count: 'count'
-              }
-            ],
-            as: 'productsCountData'
-          }
-        },
-        {
-          $addFields: {
-            productsCount: {
-              $ifNull: [
-                {
-                  $arrayElemAt: ['$productsCountData.count', 0]
-                },
-                0
-              ]
-            }
-          }
-        },
-        {
-          $project: {
-            productsCountData: 0
-          }
-        },
-        {
-          $sort: {
-            created_at: -1
-          }
-        },
-        {
-          $skip: skip
-        },
-        {
-          $limit: limit
+    const pipeline: Record<string, unknown>[] = [
+      ...(hasMatch ? [{ $match: match }] : []),
+      {
+        $lookup: {
+          from: 'products',
+          let: { brandId: '$_id' },
+          pipeline: [{ $match: { $expr: { $eq: ['$brand_id', '$$brandId'] } } }, { $count: 'count' }],
+          as: 'productsCountData'
         }
-      ])
-      .toArray()
+      },
+      {
+        $addFields: {
+          productsCount: { $ifNull: [{ $arrayElemAt: ['$productsCountData.count', 0] }, 0] }
+        }
+      },
+      { $project: { productsCountData: 0 } },
+      { $sort: { created_at: -1 } },
+      buildPaginatedFacetStages(skip, limit)
+    ]
 
-    return brands
+    const [facetResult] = await databaseService.brands.aggregate(pipeline).toArray()
+    const { data: brands, totalItems } = extractFacetResult(facetResult as { data?: unknown[]; meta?: Array<{ totalItems: number }> })
+
+    return {
+      brands,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.max(1, Math.ceil(totalItems / limit))
+      }
+    }
+  }
+
+  /** @deprecated Dùng getBrandsList — giữ cho tương thích nội bộ nếu cần */
+  async getBrands(limit: number = 10, page: number = 1) {
+    const result = await this.getBrandsList({ page, limit })
+    return result.brands
   }
 }
 

@@ -28,7 +28,7 @@ export const createProductApi = (data: CreateProductRequest) => {
 }
 
 export const updateProductApi = (id: string, data: Record<string, unknown>) => {
-  return api.put(`/products/update/${id}`, data)
+  return api.patch(`/products/update/${id}`, data)
 }
 
 export const deleteProductApi = (id: string) => {

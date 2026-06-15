@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { CartStatus, OrderStatus, PaymentStatus, USER_ROLE } from '~/constants/enums'
+import { CartStatus, OrderStatus, PaymentMethod, PaymentStatus, USER_ROLE } from '~/constants/enums'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
@@ -9,7 +9,18 @@ import Order from '~/models/schemas/Orders.schema'
 import { CreateOrderReqBody } from '~/models/requests/Orders.requests'
 import { Request } from 'express'
 import { canTransitionOrderStatus, isValidOrderStatus } from '~/utils/orderStatus'
+import { buildOrderSearchFilter } from '~/utils/listQuery'
 import shippingService from './shipping.services'
+import { createMailTransporter } from '~/config/mail'
+
+const mailTransporter = createMailTransporter()
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
+  [PaymentMethod.MOMO]: 'Ví MoMo',
+  [PaymentMethod.PAYPAL]: 'PayPal',
+  [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng'
+}
 class OrdersService {
   async createOrderItem({
     user_id,
@@ -158,7 +169,94 @@ class OrdersService {
     await databaseService.cart_items.deleteMany({
       _id: { $in: cartItems.map((item) => item._id!) }
     })
+
+    this.sendOrderConfirmationEmail(order.insertedId.toString()).catch((err) =>
+      console.error('Gửi email xác nhận đơn hàng thất bại:', err)
+    )
+
     return order
+  }
+
+  private async sendOrderConfirmationEmail(order_id: string) {
+    const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
+    if (!order) return
+
+    const user = await databaseService.users.findOne({ _id: order.user_id })
+    if (!user?.email) return
+
+    const items = await databaseService.order_items.find({ order_id: new ObjectId(order_id) }).toArray()
+    const products = await databaseService.products
+      .find({ _id: { $in: items.map((item) => item.product_id) } })
+      .toArray()
+    const productMap = new Map(products.map((product) => [product._id.toString(), product.name]))
+
+    const itemRows = items
+      .map((item) => {
+        const name = productMap.get(item.product_id.toString()) || 'Sản phẩm'
+        const lineTotal = (item.quantity * item.price).toLocaleString('vi-VN')
+        return `<tr>
+          <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;color:#334155;font-size:14px;">${name} × ${item.quantity}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #f1f5f9;text-align:right;font-weight:600;color:#0f172a;font-size:14px;">${lineTotal}đ</td>
+        </tr>`
+      })
+      .join('')
+
+    const paymentLabel = PAYMENT_METHOD_LABELS[order.payment_method] || order.payment_method
+    const address = order.shipping_address
+    const addressText = [address?.address_line, address?.district, address?.city].filter(Boolean).join(', ')
+
+    await mailTransporter.sendMail({
+      from: process.env.GMAIL_USER as string,
+      to: user.email,
+      subject: `Xác nhận đơn hàng #${order_id.slice(-6).toUpperCase()} - Vibrant Mart`,
+      html: `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <div style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);padding:32px 24px;text-align:center;">
+            <h1 style="color:#ffffff;margin:0;font-size:24px;">Đặt hàng thành công!</h1>
+            <p style="color:rgba(255,255,255,0.9);margin:8px 0 0;font-size:14px;">Cảm ơn bạn đã mua sắm tại Vibrant Mart</p>
+          </div>
+          <div style="padding:32px 24px;">
+            <p style="color:#64748b;font-size:14px;margin:0 0 16px;">Xin chào <strong>${user.name}</strong>, đơn hàng của bạn đã được ghi nhận.</p>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+              <tr><td style="color:#64748b;font-size:14px;">Mã đơn</td><td style="text-align:right;font-weight:700;">#${order_id.slice(-6).toUpperCase()}</td></tr>
+              <tr><td style="color:#64748b;font-size:14px;">Thanh toán</td><td style="text-align:right;font-weight:600;">${paymentLabel}</td></tr>
+              <tr><td style="color:#64748b;font-size:14px;">Phí ship</td><td style="text-align:right;">${order.shipping_fee.toLocaleString('vi-VN')}đ</td></tr>
+              <tr><td style="color:#64748b;font-size:14px;">Tổng cộng</td><td style="text-align:right;font-weight:700;color:#16a34a;font-size:18px;">${order.total_price.toLocaleString('vi-VN')}đ</td></tr>
+            </table>
+            <h3 style="font-size:15px;color:#0f172a;margin:24px 0 8px;">Sản phẩm</h3>
+            <table style="width:100%;border-collapse:collapse;">${itemRows}</table>
+            <h3 style="font-size:15px;color:#0f172a;margin:24px 0 8px;">Giao đến</h3>
+            <p style="color:#475569;font-size:14px;line-height:1.6;margin:0;">
+              ${address?.recipient_name || ''}<br/>
+              ${address?.phone || ''}<br/>
+              ${addressText}
+            </p>
+          </div>
+        </div>
+      `
+    })
+  }
+
+  private async sendRefundNotificationEmail(order_id: string, amount: number) {
+    const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
+    if (!order) return
+
+    const user = await databaseService.users.findOne({ _id: order.user_id })
+    if (!user?.email) return
+
+    await mailTransporter.sendMail({
+      from: process.env.GMAIL_USER as string,
+      to: user.email,
+      subject: `Hoàn tiền đơn hàng #${order_id.slice(-6).toUpperCase()}`,
+      html: `
+        <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+          <h2 style="color:#0f172a;">Đơn hàng đã được hoàn tiền</h2>
+          <p style="color:#475569;font-size:14px;">Mã đơn: <strong>#${order_id.slice(-6).toUpperCase()}</strong></p>
+          <p style="color:#475569;font-size:14px;">Số tiền hoàn: <strong style="color:#16a34a;">${amount.toLocaleString('vi-VN')}đ</strong></p>
+          <p style="color:#64748b;font-size:13px;">Tiền sẽ được hoàn theo phương thức thanh toán ban đầu trong 3–7 ngày làm việc.</p>
+        </div>
+      `
+    })
   }
   // hoàn kho khi đơn bị hủy: cộng lại quantity và trừ soldNumber
   private async restockOrderItems(order_id: ObjectId) {
@@ -361,25 +459,90 @@ class OrdersService {
   }
 
   async getAllOrders(req: Request) {
-    const page = Number(req.query.page) || 1
-    const limit = Number(req.query.limit) || 10
+    const page = Math.max(1, Number(req.query.page) || 1)
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 10))
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined
+    const filter = buildOrderSearchFilter(search)
 
-    // list endpoint: luôn trả về mảng (rỗng nếu chưa có đơn) thay vì 404
-    const orders = (await databaseService.orders
-      .aggregate([
-        {
-          $sort: { created_at: -1 }
-        },
-        {
-          $skip: (page - 1) * limit
-        },
-        {
-          $limit: limit
+    const [orders, totalItems] = await Promise.all([
+      databaseService.orders
+        .aggregate([
+          ...(Object.keys(filter).length ? [{ $match: filter }] : []),
+          { $sort: { created_at: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: limit }
+        ])
+        .toArray() as Promise<Order[]>,
+      databaseService.orders.countDocuments(filter)
+    ])
+
+    return {
+      orders,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.max(1, Math.ceil(totalItems / limit))
+      }
+    }
+  }
+
+  async refundOrder({ order_id }: { order_id: string }) {
+    const orderObjectId = new ObjectId(order_id)
+    const order = await databaseService.orders.findOne({ _id: orderObjectId })
+
+    if (!order) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    if (order.payment_status === PaymentStatus.REFUNDED) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_ALREADY_REFUNDED,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (order.payment_status !== PaymentStatus.COMPLETED) {
+      throw new ErrorWithStatus({
+        message: ORDER_MESSAGES.ORDER_NOT_REFUNDABLE,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    if (order.status !== OrderStatus.Cancelled) {
+      await this.restockOrderItems(orderObjectId)
+    }
+
+    const updated = await databaseService.orders.findOneAndUpdate(
+      { _id: orderObjectId },
+      {
+        $set: {
+          payment_status: PaymentStatus.REFUNDED,
+          status: OrderStatus.Cancelled,
+          updated_at: new Date()
         }
-      ])
-      .toArray()) as Order[]
+      },
+      { returnDocument: 'after' }
+    )
 
-    return orders
+    await databaseService.payments.updateMany(
+      { order_id: orderObjectId },
+      {
+        $set: {
+          payment_status: PaymentStatus.REFUNDED,
+          updated_at: new Date()
+        }
+      }
+    )
+
+    this.sendRefundNotificationEmail(order_id, order.total_price).catch((err) =>
+      console.error('Gửi email hoàn tiền thất bại:', err)
+    )
+
+    return updated
   }
 }
 

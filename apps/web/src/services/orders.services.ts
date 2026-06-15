@@ -1,6 +1,7 @@
 import api from '../configs/api'
 
 import type { CreateOrderPayload } from '../models/OrderRequests'
+import type { PaginationMeta } from '../models/Pagination'
 
 export const createOrderApi = (data: CreateOrderPayload) => {
   return api.post('/orders/create', data)
@@ -14,13 +15,15 @@ export const getOrderByIdApi = (id: string) => {
   return api.get(`/orders/${id}`)
 }
 
-export const getAllOrdersApi = (limit: number, page: number) => {
-  return api.get('/orders/all/all-orders', {
-    params: {
-      limit,
-      page
-    }
-  })
+export type OrdersListResponse = {
+  result: import('../models/OrderRequests').OrderApiResponse[]
+  pagination?: PaginationMeta
+}
+
+export const getAllOrdersApi = (limit: number, page: number, search?: string) => {
+  const params: Record<string, string | number> = { limit, page }
+  if (search?.trim()) params.search = search.trim()
+  return api.get<OrdersListResponse>('/orders/all/all-orders', { params })
 }
 
 export const updateOrderStatusApi = (orderId: string, status: string) => {
@@ -29,4 +32,8 @@ export const updateOrderStatusApi = (orderId: string, status: string) => {
 
 export const cancelOrderApi = (orderId: string) => {
   return api.delete(`/orders/${orderId}`)
+}
+
+export const refundOrderApi = (orderId: string) => {
+  return api.post(`/orders/${orderId}/refund`)
 }

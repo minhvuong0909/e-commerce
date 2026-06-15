@@ -143,7 +143,7 @@ export default function AdminProductCreatePage() {
     const fetchOptions = async () => {
       try {
         setOptionLoading(true)
-        const [brandsRes, categoriesRes] = await Promise.all([getBrandsApi(), getCategoriesApi()])
+        const [brandsRes, categoriesRes] = await Promise.all([getBrandsApi(1, 100), getCategoriesApi(1, 100)])
         setBrandOptions(normalizeOptions(brandsRes))
         setCategoryOptions(normalizeOptions(categoriesRes))
       } catch (error) {

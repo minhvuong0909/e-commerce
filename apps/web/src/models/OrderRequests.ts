@@ -42,14 +42,19 @@ export type OrderApiResponse = {
   updated_at: string
   items: unknown[]
 }
-export type Status = 'all' | 'processing' | 'shipping' | 'done' | 'cancel'
+export type OrderFilterStatus = 'all' | 'pending' | 'processing' | 'shipping' | 'completed' | 'cancelled'
+
+/** @deprecated Use OrderFilterStatus — kept as alias for imports */
+export type Status = OrderFilterStatus
+
+export type OrderBadgeTone = 'processing' | 'shipping' | 'done' | 'cancel'
 
 export type OrderUI = {
   id: string
   code: string
-  status: Exclude<Status, 'all'>
+  status: OrderBadgeTone
   statusLabel: string
-  rawStatus?: number
+  rawStatus: number
   total: number
   subtotal: number
   shippingFee: number

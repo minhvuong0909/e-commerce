@@ -336,38 +336,39 @@ export const refreshTokenController = async (
 export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
   const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 10
-  const users = await databaseService.users
-    .find(
-      { role: USER_ROLE.User },
-      {
-        projection: {
-          _id: 1,
-          name: 1,
-          username: 1,
-          location: 1,
-          email: 1,
-          avatar: 1,
-          role: 1,
-          created_at: 1
-        }
-      }
-    )
-    .sort({ created_at: -1 }) // sort desc
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .toArray()
+  const search = typeof req.query.search === 'string' ? req.query.search : undefined
 
-  const totalPage = await databaseService.users.countDocuments({
-    role: USER_ROLE.User
-  })
+  const result = await usersService.getUsersList({ page, limit, search })
+
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.GET_USERS_SUCCESS,
-    data: users,
-    pagination: {
-      page,
-      limit,
-      totalItems: totalPage,
-      totalPages: Math.ceil(totalPage / limit)
-    }
+    data: result.data,
+    pagination: result.pagination
+  })
+}
+
+export const banUserController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.params
+  const result = await usersService.setUserBanned(user_id, true)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.BAN_USER_SUCCESS,
+    result
+  })
+}
+
+export const unbanUserController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.params
+  const result = await usersService.setUserBanned(user_id, false)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.UNBAN_USER_SUCCESS,
+    result
   })
 }

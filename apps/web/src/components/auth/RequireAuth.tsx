@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { ROUTE_PATHS } from '../../routes/route.paths'
+import { AUTH_MESSAGES } from '../../utils/authNotice'
 import { getToken } from '../../utils/authSession'
 
 type RequireAuthProps = {
@@ -11,7 +12,16 @@ export default function RequireAuth({ children }: RequireAuthProps) {
   const token = getToken()
 
   if (!token) {
-    return <Navigate to={ROUTE_PATHS.AUTH_LOGIN} state={{ from: location.pathname }} replace />
+    return (
+      <Navigate
+        to={ROUTE_PATHS.AUTH_LOGIN}
+        replace
+        state={{
+          from: location.pathname,
+          authNotice: { kind: 'login', message: AUTH_MESSAGES.loginRequired }
+        }}
+      />
+    )
   }
 
   return children

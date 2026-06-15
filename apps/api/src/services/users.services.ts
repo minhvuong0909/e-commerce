@@ -631,7 +631,86 @@ class UserServices {
     }
     return user?.role === USER_ROLE.Admin || user?.role === USER_ROLE.Staff
   }
-  // admin ban account of
+
+  async getUsersList({ page, limit, search }: { page: number; limit: number; search?: string }) {
+    const filter: Record<string, unknown> = { role: USER_ROLE.User }
+
+    if (search?.trim()) {
+      const keyword = search.trim()
+      filter.$or = [
+        { email: { $regex: keyword, $options: 'i' } },
+        { name: { $regex: keyword, $options: 'i' } },
+        { username: { $regex: keyword, $options: 'i' } }
+      ]
+    }
+
+    const [users, totalItems] = await Promise.all([
+      databaseService.users
+        .find(filter, {
+          projection: {
+            _id: 1,
+            name: 1,
+            username: 1,
+            location: 1,
+            email: 1,
+            avatar: 1,
+            role: 1,
+            verify_status: 1,
+            created_at: 1
+          }
+        })
+        .sort({ created_at: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .toArray(),
+      databaseService.users.countDocuments(filter)
+    ])
+
+    return {
+      data: users,
+      pagination: {
+        page,
+        limit,
+        totalItems,
+        totalPages: Math.ceil(totalItems / limit)
+      }
+    }
+  }
+
+  async setUserBanned(user_id: string, banned: boolean) {
+    const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) })
+    if (!user) {
+      throw new ErrorWithStatus({
+        message: USERS_MESSAGES.USER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    if (user.role !== USER_ROLE.User) {
+      throw new ErrorWithStatus({
+        message: USERS_MESSAGES.CANNOT_BAN_ADMIN,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const verify_status = banned ? UserVerifyStatus.Banned : UserVerifyStatus.Verified
+
+    await databaseService.users.updateOne(
+      { _id: user._id },
+      {
+        $set: {
+          verify_status,
+          updated_at: new Date()
+        }
+      }
+    )
+
+    if (banned) {
+      await databaseService.refreshTokens.deleteMany({ user_id: user._id })
+    }
+
+    return { _id: user._id, verify_status }
+  }
 }
 
 let usersService = new UserServices()

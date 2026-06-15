@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Lock, Mail, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import Input from '../../components/ui/Input'
 import { supabase } from '../../configs/config'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import { loginApi, getMeApi } from '../../services/auths.services'
+import { getApiErrorMessage } from '../../utils/apiError'
 import { getHomePathForRole, getRole, getToken, normalizeRole, setUserRole } from '../../utils/authSession'
 import { persistAuthSession } from '../../utils/persistAuthSession'
 
@@ -17,6 +18,8 @@ const REMEMBER_KEY = 'remembered_email'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const redirectFrom = (location.state as { from?: string } | null)?.from
   const [googleLoading, setGoogleLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const [forms, setForms] = useState(() => ({ email: localStorage.getItem(REMEMBER_KEY) || '', password: '' }))
@@ -74,9 +77,10 @@ export default function LoginPage() {
       if (remember) localStorage.setItem(REMEMBER_KEY, forms.email.trim())
       else localStorage.removeItem(REMEMBER_KEY)
       toast.success('Đăng nhập thành công!')
-      navigate(getHomePathForRole(user?.role))
-    } catch {
-      setFormError('Email hoặc mật khẩu không đúng. Vui lòng thử lại.')
+      const target = redirectFrom && redirectFrom.startsWith('/user') ? redirectFrom : getHomePathForRole(user?.role)
+      navigate(target)
+    } catch (err) {
+      setFormError(getApiErrorMessage(err, 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.'))
     } finally {
       setLoading(false)
     }
@@ -122,6 +126,11 @@ export default function LoginPage() {
         </div>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Đăng nhập</h2>
         <p className='mt-2 text-sm leading-6 text-slate-500'>Chào mừng bạn quay lại. Đăng nhập để tiếp tục mua sắm.</p>
+        {redirectFrom ? (
+          <p className='mt-2 rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900'>
+            Bạn cần đăng nhập để mở trang yêu cầu.
+          </p>
+        ) : null}
       </div>
 
       {formError ? (

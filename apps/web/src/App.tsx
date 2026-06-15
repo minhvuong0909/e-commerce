@@ -29,6 +29,7 @@ import AdminCategoryCreatePage from './pages/admin/categories/AdminCategoryCreat
 import AdminCategoryEditPage from './pages/admin/categories/AdminCategoryUpdatePage'
 import AdminOrdersPage from './pages/admin/orders/AdminOrdersPage'
 import AdminOrderDetailPage from './pages/admin/orders/AdminOrderDetailPage'
+import AdminUsersPage from './pages/admin/users/AdminUsersPage'
 import ProfilePage from './pages/user/GetProfile'
 import ChangePasswordPage from './pages/user/ChangePasswordPage'
 import AuthCallbackPage from './pages/auth/AuthCallBackPage'
@@ -37,6 +38,7 @@ import RequireRole from './components/auth/RequireRole'
 import { getRole, getToken, normalizeRole, setUserRole, USER_ROLE } from './utils/authSession'
 import { getMeApi } from './services/auths.services'
 import { ROUTE_PATHS, ROUTE_SEGMENTS } from './routes/route.paths'
+import { useAuthNotice } from './hooks/useAuthNotice'
 
 function AuthBootstrap() {
   useEffect(() => {
@@ -53,10 +55,24 @@ function AuthBootstrap() {
   return null
 }
 
+function AuthNoticeListener() {
+  useAuthNotice()
+  return null
+}
+
+function AdminOnly({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireRole roles={[USER_ROLE.Admin]} fallback={ROUTE_PATHS.ADMIN_ORDERS}>
+      {children}
+    </RequireRole>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthBootstrap />
+      <AuthNoticeListener />
       <Toaster richColors position='top-right' />
       <Routes>
         <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
@@ -145,39 +161,97 @@ export default function App() {
         >
           <Route index element={<AdminDashboardPage />} />
 
-          {/* products */}
-          <Route path={ROUTE_SEGMENTS.ADMIN_PRODUCTS} element={<AdminProductsPage />} />
+          {/* products — Admin only */}
+          <Route
+            path={ROUTE_SEGMENTS.ADMIN_PRODUCTS}
+            element={
+              <AdminOnly>
+                <AdminProductsPage />
+              </AdminOnly>
+            }
+          />
           <Route
             path={`${ROUTE_SEGMENTS.ADMIN_PRODUCTS}/${ROUTE_SEGMENTS.CREATE}`}
-            element={<AdminProductCreatePage />}
+            element={
+              <AdminOnly>
+                <AdminProductCreatePage />
+              </AdminOnly>
+            }
           />
           <Route
             path={`${ROUTE_SEGMENTS.ADMIN_PRODUCTS}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
-            element={<AdminProductEditPage />}
+            element={
+              <AdminOnly>
+                <AdminProductEditPage />
+              </AdminOnly>
+            }
           />
 
-          {/* brands */}
-          <Route path={ROUTE_SEGMENTS.ADMIN_BRANDS} element={<AdminBrandsPage />} />
-          <Route path={`${ROUTE_SEGMENTS.ADMIN_BRANDS}/${ROUTE_SEGMENTS.CREATE}`} element={<AdminBrandCreatePage />} />
+          {/* brands — Admin only */}
+          <Route
+            path={ROUTE_SEGMENTS.ADMIN_BRANDS}
+            element={
+              <AdminOnly>
+                <AdminBrandsPage />
+              </AdminOnly>
+            }
+          />
+          <Route
+            path={`${ROUTE_SEGMENTS.ADMIN_BRANDS}/${ROUTE_SEGMENTS.CREATE}`}
+            element={
+              <AdminOnly>
+                <AdminBrandCreatePage />
+              </AdminOnly>
+            }
+          />
           <Route
             path={`${ROUTE_SEGMENTS.ADMIN_BRANDS}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
-            element={<AdminBrandEditPage />}
+            element={
+              <AdminOnly>
+                <AdminBrandEditPage />
+              </AdminOnly>
+            }
           />
 
-          {/* categories */}
-          <Route path={ROUTE_SEGMENTS.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
+          {/* categories — Admin only */}
+          <Route
+            path={ROUTE_SEGMENTS.ADMIN_CATEGORIES}
+            element={
+              <AdminOnly>
+                <AdminCategoriesPage />
+              </AdminOnly>
+            }
+          />
           <Route
             path={`${ROUTE_SEGMENTS.ADMIN_CATEGORIES}/${ROUTE_SEGMENTS.CREATE}`}
-            element={<AdminCategoryCreatePage />}
+            element={
+              <AdminOnly>
+                <AdminCategoryCreatePage />
+              </AdminOnly>
+            }
           />
           <Route
             path={`${ROUTE_SEGMENTS.ADMIN_CATEGORIES}/${ROUTE_SEGMENTS.ID}/${ROUTE_SEGMENTS.EDIT}`}
-            element={<AdminCategoryEditPage />}
+            element={
+              <AdminOnly>
+                <AdminCategoryEditPage />
+              </AdminOnly>
+            }
           />
 
-          {/* orders */}
+          {/* orders — Staff + Admin */}
           <Route path={ROUTE_SEGMENTS.ADMIN_ORDERS} element={<AdminOrdersPage />} />
           <Route path={`${ROUTE_SEGMENTS.ADMIN_ORDERS}/${ROUTE_SEGMENTS.ID}`} element={<AdminOrderDetailPage />} />
+
+          {/* users — Admin only */}
+          <Route
+            path={ROUTE_SEGMENTS.ADMIN_USERS}
+            element={
+              <AdminOnly>
+                <AdminUsersPage />
+              </AdminOnly>
+            }
+          />
         </Route>
 
         <Route path='/' element={<Navigate to={ROUTE_PATHS.AUTH_LOGIN} replace />} />

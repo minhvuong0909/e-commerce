@@ -67,7 +67,10 @@ export const USERS_MESSAGES = {
   CHANGE_PASSWORD_SUCCESS: 'Change password success',
   REFRESH_TOKEN_SUCCESS: 'Refresh token success',
   USERS_IS_NOT_ADMIN: 'User is not admin',
-  PERMISSION_DENIED: 'Permission denied'
+  PERMISSION_DENIED: 'Permission denied',
+  BAN_USER_SUCCESS: 'Ban user success',
+  UNBAN_USER_SUCCESS: 'Unban user success',
+  CANNOT_BAN_ADMIN: 'Cannot ban admin or staff account'
 }
 
 export const PRODUCT_MESSAGES = {
@@ -191,7 +194,10 @@ export const ORDER_MESSAGES = {
   SHIPPING_ADDRESS_REQUIRED: 'Shipping address is required',
   SHIPPING_COORDINATES_REQUIRED: 'Shipping coordinates are required',
   ORDER_STATUS_IS_INVALID: 'Order status is invalid',
-  ORDER_STATUS_TRANSITION_INVALID: 'Cannot change order to this status from its current status'
+  ORDER_STATUS_TRANSITION_INVALID: 'Cannot change order to this status from its current status',
+  REFUND_ORDER_SUCCESS: 'Refund order success',
+  ORDER_NOT_REFUNDABLE: 'This order cannot be refunded',
+  ORDER_ALREADY_REFUNDED: 'This order has already been refunded'
 } as const
 
 export const SHIPPING_MESSAGES = {
@@ -213,4 +219,16 @@ export const PAYMENT_MESSAGES = {
   MOMO_WEBHOOK_SUCCESS: 'MoMo webhook processed successfully',
   MOMO_WEBHOOK_INVALID_SIGNATURE: 'Invalid MoMo webhook signature',
   PAYMENT_ALREADY_COMPLETED: 'Payment has already been completed'
+} as const
+
+export const ADDRESS_MESSAGES = {
+  GET_ADDRESSES_SUCCESS: 'Get saved addresses success',
+  CREATE_ADDRESS_SUCCESS: 'Create saved address success',
+  UPDATE_ADDRESS_SUCCESS: 'Update saved address success',
+  DELETE_ADDRESS_SUCCESS: 'Delete saved address success',
+  ADDRESS_NOT_FOUND: 'Saved address not found',
+  RECIPIENT_NAME_REQUIRED: 'Recipient name is required',
+  PHONE_REQUIRED: 'Phone number is required',
+  ADDRESS_LINE_REQUIRED: 'Address line is required',
+  INVALID_COORDINATES: 'Invalid map coordinates'
 } as const

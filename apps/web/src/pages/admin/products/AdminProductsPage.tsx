@@ -2,11 +2,16 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
+import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
+import PaginationBar from '../../../components/ui/PaginationBar'
 import { STOCK_BADGE, STOCK_LABEL, STOCK_OPTIONS } from '../../../constants/product'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import type { Product } from '../../../models/ProductRequests'
+import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { ROUTES } from '../../../routes/route.paths'
-import { getAllProductsApi } from '../../../services/products.services'
+import { deleteProductApi, getAllProductsApi, type ProductFilters } from '../../../services/products.services'
+import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
 import money from '../../../utils/money'
 
@@ -36,34 +41,52 @@ function SkeletonRow() {
 export default function AdminProductsPage() {
   const [search, setSearch] = useState('')
   const [stockFilter, setStockFilter] = useState('all')
+  const [page, setPage] = useState(1)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const debouncedSearch = useDebouncedValue(search)
+
+  const filters = useMemo<ProductFilters>(() => {
+    const next: ProductFilters = {}
+    if (debouncedSearch.trim()) next.search = debouncedSearch.trim()
+    if (stockFilter === 'active') next.status = 0
+    if (stockFilter === 'stock') next.status = 1
+    return next
+  }, [debouncedSearch, stockFilter])
 
   const {
-    data: products = [],
+    data,
     isLoading: loading,
     isError,
     refetch,
     isFetching
-  } = useQuery<Product[]>({
-    queryKey: ['admin-products'],
+  } = useQuery({
+    queryKey: ['admin-products', page, filters],
     queryFn: async () => {
-      const list = (await getAllProductsApi(100, 1))?.data?.result
-      return Array.isArray(list) ? list : []
+      const res = await getAllProductsApi(ADMIN_LIST_LIMIT, page, filters)
+      return {
+        products: (res.data.result ?? []) as Product[],
+        pagination: res.data.pagination
+      }
     }
   })
 
+  const products = data?.products ?? []
+  const pagination = data?.pagination
   const error = isError ? 'Không tải được danh sách sản phẩm' : ''
 
-  const filteredProducts = useMemo(() => {
-    const kw = search.toLowerCase()
-    return products.filter((product) => {
-      const matchSearch =
-        product.name.toLowerCase().includes(kw) ||
-        product.origin.toLowerCase().includes(kw) ||
-        product._id.toLowerCase().includes(kw)
-      const matchStock = stockFilter === 'all' || stockFilter === getStockType(product.quantity)
-      return matchSearch && matchStock
-    })
-  }, [products, search, stockFilter])
+  const handleDelete = async (productId: string) => {
+    if (!window.confirm('Xóa sản phẩm này? Hành động không thể hoàn tác.')) return
+    try {
+      setDeletingId(productId)
+      await deleteProductApi(productId)
+      toast.success('Đã xóa sản phẩm')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể xóa sản phẩm'))
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <AdminTableShell title='Sản phẩm' createTo={ROUTES.ADMIN + ROUTES.CREATE_PRODUCT}>
@@ -73,8 +96,11 @@ export default function AdminProductsPage() {
             <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder='Tìm theo tên, xuất xứ, ID...'
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              placeholder='Tìm theo tên sản phẩm...'
               className='premium-input pl-10'
             />
           </div>
@@ -82,7 +108,14 @@ export default function AdminProductsPage() {
           <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
             <div className='relative'>
               <SlidersHorizontal size={15} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
-              <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value)} className='premium-input cursor-pointer pl-10 pr-8'>
+              <select
+                value={stockFilter}
+                onChange={(e) => {
+                  setStockFilter(e.target.value)
+                  setPage(1)
+                }}
+                className='premium-input cursor-pointer pl-10 pr-8'
+              >
                 {STOCK_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -119,7 +152,7 @@ export default function AdminProductsPage() {
             <tbody>
               {loading ? Array.from({ length: 5 }).map((_, index) => <SkeletonRow key={index} />) : null}
 
-              {!loading && filteredProducts.length === 0 ? (
+              {!loading && products.length === 0 ? (
                 <tr>
                   <td colSpan={5} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
                     Không tìm thấy sản phẩm nào.
@@ -128,7 +161,7 @@ export default function AdminProductsPage() {
               ) : null}
 
               {!loading
-                ? filteredProducts.map((product) => (
+                ? products.map((product) => (
                     <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
                       <td className='px-5 py-4'>
                         <div className='flex items-center gap-3'>
@@ -160,8 +193,13 @@ export default function AdminProductsPage() {
                           <Link to={`/admin/products/${product._id}/edit`} className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
                             Sửa
                           </Link>
-                          <button className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100'>
-                            Xóa
+                          <button
+                            type='button'
+                            disabled={deletingId === product._id}
+                            onClick={() => handleDelete(product._id)}
+                            className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-50'
+                          >
+                            {deletingId === product._id ? 'Đang xóa...' : 'Xóa'}
                           </button>
                         </div>
                       </td>
@@ -170,13 +208,17 @@ export default function AdminProductsPage() {
                 : null}
             </tbody>
           </table>
-
-          {!loading && filteredProducts.length > 0 ? (
-            <div className='border-t border-slate-100 px-5 py-3 text-xs font-bold text-slate-500'>
-              Hiển thị {filteredProducts.length} / {products.length} sản phẩm
-            </div>
-          ) : null}
         </div>
+
+        {pagination ? (
+          <PaginationBar
+            pagination={pagination}
+            page={page}
+            onPageChange={setPage}
+            isLoading={isFetching}
+            itemLabel='sản phẩm'
+          />
+        ) : null}
       </div>
     </AdminTableShell>
   )

@@ -1,14 +1,64 @@
-import { useSearchParams, useNavigate } from 'react-router-dom'
-import { CheckCircle, XCircle, ShoppingBag, ArrowLeft } from 'lucide-react'
-import Button from '../../components/ui/Button'
+import { useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Headphones,
+  RefreshCw,
+  ShieldCheck,
+  ShoppingBag,
+  XCircle
+} from 'lucide-react'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
+import cn from '../../utils/cn'
+
+type ResultStatus = 'success' | 'failed' | 'pending'
+
+const panelClass = 'rounded-lg border border-[#eaded8] bg-white overflow-hidden'
+
+function resolvePaymentResult(params: URLSearchParams): ResultStatus {
+  const gatewayStatus = params.get('status')?.toLowerCase()
+  const resultCode = params.get('resultCode')
+
+  if (gatewayStatus === 'pending') return 'pending'
+  if (resultCode === '0' || gatewayStatus === 'success') return 'success'
+  if (resultCode && resultCode !== '0') return 'failed'
+  if (gatewayStatus === 'fail' || gatewayStatus === 'failed') return 'failed'
+
+  const orderId = params.get('orderId')
+  if (orderId && !resultCode && !gatewayStatus) return 'pending'
+
+  return 'failed'
+}
+
+function TrustStrip() {
+  const items = [
+    { icon: ShieldCheck, text: 'Thanh toán bảo mật' },
+    { icon: Headphones, text: 'support@vibrantmart.local' },
+    { icon: RefreshCw, text: 'Đổi trả minh bạch' }
+  ]
+
+  return (
+    <div className='mt-6 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-4'>
+      <p className='text-xs font-semibold uppercase tracking-wide text-[#8a7a74]'>Hỗ trợ & cam kết</p>
+      <ul className='mt-3 space-y-2'>
+        {items.map(({ icon: Icon, text }) => (
+          <li key={text} className='flex items-center gap-2 text-sm text-[#6b5f59]'>
+            <Icon size={15} className='shrink-0 text-[#b07a72]' />
+            {text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export default function OrderResultPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  // Lấy thông tin từ URL mà cổng thanh toán redirect về
   const gatewayStatus = searchParams.get('status')
   const resultCode = searchParams.get('resultCode')
   const orderId = searchParams.get('orderId') || ''
@@ -19,126 +69,145 @@ export default function OrderResultPage() {
   const amountValue = Number(amountStr)
   const paymentMethodLabel = paymentMethod === 'PAYPAL' ? 'PayPal' : 'Ví MoMo'
 
-  // query orderId
-  const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-')[1] || '' : orderId
+  const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-').slice(1).join('-') || orderId.replace('ORDER-', '') : orderId
+  const orderCode = realOrderId ? `#${realOrderId.slice(-6).toUpperCase()}` : ''
 
-  // resultCode = 0 là thành công, PayPal callback gửi status=success
-  const status: 'success' | 'failed' = resultCode === '0' || gatewayStatus === 'success' ? 'success' : 'failed'
+  const status = useMemo(() => resolvePaymentResult(searchParams), [searchParams])
+
+  const orderDetailPath = realOrderId ? ROUTE_PATHS.USER_ORDER_DETAIL(realOrderId) : ROUTE_PATHS.USER_ORDERS
+
+  const headerConfig = {
+    success: {
+      icon: CheckCircle2,
+      title: 'Thanh toán thành công',
+      desc: 'Cảm ơn bạn! Đơn hàng đang được xử lý.',
+      bg: 'bg-[linear-gradient(180deg,#fdf8f6_0%,#f5ebe6_100%)]',
+      iconWrap: 'bg-[#b07a72]/15 text-[#b07a72]'
+    },
+    failed: {
+      icon: XCircle,
+      title: 'Thanh toán chưa hoàn tất',
+      desc: gatewayMessage || 'Giao dịch không thành công. Bạn có thể thử lại.',
+      bg: 'bg-[linear-gradient(180deg,#fff5f5_0%,#fdf8f6_100%)]',
+      iconWrap: 'bg-rose-100 text-rose-600'
+    },
+    pending: {
+      icon: Clock,
+      title: 'Đang xử lý thanh toán',
+      desc: 'Giao dịch đang được xác nhận. Vui lòng kiểm tra lại đơn hàng sau vài phút.',
+      bg: 'bg-[linear-gradient(180deg,#fffbf7_0%,#fdf8f6_100%)]',
+      iconWrap: 'bg-amber-100 text-amber-700'
+    }
+  }[status]
+
+  const HeaderIcon = headerConfig.icon
 
   return (
-    <div className='mx-auto max-w-2xl px-4 py-12 md:px-6'>
-      <div className='surface-card overflow-hidden rounded-3xl'>
-        {status === 'success' && (
-          <>
-            <div
-              className='flex flex-col items-center gap-3 p-10 text-center'
-              style={{
-                background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
-              }}
-            >
-              <div
-                className='grid h-20 w-20 place-items-center rounded-full'
-                style={{ background: 'rgba(255,255,255,0.2)' }}
+    <div className='mx-auto max-w-xl px-4 py-10 md:px-6 md:py-14'>
+      <div className={panelClass}>
+        <div className={cn('flex flex-col items-center px-6 py-10 text-center', headerConfig.bg)}>
+          <span className={cn('grid h-16 w-16 place-items-center rounded-full', headerConfig.iconWrap)}>
+            <HeaderIcon size={32} strokeWidth={1.75} />
+          </span>
+          <h1 className='mt-5 text-2xl font-semibold text-[#3d3330]'>{headerConfig.title}</h1>
+          <p className='mt-2 max-w-sm text-sm leading-6 text-[#8a7a74]'>{headerConfig.desc}</p>
+        </div>
+
+        <div className='space-y-4 p-6 md:p-8'>
+          {(orderCode || amountValue > 0 || transId) && (
+            <div className='space-y-3 rounded-lg border border-[#f0e4de] bg-[#fdf8f6] p-4 text-sm'>
+              {orderCode ? (
+                <div className='flex justify-between gap-4'>
+                  <span className='text-[#8a7a74]'>Mã đơn</span>
+                  <span className='font-semibold text-[#3d3330]'>{orderCode}</span>
+                </div>
+              ) : null}
+              {amountValue > 0 ? (
+                <div className='flex justify-between gap-4'>
+                  <span className='text-[#8a7a74]'>Số tiền</span>
+                  <span className='text-lg font-bold text-[#3d3330]'>{money(amountValue)}</span>
+                </div>
+              ) : null}
+              <div className='flex justify-between gap-4'>
+                <span className='text-[#8a7a74]'>Phương thức</span>
+                <span className='font-semibold text-[#3d3330]'>{paymentMethodLabel}</span>
+              </div>
+              {transId ? (
+                <div className='flex justify-between gap-4'>
+                  <span className='shrink-0 text-[#8a7a74]'>Mã GD</span>
+                  <span className='break-all text-right font-mono text-xs font-semibold text-[#3d3330]'>{transId}</span>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {status === 'success' ? (
+            <p className='rounded-lg border border-[#eaded8] bg-[#fdf8f6] px-4 py-3 text-center text-sm leading-6 text-[#6b5f59]'>
+              Dự kiến giao trong bán kính 25km — shop sẽ xác nhận và liên hệ khi đơn sẵn sàng giao.
+              {gatewayStatus || resultCode ? (
+                <span className='mt-1 block text-xs text-[#8a7a74]'>Email xác nhận sẽ được gửi nếu bạn đã bật thông báo.</span>
+              ) : null}
+            </p>
+          ) : null}
+
+          {status === 'pending' ? (
+            <p className='rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900'>
+              Nếu đã trừ tiền, trạng thái sẽ cập nhật tự động. Bạn có thể mở chi tiết đơn để kiểm tra hoặc thanh toán lại.
+            </p>
+          ) : null}
+
+          {status === 'failed' ? (
+            <p className='rounded-lg border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm leading-6 text-rose-800'>
+              {gatewayMessage || 'Vui lòng thử lại hoặc chọn phương thức thanh toán khác tại trang đơn hàng.'}
+            </p>
+          ) : null}
+
+          <div className='flex flex-col gap-2 pt-1'>
+            {status === 'failed' && realOrderId ? (
+              <button
+                type='button'
+                onClick={() => navigate(orderDetailPath)}
+                className='flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#3d3330] text-sm font-semibold text-white hover:bg-[#2a2421]'
               >
-                <CheckCircle size={44} className='text-white' />
-              </div>
-              <h1 className='text-2xl font-black text-white'>Thanh toán thành công!</h1>
-              <p className='text-sm font-medium text-white/80'>Đơn hàng của bạn đã được xác nhận và đang được xử lý</p>
-            </div>
+                <RefreshCw size={16} />
+                Thử thanh toán lại
+              </button>
+            ) : null}
 
-            <div className='space-y-4 p-6 md:p-8'>
-              {/* Thông tin giao dịch */}
-              <div className='space-y-3 rounded-2xl bg-slate-50 p-5'>
-                {amountValue > 0 && (
-                  <>
-                    <div className='flex items-center justify-between text-sm'>
-                      <span className='text-slate-500'>Số tiền</span>
-                      <span className='text-xl font-black text-green-600'>{money(amountValue)}</span>
-                    </div>
-                    <div className='h-px bg-slate-200' />
-                  </>
-                )}
-                <div className='flex items-center justify-between text-sm'>
-                  <span className='text-slate-500'>Phương thức</span>
-                  <span className='font-bold text-ink-950'>{paymentMethodLabel}</span>
-                </div>
-                <div className='h-px bg-slate-200' />
-                <div className='flex items-center justify-between text-sm'>
-                  <span className='text-slate-500'>Mã giao dịch</span>
-                  <span className='break-all text-right font-mono font-bold text-ink-950'>
-                    {transId || 'Đang cập nhật'}
-                  </span>
-                </div>
-                <div className='h-px bg-slate-200' />
-                <div className='flex items-center justify-between text-sm'>
-                  <span className='text-slate-500'>Trạng thái</span>
-                  <span className='inline-flex items-center gap-1.5 rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700'>
-                    <span className='h-1.5 w-1.5 rounded-full bg-green-500' />
-                    Thành công
-                  </span>
-                </div>
-              </div>
-
-              <p className='rounded-2xl border border-green-200 bg-green-50 p-4 text-center text-sm font-semibold leading-6 text-green-700'>
-                📧 Email xác nhận thanh toán đã được gửi đến hộp thư của bạn!
-              </p>
-
-              {/* Actions */}
-              <div className='flex flex-col gap-3 pt-2 sm:flex-row'>
-                <Button
-                  full
-                  onClick={() =>
-                    navigate(realOrderId ? ROUTE_PATHS.USER_ORDER_DETAIL(realOrderId) : ROUTE_PATHS.USER_ORDERS)
-                  }
-                >
-                  <ShoppingBag size={16} />
-                  Xem đơn hàng
-                </Button>
-                <Button full variant='outline' onClick={() => navigate(ROUTE_PATHS.USER_HOME)}>
-                  <ArrowLeft size={16} />
-                  Tiếp tục mua sắm
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
-
-        {status === 'failed' && (
-          <>
-            <div
-              className='flex flex-col items-center gap-3 p-10 text-center'
-              style={{
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-              }}
+            <button
+              type='button'
+              onClick={() => navigate(orderDetailPath)}
+              className={cn(
+                'flex h-11 w-full items-center justify-center gap-2 rounded-md text-sm font-semibold',
+                status === 'failed' && realOrderId
+                  ? 'border border-[#3d3330] text-[#3d3330] hover:bg-[#fdf8f6]'
+                  : 'bg-[#3d3330] text-white hover:bg-[#2a2421]'
+              )}
             >
-              <div
-                className='grid h-20 w-20 place-items-center rounded-full'
-                style={{ background: 'rgba(255,255,255,0.2)' }}
+              <ShoppingBag size={16} />
+              Xem đơn hàng
+            </button>
+
+            {status === 'failed' ? (
+              <Link
+                to={ROUTE_PATHS.USER_CART}
+                className='flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#eaded8] text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
               >
-                <XCircle size={44} className='text-white' />
-              </div>
-              <h1 className='text-2xl font-black text-white'>Thanh toán thất bại</h1>
-              <p className='text-sm font-medium text-white/80'>{gatewayMessage || 'Giao dịch không thành công'}</p>
-            </div>
+                Quay lại giỏ hàng
+              </Link>
+            ) : null}
 
-            <div className='space-y-4 p-6 md:p-8'>
-              <div className='rounded-2xl border border-red-200 bg-red-50 p-4 text-center text-sm font-semibold leading-6 text-red-700'>
-                Vui lòng thử lại hoặc chọn phương thức thanh toán khác.
-              </div>
+            <Link
+              to={ROUTE_PATHS.USER_HOME}
+              className='flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#eaded8] text-sm font-semibold text-[#6b5f59] hover:bg-[#fdf8f6]'
+            >
+              <ArrowLeft size={16} />
+              Tiếp tục mua sắm
+            </Link>
+          </div>
 
-              <div className='flex flex-col gap-3 pt-2 sm:flex-row'>
-                <Button full onClick={() => navigate(ROUTE_PATHS.USER_ORDERS)}>
-                  <ShoppingBag size={16} />
-                  Xem đơn hàng
-                </Button>
-                <Button full variant='outline' onClick={() => navigate(ROUTE_PATHS.USER_HOME)}>
-                  <ArrowLeft size={16} />
-                  Về trang chủ
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
+          <TrustStrip />
+        </div>
       </div>
     </div>
   )

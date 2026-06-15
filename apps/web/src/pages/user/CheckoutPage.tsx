@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { CreditCard, Loader2, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
+import { BadgeCheck, CreditCard, Loader2, MapPin, PackageCheck, ShieldCheck, Truck } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import StatusBadge from '../../components/ui/StatusBadge'
 import ShippingMapPicker from '../../components/checkout/ShippingMapPicker'
+import SavedAddressesPanel from '../../components/profile/SavedAddressesPanel'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
 import { createOrderApi } from '../../services/orders.services'
 import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
+import { createSavedAddressApi, getSavedAddressesApi, type SavedAddress } from '../../services/user_addresses.services'
 import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
@@ -29,11 +30,40 @@ type ShippingForm = {
 
 type AddressMode = 'manual' | 'map'
 
+const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
+
 const paymentMethodLabel: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
   [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng / Visa / MasterCard',
   [PaymentMethod.PAYPAL]: 'Thanh toán qua PayPal',
   [PaymentMethod.MOMO]: 'Ví điện tử MoMo'
+}
+
+function TrustBadges({ compact = false }: { compact?: boolean }) {
+  const items = [
+    { icon: BadgeCheck, label: 'Hàng chính hãng' },
+    { icon: ShieldCheck, label: 'Thanh toán bảo mật' },
+    { icon: Truck, label: 'Giao trong bán kính 25km' }
+  ]
+
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap gap-2',
+        compact ? 'justify-center' : 'rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-3'
+      )}
+    >
+      {items.map(({ icon: Icon, label }) => (
+        <span
+          key={label}
+          className='inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[11px] font-semibold text-[#6b5f59] ring-1 ring-[#eaded8]'
+        >
+          <Icon size={13} className='text-[#b07a72]' />
+          {label}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 export default function CheckoutPage() {
@@ -61,6 +91,28 @@ export default function CheckoutPage() {
     city: '',
     district: ''
   })
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [saveThisAddress, setSaveThisAddress] = useState(false)
+
+  const applySavedAddress = useCallback((address: SavedAddress) => {
+    setSelectedAddressId(address._id)
+    setShipping({
+      recipient_name: address.recipient_name,
+      phone: address.phone,
+      note: address.note || '',
+      address_line: address.address_line,
+      city: address.city || '',
+      district: address.district || ''
+    })
+    setCoords({ lat: address.lat, lng: address.lng })
+    setAddressMode(address.address_source || 'manual')
+    setSaveThisAddress(false)
+  }, [])
+
+  const patchShipping = (patch: Partial<ShippingForm>) => {
+    setSelectedAddressId(null)
+    setShipping((prev) => ({ ...prev, ...patch }))
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,10 +123,11 @@ export default function CheckoutPage() {
           return
         }
 
-        const [cartRes, deliveryRes, storeRes] = await Promise.all([
+        const [cartRes, deliveryRes, storeRes, addressesRes] = await Promise.all([
           getCartApi(),
           getDeliveryMethodsApi(),
-          getStoreInfoApi()
+          getStoreInfoApi(),
+          getSavedAddressesApi().catch(() => null)
         ])
 
         const allItems: CartItem[] = cartRes.data.data.cartItems
@@ -96,13 +149,19 @@ export default function CheckoutPage() {
         if (available.length > 0) {
           setSelectedDelivery(available[0]._id)
         }
+
+        const addresses = addressesRes?.data?.result ?? []
+        const defaultAddress = addresses.find((item) => item.is_default) || addresses[0]
+        if (defaultAddress) {
+          applySavedAddress(defaultAddress)
+        }
       } catch {
         toast.error('Không thể tải dữ liệu')
       }
     }
 
     fetchData()
-  }, [navigate, selectedIds])
+  }, [navigate, selectedIds, applySavedAddress])
 
   const subtotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.product_infor.price * item.quantity, 0),
@@ -116,7 +175,7 @@ export default function CheckoutPage() {
     if (!selectedDelivery) return
 
     const address_line = shipping.address_line.trim()
-    const hasCoords = addressMode === 'map' && coords != null
+    const hasCoords = coords != null
 
     if (!hasCoords && !address_line) {
       setQuote(null)
@@ -132,8 +191,8 @@ export default function CheckoutPage() {
         address_line: address_line || undefined,
         city: shipping.city.trim() || undefined,
         district: shipping.district.trim() || undefined,
-        lat: addressMode === 'map' ? coords?.lat : undefined,
-        lng: addressMode === 'map' ? coords?.lng : undefined,
+        lat: coords?.lat,
+        lng: coords?.lng,
         delivery_method_id: selectedDelivery
       })
 
@@ -144,7 +203,7 @@ export default function CheckoutPage() {
     } finally {
       setQuoteLoading(false)
     }
-  }, [addressMode, coords, selectedDelivery, shipping.address_line, shipping.city, shipping.district])
+  }, [coords, selectedDelivery, shipping.address_line, shipping.city, shipping.district])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -155,6 +214,7 @@ export default function CheckoutPage() {
   }, [fetchQuote, addressMode])
 
   const handleMapPick = async (picked: { lat: number; lng: number }) => {
+    setSelectedAddressId(null)
     setCoords(picked)
     setAddressMode('map')
 
@@ -222,6 +282,25 @@ export default function CheckoutPage() {
       const orderId = res.data?.result?.insertedId as string | undefined
       toast.success('Đặt hàng thành công!')
 
+      if (saveThisAddress && !selectedAddressId && quote) {
+        try {
+          await createSavedAddressApi({
+            recipient_name,
+            phone,
+            note: shipping.note.trim() || undefined,
+            address_line,
+            city: shipping.city.trim() || undefined,
+            district: shipping.district.trim() || undefined,
+            lat: quote.lat,
+            lng: quote.lng,
+            address_source: addressMode,
+            is_default: false
+          })
+        } catch {
+          // không chặn luồng đặt hàng nếu lưu địa chỉ thất bại
+        }
+      }
+
       if (orderId && (paymentMethod === PaymentMethod.MOMO || paymentMethod === PaymentMethod.PAYPAL)) {
         navigate(ROUTE_PATHS.USER_ORDER_DETAIL(orderId))
         return
@@ -237,22 +316,25 @@ export default function CheckoutPage() {
 
   return (
     <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-      <div className='mb-6 flex flex-col gap-2'>
-        <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Secure checkout</p>
-        <h1 className='text-3xl font-black tracking-tight text-ink-950'>Thanh toán</h1>
-        <p className='max-w-2xl text-sm leading-6 text-slate-500'>
-          Nhập địa chỉ hoặc chọn trên bản đồ. Phí ship được tính theo khoảng cách từ cửa hàng (tối đa 25 km).
-        </p>
+      <div className='mb-6 flex flex-col gap-4'>
+        <div>
+          <p className='text-xs font-semibold uppercase tracking-[0.14em] text-[#b07a72]'>Secure checkout</p>
+          <h1 className='mt-1 text-3xl font-semibold tracking-tight text-[#3d3330]'>Thanh toán</h1>
+          <p className='mt-2 max-w-2xl text-sm leading-6 text-[#8a7a74]'>
+            Nhập địa chỉ hoặc chọn trên bản đồ. Phí ship được tính theo khoảng cách từ cửa hàng (tối đa 25 km).
+          </p>
+        </div>
+        <TrustBadges />
       </div>
 
-      <div className='grid gap-8 lg:grid-cols-[1.55fr_0.88fr]'>
-        <div className='space-y-6'>
-          <section className='surface-card rounded-3xl p-5 md:p-6'>
-            <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
-                <PackageCheck size={18} />
+      <div className='grid gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px]'>
+        <div className='space-y-5'>
+          <section className={cn(panelClass, 'p-5 md:p-6')}>
+            <div className='mb-4 flex items-center gap-3'>
+              <span className='grid h-9 w-9 place-items-center rounded-md bg-[#fdf8f6] text-[#3d3330]'>
+                <PackageCheck size={17} />
               </span>
-              <h2 className='text-lg font-black text-ink-950'>Sản phẩm</h2>
+              <h2 className='text-base font-semibold text-[#3d3330]'>Sản phẩm</h2>
             </div>
 
             <div className='space-y-3'>
@@ -261,39 +343,42 @@ export default function CheckoutPage() {
                 const image = product.medias?.[0]?.url
 
                 return (
-                  <div
-                    key={item._id}
-                    className='flex flex-col gap-4 rounded-3xl border border-slate-200 p-4 sm:flex-row sm:items-center'
-                  >
-                    <div className='h-24 w-full overflow-hidden rounded-2xl bg-slate-100 sm:w-24'>
+                  <div key={item._id} className='flex gap-3 rounded-md border border-[#f0e4de] p-3 sm:items-center'>
+                    <div className='aspect-[4/5] w-16 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6] sm:w-20'>
                       {image ? <img src={image} alt={product.name} className='h-full w-full object-cover' /> : null}
                     </div>
 
                     <div className='min-w-0 flex-1'>
-                      <div className='line-clamp-2 text-base font-black text-ink-950'>{product.name}</div>
-                      <div className='mt-1 text-sm font-semibold text-slate-500'>
-                        {money(product.price)} x {item.quantity}
+                      {product.origin ? (
+                        <p className='text-[10px] font-semibold uppercase tracking-wider text-[#b07a72]'>{product.origin}</p>
+                      ) : null}
+                      <div className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</div>
+                      <div className='mt-1 text-xs text-[#8a7a74]'>
+                        {money(product.price)} × {item.quantity}
                       </div>
                     </div>
 
-                    <div className='text-left text-lg font-black text-ink-950 sm:text-right'>
-                      {money(product.price * item.quantity)}
-                    </div>
+                    <div className='shrink-0 text-sm font-bold text-[#3d3330]'>{money(product.price * item.quantity)}</div>
                   </div>
                 )
               })}
             </div>
           </section>
 
-          <section className='surface-card rounded-3xl p-5 md:p-6'>
-            <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-mint-50 text-mint-700'>
-                <MapPin size={18} />
+          <section className={cn(panelClass, 'p-5 md:p-6')}>
+            <div className='mb-4 flex items-center gap-3'>
+              <span className='grid h-9 w-9 place-items-center rounded-md bg-[#fdf8f6] text-[#b07a72]'>
+                <MapPin size={17} />
               </span>
-              <h2 className='text-lg font-black text-ink-950'>Địa chỉ nhận hàng</h2>
+              <h2 className='text-base font-semibold text-[#3d3330]'>Địa chỉ nhận hàng</h2>
             </div>
 
-            <div className='mb-4 grid grid-cols-2 gap-2 rounded-2xl bg-slate-100 p-1'>
+            <div className='mb-5'>
+              <p className='mb-3 text-sm font-semibold text-[#6b5f59]'>Chọn từ sổ địa chỉ</p>
+              <SavedAddressesPanel selectable selectedId={selectedAddressId} onSelect={applySavedAddress} />
+            </div>
+
+            <div className='mb-4 grid grid-cols-2 gap-1 rounded-md bg-[#fdf8f6] p-1'>
               {([
                 { id: 'manual' as const, label: 'Nhập địa chỉ' },
                 { id: 'map' as const, label: 'Chọn trên bản đồ' }
@@ -303,11 +388,12 @@ export default function CheckoutPage() {
                   type='button'
                   onClick={() => {
                     setAddressMode(tab.id)
+                    setSelectedAddressId(null)
                     if (tab.id === 'manual') setCoords(null)
                   }}
                   className={cn(
-                    'rounded-xl px-3 py-2 text-sm font-bold transition',
-                    addressMode === tab.id ? 'bg-white text-ink-950 shadow-sm' : 'text-slate-500 hover:text-ink-950'
+                    'rounded-md px-3 py-2 text-sm font-semibold transition',
+                    addressMode === tab.id ? 'bg-white text-[#3d3330] shadow-sm' : 'text-[#8a7a74] hover:text-[#3d3330]'
                   )}
                 >
                   {tab.label}
@@ -320,14 +406,14 @@ export default function CheckoutPage() {
                 label='Họ tên người nhận'
                 name='recipient_name'
                 value={shipping.recipient_name}
-                onChange={(e) => setShipping((prev) => ({ ...prev, recipient_name: e.target.value }))}
+                onChange={(e) => patchShipping({ recipient_name: e.target.value })}
                 required
               />
               <Input
                 label='Số điện thoại'
                 name='phone'
                 value={shipping.phone}
-                onChange={(e) => setShipping((prev) => ({ ...prev, phone: e.target.value }))}
+                onChange={(e) => patchShipping({ phone: e.target.value })}
                 required
               />
               <div className='md:col-span-2'>
@@ -335,71 +421,73 @@ export default function CheckoutPage() {
                   label='Địa chỉ chi tiết'
                   name='address_line'
                   value={shipping.address_line}
-                  onChange={(e) => setShipping((prev) => ({ ...prev, address_line: e.target.value }))}
+                  onChange={(e) => patchShipping({ address_line: e.target.value })}
                   required
                 />
               </div>
-              <Input
-                label='Thành phố'
-                name='city'
-                value={shipping.city}
-                onChange={(e) => setShipping((prev) => ({ ...prev, city: e.target.value }))}
-              />
+              <Input label='Thành phố' name='city' value={shipping.city} onChange={(e) => patchShipping({ city: e.target.value })} />
               <Input
                 label='Quận / Huyện'
                 name='district'
                 value={shipping.district}
-                onChange={(e) => setShipping((prev) => ({ ...prev, district: e.target.value }))}
+                onChange={(e) => patchShipping({ district: e.target.value })}
               />
               <div className='md:col-span-2'>
-                <label className='mb-2 block text-sm font-bold text-ink-900'>Ghi chú giao hàng</label>
+                <label className='mb-2 block text-sm font-semibold text-[#3d3330]'>Ghi chú giao hàng</label>
                 <textarea
                   value={shipping.note}
-                  onChange={(e) => setShipping((prev) => ({ ...prev, note: e.target.value }))}
+                  onChange={(e) => patchShipping({ note: e.target.value })}
                   rows={3}
                   placeholder='Ví dụ: Giao giờ hành chính, gọi trước 15 phút...'
-                  className='w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
+                  className='w-full rounded-md border border-[#eaded8] bg-white px-4 py-3 text-sm text-[#3d3330] outline-none transition focus:border-[#cbb8af] focus:ring-2 focus:ring-[#f5d5cf]/50'
                 />
               </div>
             </div>
 
+            {!selectedAddressId ? (
+              <label className='mt-4 flex cursor-pointer items-center gap-3 rounded-md border border-[#eaded8] bg-[#fdf8f6] px-4 py-3'>
+                <input
+                  type='checkbox'
+                  checked={saveThisAddress}
+                  onChange={(e) => setSaveThisAddress(e.target.checked)}
+                  className='h-4 w-4 accent-[#3d3330]'
+                />
+                <span className='text-sm font-medium text-[#6b5f59]'>Lưu địa chỉ này cho lần mua sau</span>
+              </label>
+            ) : null}
+
             {addressMode === 'map' && storeInfo ? (
               <div className='mt-4'>
-                <ShippingMapPicker
-                  storeLat={storeInfo.lat}
-                  storeLng={storeInfo.lng}
-                  value={coords}
-                  onPick={handleMapPick}
-                />
+                <ShippingMapPicker storeLat={storeInfo.lat} storeLng={storeInfo.lng} value={coords} onPick={handleMapPick} />
               </div>
             ) : null}
 
-            <div className='mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm'>
+            <div className='mt-4 rounded-md border border-[#eaded8] bg-[#fdf8f6] px-4 py-3 text-sm'>
               {quoteLoading ? (
-                <span className='inline-flex items-center gap-2 font-semibold text-slate-600'>
+                <span className='inline-flex items-center gap-2 font-medium text-[#6b5f59]'>
                   <Loader2 size={16} className='animate-spin' />
                   Đang tính phí giao hàng...
                 </span>
               ) : quoteError ? (
-                <span className='font-semibold text-rose-600'>{quoteError}</span>
+                <span className='font-medium text-rose-600'>{quoteError}</span>
               ) : quote ? (
-                <div className='space-y-1 font-semibold text-slate-700'>
+                <div className='space-y-1 font-medium text-[#6b5f59]'>
                   <div>Khoảng cách: {quote.distance_km} km</div>
                   <div>Phí cơ bản: {money(quote.base_shipping_fee)}</div>
                   {quote.express_surcharge > 0 ? <div>Phụ phí hỏa tốc: {money(quote.express_surcharge)}</div> : null}
                 </div>
               ) : (
-                <span className='font-semibold text-slate-500'>Nhập địa chỉ hoặc chọn trên bản đồ để xem phí ship.</span>
+                <span className='font-medium text-[#8a7a74]'>Nhập địa chỉ hoặc chọn trên bản đồ để xem phí ship.</span>
               )}
             </div>
           </section>
 
-          <section className='surface-card rounded-3xl p-5 md:p-6'>
-            <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-brand-50 text-brand-700'>
-                <Truck size={18} />
+          <section className={cn(panelClass, 'p-5 md:p-6')}>
+            <div className='mb-4 flex items-center gap-3'>
+              <span className='grid h-9 w-9 place-items-center rounded-md bg-[#fdf8f6] text-[#b07a72]'>
+                <Truck size={17} />
               </span>
-              <h2 className='text-lg font-black text-ink-950'>Phương thức giao hàng</h2>
+              <h2 className='text-base font-semibold text-[#3d3330]'>Phương thức giao hàng</h2>
             </div>
 
             <div className='grid gap-3 md:grid-cols-2'>
@@ -410,16 +498,14 @@ export default function CheckoutPage() {
                   <label
                     key={method._id}
                     className={cn(
-                      'cursor-pointer rounded-3xl border p-4 transition',
-                      isSelected
-                        ? 'border-brand-500/50 bg-brand-50 ring-4 ring-brand-500/10'
-                        : 'border-slate-200 hover:border-slate-300'
+                      'cursor-pointer rounded-md border p-4 transition',
+                      isSelected ? 'border-[#3d3330] bg-[#fdf8f6] ring-1 ring-[#3d3330]/10' : 'border-[#eaded8] hover:border-[#cbb8af]'
                     )}
                   >
                     <div className='flex items-start justify-between gap-3'>
                       <div>
-                        <div className='font-black text-ink-950'>{method.name}</div>
-                        <div className='mt-1 text-sm leading-6 text-slate-500'>{method.description}</div>
+                        <div className='font-semibold text-[#3d3330]'>{method.name}</div>
+                        <div className='mt-1 text-sm leading-6 text-[#8a7a74]'>{method.description}</div>
                       </div>
 
                       <input
@@ -428,7 +514,7 @@ export default function CheckoutPage() {
                         value={method._id}
                         checked={isSelected}
                         onChange={() => setSelectedDelivery(method._id)}
-                        className='mt-1 h-4 w-4 accent-brand-600'
+                        className='mt-1 h-4 w-4 accent-[#3d3330]'
                       />
                     </div>
                   </label>
@@ -437,12 +523,12 @@ export default function CheckoutPage() {
             </div>
           </section>
 
-          <section className='surface-card rounded-3xl p-5 md:p-6'>
-            <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
-                <CreditCard size={18} />
+          <section className={cn(panelClass, 'p-5 md:p-6')}>
+            <div className='mb-4 flex items-center gap-3'>
+              <span className='grid h-9 w-9 place-items-center rounded-md bg-[#fdf8f6] text-[#3d3330]'>
+                <CreditCard size={17} />
               </span>
-              <h2 className='text-lg font-black text-ink-950'>Phương thức thanh toán</h2>
+              <h2 className='text-base font-semibold text-[#3d3330]'>Phương thức thanh toán</h2>
             </div>
 
             <div className='grid gap-3 md:grid-cols-2'>
@@ -453,18 +539,16 @@ export default function CheckoutPage() {
                   <label
                     key={method}
                     className={cn(
-                      'flex cursor-pointer items-center justify-between gap-3 rounded-3xl border p-4 transition',
-                      isSelected
-                        ? 'border-ink-950 bg-slate-50 ring-4 ring-slate-950/5'
-                        : 'border-slate-200 hover:border-slate-300'
+                      'flex cursor-pointer items-center justify-between gap-3 rounded-md border p-4 transition',
+                      isSelected ? 'border-[#3d3330] bg-[#fdf8f6] ring-1 ring-[#3d3330]/10' : 'border-[#eaded8] hover:border-[#cbb8af]'
                     )}
                   >
-                    <span className='text-sm font-black text-ink-950'>{paymentMethodLabel[method]}</span>
+                    <span className='text-sm font-semibold text-[#3d3330]'>{paymentMethodLabel[method]}</span>
                     <input
                       type='radio'
                       checked={isSelected}
                       onChange={() => setPaymentMethod(method)}
-                      className='h-4 w-4 accent-ink-950'
+                      className='h-4 w-4 accent-[#3d3330]'
                     />
                   </label>
                 )
@@ -473,43 +557,40 @@ export default function CheckoutPage() {
           </section>
         </div>
 
-        <aside className='surface-strong h-fit rounded-3xl p-6 lg:sticky lg:top-28'>
-          <div className='mb-5 flex items-center justify-between gap-4'>
-            <div>
-              <div className='text-lg font-black text-ink-950'>Tóm tắt đơn hàng</div>
-              <div className='mt-1 text-sm font-semibold text-slate-500'>{cartItems.length} sản phẩm</div>
-            </div>
-            <StatusBadge tone='success'>Bảo mật</StatusBadge>
+        <aside className={cn(panelClass, 'h-fit p-5 lg:sticky lg:top-28')}>
+          <div className='mb-4'>
+            <p className='font-semibold text-[#3d3330]'>Tóm tắt đơn hàng</p>
+            <p className='mt-1 text-xs text-[#8a7a74]'>{cartItems.length} sản phẩm</p>
           </div>
 
-          <div className='space-y-3'>
-            <div className='flex justify-between text-sm'>
-              <span className='text-slate-500'>Tạm tính</span>
-              <span className='font-bold text-ink-950'>{money(subtotal)}</span>
+          <div className='space-y-2 text-sm'>
+            <div className='flex justify-between'>
+              <span className='text-[#8a7a74]'>Tạm tính</span>
+              <span className='font-semibold text-[#3d3330]'>{money(subtotal)}</span>
             </div>
-            <div className='flex justify-between text-sm'>
-              <span className='text-slate-500'>Phí giao hàng</span>
-              <span className='font-bold text-slate-700'>
+            <div className='flex justify-between'>
+              <span className='text-[#8a7a74]'>Phí giao hàng</span>
+              <span className='font-semibold text-[#3d3330]'>
                 {quoteLoading ? 'Đang tính...' : quote ? money(shippingFee) : 'Chưa tính'}
               </span>
             </div>
             {quote ? (
-              <div className='rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500'>
+              <div className='rounded-md bg-[#fdf8f6] px-3 py-2 text-xs font-medium text-[#8a7a74]'>
                 {quote.distance_km} km từ cửa hàng · Giao trong bán kính 25 km
               </div>
             ) : null}
           </div>
 
-          <div className='my-6 h-px bg-slate-200' />
+          <div className='my-4 h-px bg-[#f0e4de]' />
 
           <div className='flex justify-between gap-4'>
-            <span className='text-sm font-bold text-slate-500'>Thanh toán</span>
-            <span className='text-2xl font-black text-ink-950'>{money(total)}</span>
+            <span className='text-sm text-[#8a7a74]'>Thanh toán</span>
+            <span className='text-xl font-bold text-[#3d3330]'>{money(total)}</span>
           </div>
 
           <Button
             full
-            className='mt-6'
+            className='mt-5 !rounded-md !bg-[#3d3330] hover:!bg-[#2a2421]'
             onClick={handleCheckout}
             loading={loading}
             disabled={loading || quoteLoading || !quote || Boolean(quoteError)}
@@ -517,9 +598,8 @@ export default function CheckoutPage() {
             Xác nhận đặt hàng
           </Button>
 
-          <div className='mt-5 flex items-center gap-2 rounded-2xl bg-slate-50 p-3 text-xs font-semibold leading-5 text-slate-500'>
-            <ShieldCheck size={16} className='shrink-0 text-mint-600' />
-            Phí ship được tính bằng OpenStreetMap Routing (OSRM) từ 160 Lã Xuân Oai.
+          <div className='mt-4'>
+            <TrustBadges compact />
           </div>
         </aside>
       </div>

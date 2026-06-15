@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { getOrderStatusMeta } from '../constants/order'
-import type { OrderApiResponse, OrderUI } from '../models/OrderRequests'
+import { getOrderStatusMeta, mapPaymentMethod, mapPaymentStatus } from '../constants/order'
+import type { OrderApiResponse, OrderBadgeTone, OrderUI } from '../models/OrderRequests'
 import { getMyOrdersApi } from '../services/orders.services'
 
 export const MY_ORDERS_QUERY_KEY = ['my-orders'] as const
@@ -20,14 +20,21 @@ const mapOrders = (rawOrders: OrderApiResponse[]): OrderUI[] =>
     return {
       id: order._id,
       code: createOrderCode(order._id),
-      status: statusData.filter,
+      status: statusData.tone as OrderBadgeTone,
       statusLabel: statusData.label,
-      subtotal: order.total_price,
-      shippingFee: order.shipping_fee,
+      rawStatus: order.status,
+      subtotal: order.total_price - (order.shipping_fee ?? 0),
+      shippingFee: order.shipping_fee ?? 0,
       total: order.total_price,
       items: order.items || [],
       date: formatDate(order.created_at),
-      paymentMethod: order.payment_method
+      paymentMethod: mapPaymentMethod(order.payment_method),
+      rawPaymentMethod: order.payment_method,
+      rawPaymentStatus: order.payment_status,
+      paymentStatusLabel: mapPaymentStatus(order.payment_status),
+      deliveryMethodId: order.delivery_method_id,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at
     }
   })
 

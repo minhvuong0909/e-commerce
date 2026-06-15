@@ -105,10 +105,10 @@ export default function AdminDashboardPage() {
       <section className='surface-strong animate-fade-up rounded-3xl p-6 md:p-8'>
         <div className='flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between'>
           <div>
-            <div className='inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-brand-700'>
-              Commerce overview
+            <div className='inline-flex items-center gap-2 rounded-full border border-[#eaded8] bg-[#fdf8f6] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#b07a72]'>
+              Tổng quan cửa hàng
             </div>
-            <h1 className='mt-4 text-3xl font-black tracking-tight text-ink-950'>Dashboard tổng quan</h1>
+            <h1 className='mt-4 text-3xl font-semibold tracking-tight text-[#3d3330]'>Dashboard</h1>
             <p className='mt-2 max-w-2xl text-sm leading-6 text-slate-500'>
               Theo dõi đơn hàng, doanh thu và tồn kho thấp trong cùng một không gian quản trị.
             </p>
@@ -116,7 +116,7 @@ export default function AdminDashboardPage() {
 
           <Link
             to='/admin/orders'
-            className='inline-flex h-11 w-fit items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 text-sm font-black text-ink-950 shadow-sm transition hover:-translate-y-0.5 hover:shadow-card'
+            className='inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-[#eaded8] bg-white px-5 text-sm font-semibold text-[#3d3330] transition hover:border-[#cbb8af] hover:bg-[#fdf8f6]'
           >
             Xem đơn hàng <ArrowRight size={16} />
           </Link>
