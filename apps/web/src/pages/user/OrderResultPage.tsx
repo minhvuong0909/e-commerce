@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -72,7 +71,7 @@ export default function OrderResultPage() {
   const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-').slice(1).join('-') || orderId.replace('ORDER-', '') : orderId
   const orderCode = realOrderId ? `#${realOrderId.slice(-6).toUpperCase()}` : ''
 
-  const status = useMemo(() => resolvePaymentResult(searchParams), [searchParams])
+  const status = resolvePaymentResult(searchParams)
 
   const orderDetailPath = realOrderId ? ROUTE_PATHS.USER_ORDER_DETAIL(realOrderId) : ROUTE_PATHS.USER_ORDERS
 

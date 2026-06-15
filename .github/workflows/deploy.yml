@@ -1,24 +1,24 @@
-name: CI/CD Deploy to VPS
+name: Deploy
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
 
-# Tránh 2 deploy chạy đồng thời — deploy mới sẽ cancel deploy cũ
 concurrency:
   group: deploy-production
   cancel-in-progress: true
 
 jobs:
   deploy:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -30,27 +30,22 @@ jobs:
           script: |
             set -e
 
-            # Di chuyển tới thư mục dự án trên VPS
             if [ "${{ secrets.VPS_USER }}" = "root" ]; then
               cd /root/e-commerce
             else
               cd /home/${{ secrets.VPS_USER }}/e-commerce
             fi
 
-            # Cập nhật mã nguồn mới nhất
             git pull origin main
 
-            # Đồng bộ các biến môi trường cho Frontend build
             cat > .env << 'ENVEOF'
             VITE_BASE_URL_API=${{ secrets.VITE_BASE_URL_API }}
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             ENVEOF
 
-            # Zero-downtime deploy: build mới rồi thay thế container (KHÔNG dùng docker compose down)
             docker compose up -d --build --remove-orphans
 
-            # Đợi API container khởi động và health check
             echo "Đợi API container healthy..."
             RETRIES=0
             MAX_RETRIES=10
@@ -70,6 +65,5 @@ jobs:
               exit 1
             fi
 
-            # Dọn dẹp toàn bộ tài nguyên Docker không dùng (images, volumes, networks)
-            docker system prune -f --volumes
+            docker image prune -f
             echo "Deploy thành công!"

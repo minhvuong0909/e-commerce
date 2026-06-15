@@ -1,5 +1,11 @@
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 
+/** URL public của API — dùng cho MoMo redirect/ipn, PayPal return. Không dùng domain frontend. */
+export function resolveApiBaseUrl(): string {
+  const raw = stripEnv(process.env.API_URL) || stripEnv(process.env.HOST) || 'http://localhost:3000'
+  return raw.replace(/\/+$/, '')
+}
+
 export const PAYMENT_MODE = stripEnv(process.env.PAYMENT_MODE) || 'sandbox'
 export const isPaymentProduction = PAYMENT_MODE === 'production'
 
@@ -12,7 +18,7 @@ const MOMO_SANDBOX_DEFAULTS = {
 
 const MOMO_PRODUCTION_ENDPOINT = 'https://payment.momo.vn/v2/gateway/api/create'
 
-const apiBaseUrl = stripEnv(process.env.HOST) || stripEnv(process.env.API_URL) || 'http://localhost:3000'
+const apiBaseUrl = resolveApiBaseUrl()
 const clientBaseUrl = stripEnv(process.env.CLIENT_URL) || 'http://localhost:5173'
 
 const envPartnerCode = stripEnv(process.env.MOMO_PARTNER_CODE)
@@ -61,6 +67,13 @@ export const assertMoMoProductionReady = () => {
   if (isPaymentProduction && !hasMoMoCredentials) {
     throw new Error(
       'Chua cau hinh MOMO_PARTNER_CODE, MOMO_ACCESS_KEY, MOMO_SECRET_KEY. Lay tu https://business.momo.vn/'
+    )
+  }
+
+  const clientUrl = clientBaseUrl.replace(/\/+$/, '')
+  if (MOMO_CONFIG.redirectUrl.startsWith(clientUrl)) {
+    throw new Error(
+      'MOMO_REDIRECT_URL phai tro ve API (/payment/momo/return), khong tro ve CLIENT_URL (frontend).'
     )
   }
 }

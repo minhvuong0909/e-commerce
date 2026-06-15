@@ -23,7 +23,11 @@
   },
   "scripts": {
     "dev": "turbo run dev",
-    "build": "turbo run build"
+    "build": "turbo run build",
+    "lint": "pnpm --filter web lint",
+    "typecheck": "pnpm --filter ecommerce-monorepo exec tsc --noEmit && pnpm --filter web exec tsc -b",
+    "test": "pnpm --filter ecommerce-monorepo test",
+    "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
