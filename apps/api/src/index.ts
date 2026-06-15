@@ -23,9 +23,28 @@ const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
 //
 
-const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000']
-const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',').map((s: string) => s.trim()) : []
-const allowedOrigins = [...defaultOrigins, ...envOrigins]
+const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
+const splitOrigins = (value?: string) =>
+  stripEnv(value)
+    .split(',')
+    .map((origin) => stripEnv(origin))
+    .filter(Boolean)
+
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'https://vuongdev.top',
+  'http://vuongdev.top',
+  'http://160.22.106.238:8080'
+]
+const envOrigins = [
+  ...splitOrigins(process.env.CORS_ORIGINS),
+  stripEnv(process.env.CLIENT_URL),
+  stripEnv(process.env.WEB_URL),
+  stripEnv(process.env.FRONTEND_URL)
+].filter(Boolean)
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]))
 
 app.use(
   cors({

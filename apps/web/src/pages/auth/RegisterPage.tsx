@@ -31,9 +31,14 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await registerApi(data)
+      const res = await registerApi(data)
+      const emailSent = res.data?.data?.email_sent !== false
 
-      toast.success('Đăng ký thành công! Vui lòng kiểm tra email.')
+      if (emailSent) {
+        toast.success('Đăng ký thành công! Vui lòng kiểm tra email.')
+      } else {
+        toast.warning('Tài khoản đã tạo nhưng chưa gửi được email xác minh. Vui lòng dùng chức năng gửi lại email.')
+      }
       setTimeout(() => {
         navigate(ROUTES.AUTH + ROUTES.LOGIN)
       }, 1500)

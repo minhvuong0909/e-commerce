@@ -44,6 +44,32 @@ jobs:
             VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
             ENVEOF
 
+            touch apps/api/.env
+            upsert_api_env() {
+              key="$1"
+              value="$2"
+              tmp_file="$(mktemp)"
+              grep -v "^[[:space:]]*${key}[[:space:]]*=" apps/api/.env > "$tmp_file" || true
+              printf "%s=%s\n" "$key" "$value" >> "$tmp_file"
+              mv "$tmp_file" apps/api/.env
+            }
+            upsert_api_env_if_present() {
+              key="$1"
+              value="$2"
+              if [ -n "$value" ]; then
+                upsert_api_env "$key" "$value"
+              fi
+            }
+
+            upsert_api_env "HOST" "https://api.vuongdev.top"
+            upsert_api_env "API_URL" "https://api.vuongdev.top"
+            upsert_api_env "CLIENT_URL" "https://vuongdev.top"
+            upsert_api_env "CORS_ORIGINS" "https://vuongdev.top,http://vuongdev.top,http://160.22.106.238:8080"
+            upsert_api_env "SUPABASE_URL" "${{ secrets.VITE_SUPABASE_URL }}"
+            upsert_api_env "SUPABASE_ANON_KEY" "${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+            upsert_api_env_if_present "GMAIL_USER" "${{ secrets.GMAIL_USER }}"
+            upsert_api_env_if_present "GMAIL_PASS" "${{ secrets.GMAIL_PASS }}"
+
             docker compose up -d --build --remove-orphans
 
             echo "Đợi API container healthy..."

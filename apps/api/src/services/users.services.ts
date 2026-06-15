@@ -10,10 +10,8 @@ import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
 import User from '~/models/schemas/Users.schema'
 import { RegisterRequestBody, UpdateProfileRequestBody } from '~/models/requests/Users.requests'
 import { REGEX_USERNAME } from '~/constants/regex'
-import { createMailTransporter, getApiBaseUrl } from '~/config/mail'
+import { createMailTransporter, getApiBaseUrl, getGmailAuth } from '~/config/mail'
 import { supabaseConfig } from '~/config/config'
-
-const transporter = createMailTransporter()
 
 class UserServices {
   // kí access_token bằng jwt
@@ -53,8 +51,10 @@ class UserServices {
   // hàm gửi mail xác thức token
   private async sendEmail(to: string, subject: string, html: string) {
     try {
+      const transporter = createMailTransporter()
+      const { user } = getGmailAuth()
       return await transporter.sendMail({
-        from: process.env.GMAIL_USER as string,
+        from: user,
         to,
         subject,
         html: html
@@ -322,6 +322,7 @@ class UserServices {
     // check có đúng email verify token gửi lên không
     const apiBaseUrl = getApiBaseUrl()
     const uri = `${apiBaseUrl}/users/verify-email/?email_verify_token=${email_verify_token}`
+    let email_sent = true
     try {
       await this.sendEmail(
         payload.email,
@@ -344,7 +345,8 @@ class UserServices {
         `
       )
     } catch (error) {
-      console.error('Send email error:', error)
+      email_sent = false
+      console.error('Send verify email error:', error)
     }
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
 
@@ -357,7 +359,7 @@ class UserServices {
         exp
       })
     )
-    return { tokens }
+    return { tokens, email_sent }
   }
 
   // hàm logout
