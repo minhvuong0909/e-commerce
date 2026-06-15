@@ -36,7 +36,9 @@ jobs:
               cd /home/${{ secrets.VPS_USER }}/e-commerce
             fi
 
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
 
             cat > .env << 'ENVEOF'
             VITE_BASE_URL_API=${{ secrets.VITE_BASE_URL_API }}
