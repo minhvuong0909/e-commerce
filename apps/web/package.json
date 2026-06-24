@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.100.13",
     "antd": "^6.1.1",
-    "axios": "^1.11.0",
+    "axios": "^1.18.0",
     "date-fns": "^4.1.0",
     "flatpickr": "^4.6.13",
     "framer-motion": "^12.34.0",
