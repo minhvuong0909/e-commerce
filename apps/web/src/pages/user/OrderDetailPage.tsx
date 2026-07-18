@@ -21,7 +21,7 @@ import { getOrderStatusMeta, mapPaymentStatus, ORDER_BADGE_CLASS, ORDER_STATUS_C
 import type { OrderApiResponse, OrderUI, PaymentMethod } from '../../models/OrderRequests'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import { cancelOrderApi, getOrderByIdApi } from '../../services/orders.services'
-import { getMomoPaymentUrlApi, getPaypalPaymentUrlApi } from '../../services/payment.services'
+import { getMomoPaymentUrlApi, getPaypalPaymentUrlApi, getPayosPaymentUrlApi } from '../../services/payment.services'
 import formatDate from '../../utils/date'
 import money from '../../utils/money'
 import { getApiErrorMessage } from '../../utils/apiError'
@@ -267,6 +267,26 @@ export default function OrderDetailPage() {
     }
   }
 
+  const handlePayosPayment = async () => {
+    if (!order?.id) return
+    try {
+      setPaying(true)
+      const res = await getPayosPaymentUrlApi(order.id)
+      const payosResult = res.data?.result || res.data?.data || res.data
+      const payUrl = payosResult?.payUrl
+      if (payUrl) {
+        toast.success('Đang mở trang thanh toán PayOS...')
+        window.location.href = payUrl
+      } else {
+        toast.error('Không thể tạo liên kết thanh toán PayOS.')
+      }
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Có lỗi xảy ra khi tạo thanh toán PayOS.'))
+    } finally {
+      setPaying(false)
+    }
+  }
+
   useEffect(() => {
     const fetchOrder = async () => {
       if (!id) {
@@ -352,6 +372,14 @@ export default function OrderDetailPage() {
       order?.rawStatus === ORDER_STATUS_CODE.PENDING &&
       order?.rawPaymentStatus === 0 &&
       (order?.rawPaymentMethod === 'PAYPAL' || order?.rawPaymentMethod === '1'),
+    [order]
+  )
+
+  const canPayPayos = useMemo(
+    () =>
+      order?.rawStatus === ORDER_STATUS_CODE.PENDING &&
+      order?.rawPaymentStatus === 0 &&
+      order?.rawPaymentMethod === 'PAYOS',
     [order]
   )
 
@@ -522,7 +550,7 @@ export default function OrderDetailPage() {
               <span className='text-xl font-bold text-[#3d3330]'>{money(order.total)}</span>
             </div>
 
-            {(canPayMomo || canPayPaypal) && (
+            {(canPayMomo || canPayPaypal || canPayPayos) && (
               <div className='mt-5 rounded-md border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900'>
                 Đơn hàng chưa thanh toán. Vui lòng hoàn tất thanh toán để cửa hàng xử lý đơn.
               </div>
@@ -549,6 +577,18 @@ export default function OrderDetailPage() {
                 disabled={paying}
               >
                 Thanh toán qua PayPal
+              </Button>
+            )}
+
+            {canPayPayos && (
+              <Button
+                full
+                className='mt-3 !rounded-md !bg-blue-600 hover:!bg-blue-700 text-white'
+                onClick={handlePayosPayment}
+                loading={paying}
+                disabled={paying}
+              >
+                Thanh toán qua PayOS
               </Button>
             )}
 

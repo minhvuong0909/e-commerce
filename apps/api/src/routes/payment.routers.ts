@@ -5,7 +5,11 @@ import {
   momoReturnController,
   createPayPalPaymentController,
   paypalSuccessController,
-  mockMoMoPaymentSuccessController
+  mockMoMoPaymentSuccessController,
+  createPayOSPaymentController,
+  payosWebhookController,
+  payosReturnController,
+  payosCancelController
 } from '~/controllers/payment.controllers'
 import { accessTokenValidator } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
@@ -53,6 +57,34 @@ paymentRouter.post('/paypal/create/:order_id', accessTokenValidator, wrapAsync(c
     path: /payment/paypal/success
 */
 paymentRouter.get('/paypal/success', wrapAsync(paypalSuccessController))
+
+/*
+    description: Tạo liên kết thanh toán PayOS
+    method: POST
+    path: /payment/payos/create/:order_id
+*/
+paymentRouter.post('/payos/create/:order_id', accessTokenValidator, wrapAsync(createPayOSPaymentController))
+
+/*
+    description: PayOS callback nhận kết quả chuyển khoản thành công
+    method: GET
+    path: /payment/payos/return
+*/
+paymentRouter.get('/payos/return', wrapAsync(payosReturnController))
+
+/*
+    description: PayOS callback khi người dùng hủy giao dịch
+    method: GET
+    path: /payment/payos/cancel
+*/
+paymentRouter.get('/payos/cancel', wrapAsync(payosCancelController))
+
+/*
+    description: Webhook nhận kết quả thanh toán từ PayOS
+    method: POST
+    path: /payment/payos/webhook
+*/
+paymentRouter.post('/payos/webhook', wrapAsync(payosWebhookController))
 
 if (isMoMoSandboxMode) {
   paymentRouter.post(

@@ -1,9 +1,12 @@
 import { AnimatePresence, motion } from 'framer-motion'
 import { type FormEvent, useState } from 'react'
-import { PackageCheck, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, UserRound } from 'lucide-react'
+import { LogOut, PackageCheck, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, UserRound } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { pageMotion } from '../constants/motion'
 import { ROUTE_PATHS } from '../routes/route.paths'
+import { logoutApi } from '../services/auths.services'
+import { clearAuth, getRefreshToken, getToken } from '../utils/authSession'
 import cn from '../utils/cn'
 
 const mobileNav = [
@@ -64,6 +67,22 @@ export default function UserLayout() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const hasToken = Boolean(getToken())
+
+  const handleLogout = async () => {
+    const refresh_token = getRefreshToken()
+    if (refresh_token) {
+      try {
+        await logoutApi(refresh_token)
+      } catch {
+        // ignore
+      }
+    }
+    clearAuth()
+    toast.success('Đăng xuất thành công!')
+    navigate(ROUTE_PATHS.AUTH_LOGIN)
+  }
+
   const isHome = location.pathname === ROUTE_PATHS.USER_HOME || location.pathname === ROUTE_PATHS.USER
   const urlSearch = isHome ? (new URLSearchParams(location.search).get('search') ?? '') : ''
   const searchKey = `${location.pathname}${location.search}`
@@ -119,6 +138,17 @@ export default function UserLayout() {
                   <HeaderIconLink to={ROUTE_PATHS.USER_PROFILE} label='Tài khoản'>
                     <UserRound size={18} />
                   </HeaderIconLink>
+                  {hasToken ? (
+                    <button
+                      type='button'
+                      onClick={handleLogout}
+                      title='Đăng xuất'
+                      aria-label='Đăng xuất'
+                      className='grid h-10 w-10 place-items-center rounded-lg border border-rose-200 bg-rose-50/50 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50'
+                    >
+                      <LogOut size={18} />
+                    </button>
+                  ) : null}
                   <Link
                     to={ROUTE_PATHS.USER_ORDERS}
                     className='hidden h-10 items-center rounded-lg border border-[#eaded8] bg-white px-3 text-xs font-semibold text-[#5c504a] transition hover:bg-[#fdf8f6] lg:inline-flex'

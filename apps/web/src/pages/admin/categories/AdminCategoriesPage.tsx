@@ -89,7 +89,7 @@ export default function AdminCategoriesPage() {
             className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
           >
             <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
-            Reload
+              Làm mới
           </button>
         </div>
 
@@ -181,3 +181,5 @@ export default function AdminCategoriesPage() {
     </AdminTableShell>
   )
 }
+
+// Force reload comment

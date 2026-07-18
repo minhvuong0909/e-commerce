@@ -11,6 +11,7 @@ import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
 import { createOrderApi } from '../../services/orders.services'
 import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
 import { createSavedAddressApi, getSavedAddressesApi, type SavedAddress } from '../../services/user_addresses.services'
+import { getPayosPaymentUrlApi } from '../../services/payment.services'
 import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
@@ -36,7 +37,8 @@ const paymentMethodLabel: Record<PaymentMethod, string> = {
   [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
   [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng / Visa / MasterCard',
   [PaymentMethod.PAYPAL]: 'Thanh toán qua PayPal',
-  [PaymentMethod.MOMO]: 'Ví điện tử MoMo'
+  [PaymentMethod.MOMO]: 'Ví điện tử MoMo',
+  [PaymentMethod.PAYOS]: 'Chuyển khoản (PayOS)'
 }
 
 function TrustBadges({ compact = false }: { compact?: boolean }) {
@@ -298,6 +300,23 @@ export default function CheckoutPage() {
           })
         } catch {
           // không chặn luồng đặt hàng nếu lưu địa chỉ thất bại
+        }
+      }
+
+      if (orderId && paymentMethod === PaymentMethod.PAYOS) {
+        try {
+          const payosRes = await getPayosPaymentUrlApi(orderId)
+          const payosResult = payosRes.data?.result || payosRes.data?.data || payosRes.data
+          const payUrl = payosResult?.payUrl
+          if (payUrl) {
+            toast.success('Đang chuyển hướng tới cổng thanh toán PayOS...')
+            window.location.href = payUrl
+            return
+          }
+        } catch (payosErr) {
+          toast.error(getApiErrorMessage(payosErr, 'Không thể tạo liên kết thanh toán PayOS. Bạn có thể thanh toán lại trong chi tiết đơn hàng.'))
+          navigate(ROUTE_PATHS.USER_ORDER_DETAIL(orderId))
+          return
         }
       }
 

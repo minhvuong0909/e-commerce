@@ -24,6 +24,44 @@ function getRawMessage(error: unknown): string {
   return ''
 }
 
+function getFriendlyBackendErrorMessage(raw: string): string | null {
+  const lower = raw.toLowerCase()
+  if (lower.includes('email already exists')) {
+    return 'Email này đã được đăng ký sử dụng.'
+  }
+  if (lower.includes('username already exists')) {
+    return 'Tên người dùng đã được đăng ký sử dụng.'
+  }
+  if (lower.includes('insufficient product stock')) {
+    return 'Số lượng sản phẩm trong kho không đủ để đáp ứng yêu cầu.'
+  }
+  if (lower.includes('product not found')) {
+    return 'Không tìm thấy sản phẩm.'
+  }
+  if (lower.includes('payment has already been completed')) {
+    return 'Thanh toán này đã được hoàn tất trước đó.'
+  }
+  if (lower.includes('out of delivery zone') || lower.includes('within 25 km')) {
+    return 'Chúng tôi chỉ giao hàng trong bán kính 25 km từ cửa hàng.'
+  }
+  if (lower.includes('address not found') || lower.includes('locate this address')) {
+    return 'Không thể định vị địa chỉ này. Vui lòng chọn vị trí trên bản đồ.'
+  }
+  if (lower.includes('cannot change order to this status')) {
+    return 'Không thể thay đổi trạng thái đơn hàng ở thời điểm này.'
+  }
+  if (lower.includes('order not found')) {
+    return 'Không tìm thấy thông tin đơn hàng.'
+  }
+  if (lower.includes('invalid momo webhook signature') || lower.includes('invalid signature')) {
+    return 'Xác thực chữ ký giao dịch thất bại.'
+  }
+  if (lower.includes('order not refundable')) {
+    return 'Đơn hàng này không đủ điều kiện để hoàn tiền.'
+  }
+  return null
+}
+
 function includesAny(text: string, needles: string[]) {
   const lower = text.toLowerCase()
   return needles.some((needle) => lower.includes(needle.toLowerCase()))
@@ -75,7 +113,10 @@ export function parseApiError(error: unknown, fallback = 'Đã xảy ra lỗi. V
     return { kind: 'login', message: AUTH_MESSAGES.loginRequired, status }
   }
 
-  if (raw) return { kind: 'generic', message: raw, status }
+  if (raw) {
+    const friendlyMessage = getFriendlyBackendErrorMessage(raw)
+    return { kind: 'generic', message: friendlyMessage || fallback, status }
+  }
 
   return { kind: 'generic', message: fallback, status }
 }

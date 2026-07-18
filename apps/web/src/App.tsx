@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate, BrowserRouter } from 'react-router-dom'
+import { Routes, Route, Navigate, BrowserRouter, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import AuthLayout from './layouts/AuthLayout'
 import LoginPage from './pages/auth/LoginPage'
@@ -68,9 +68,20 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
   )
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as unknown as ScrollBehavior })
+  }, [pathname])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthBootstrap />
       <AuthNoticeListener />
       <Toaster richColors position='top-right' />
@@ -260,3 +271,5 @@ export default function App() {
     </BrowserRouter>
   )
 }
+
+// Touch comment to trigger reload

@@ -54,6 +54,34 @@ function TrustStrip() {
   )
 }
 
+function getFriendlyErrorMessage(resultCode: string | null, paymentMethod: string): string {
+  if (paymentMethod === 'MOMO') {
+    if (!resultCode) return 'Giao dịch không thành công. Vui lòng thử lại.'
+    switch (resultCode) {
+      case '9000':
+        return 'Giao dịch đã bị hủy bởi người dùng.'
+      case '1006':
+        return 'Tài khoản ví MoMo không đủ số dư để thực hiện giao dịch.'
+      case '49':
+        return 'Giao dịch bị từ chối do người dùng hủy thanh toán trên ứng dụng MoMo.'
+      case '1001':
+        return 'Giao dịch bị từ chối do tài khoản của bạn chưa được xác thực.'
+      case '1002':
+        return 'Giao dịch bị từ chối do nhà phát hành ví MoMo.'
+      case '1005':
+        return 'Giao dịch thất bại do mã QR hoặc thông tin thanh toán đã hết hạn.'
+      case '1':
+      case '99':
+      default:
+        return 'Giao dịch thanh toán qua MoMo không thành công. Vui lòng thử lại.'
+    }
+  }
+  if (paymentMethod === 'PAYOS') {
+    return 'Giao dịch chuyển khoản qua PayOS đã bị hủy hoặc không thành công.'
+  }
+  return 'Giao dịch không thành công. Bạn có thể thử lại.'
+}
+
 export default function OrderResultPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -62,11 +90,14 @@ export default function OrderResultPage() {
   const resultCode = searchParams.get('resultCode')
   const orderId = searchParams.get('orderId') || ''
   const amountStr = searchParams.get('amount') || '0'
-  const gatewayMessage = searchParams.get('message') || ''
   const transId = searchParams.get('transId') || ''
   const paymentMethod = searchParams.get('paymentMethod') || 'MOMO'
   const amountValue = Number(amountStr)
-  const paymentMethodLabel = paymentMethod === 'PAYPAL' ? 'PayPal' : 'Ví MoMo'
+  const paymentMethodLabel = (() => {
+    if (paymentMethod === 'PAYPAL') return 'PayPal'
+    if (paymentMethod === 'PAYOS') return 'PayOS'
+    return 'Ví MoMo'
+  })()
 
   const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-').slice(1).join('-') || orderId.replace('ORDER-', '') : orderId
   const orderCode = realOrderId ? `#${realOrderId.slice(-6).toUpperCase()}` : ''
@@ -74,6 +105,8 @@ export default function OrderResultPage() {
   const status = resolvePaymentResult(searchParams)
 
   const orderDetailPath = realOrderId ? ROUTE_PATHS.USER_ORDER_DETAIL(realOrderId) : ROUTE_PATHS.USER_ORDERS
+
+  const friendlyError = getFriendlyErrorMessage(resultCode, paymentMethod)
 
   const headerConfig = {
     success: {
@@ -86,7 +119,7 @@ export default function OrderResultPage() {
     failed: {
       icon: XCircle,
       title: 'Thanh toán chưa hoàn tất',
-      desc: gatewayMessage || 'Giao dịch không thành công. Bạn có thể thử lại.',
+      desc: friendlyError,
       bg: 'bg-[linear-gradient(180deg,#fff5f5_0%,#fdf8f6_100%)]',
       iconWrap: 'bg-rose-100 text-rose-600'
     },
@@ -157,7 +190,7 @@ export default function OrderResultPage() {
 
           {status === 'failed' ? (
             <p className='rounded-lg border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm leading-6 text-rose-800'>
-              {gatewayMessage || 'Vui lòng thử lại hoặc chọn phương thức thanh toán khác tại trang đơn hàng.'}
+              {friendlyError}
             </p>
           ) : null}
 

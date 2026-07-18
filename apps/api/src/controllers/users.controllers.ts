@@ -17,7 +17,6 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { ErrorWithStatus } from '~/models/Errors'
 import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
-import { json } from 'sequelize'
 import { ParamsDictionary } from 'express-serve-static-core'
 import databaseService from '~/services/database.service'
 
@@ -158,10 +157,9 @@ export const resendEmailVerifyController = async (
       message: USERS_MESSAGES.EMAIL_HAS_BEEN_VERIFY
     })
   } else if (user.verify_status === UserVerifyStatus.Banned) {
-    ;(res.status(HTTP_STATUS.OK),
-      json({
-        message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED
-      }))
+    res.status(HTTP_STATUS.OK).json({
+      message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED
+    })
   } else {
     // chưa verify
     await usersService.resendEmailVerify(user_id)

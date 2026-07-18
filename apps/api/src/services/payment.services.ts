@@ -7,7 +7,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { PAYMENT_MESSAGES } from '~/constants/messages'
 import databaseService from './database.service'
 import { createMailTransporter } from '~/config/mail'
-import { assertMoMoProductionReady, MOMO_CONFIG } from '~/config/payment'
+import { assertMoMoProductionReady, MOMO_CONFIG, payos, PAYOS_CONFIG } from '~/config/payment'
 
 const transporter = createMailTransporter()
 
@@ -405,6 +405,181 @@ class PaymentService {
     )
 
     return { message: 'Giả lập thanh toán thành công!', transId: mockTransId }
+  }
+
+  // -------------------------------------------------------
+  // PayOS Payment Integration
+  // -------------------------------------------------------
+
+  async createPayOSPaymentUrl(order_id: string) {
+    const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
+    if (!order) {
+      throw new ErrorWithStatus({
+        message: PAYMENT_MESSAGES.PAYMENT_ORDER_NOT_FOUND,
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+    if (order.payment_status === PaymentStatus.COMPLETED) {
+      throw new ErrorWithStatus({
+        message: PAYMENT_MESSAGES.PAYMENT_ALREADY_COMPLETED,
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const orderCode = Number(String(Date.now()).slice(-9))
+    const description = `Don hang #${order_id.slice(-6).toUpperCase()}`
+
+    const paymentData = {
+      orderCode,
+      amount: order.total_price,
+      description: description.substring(0, 25), // PayOS limit is 25 chars
+      cancelUrl: PAYOS_CONFIG.cancelUrl,
+      returnUrl: `${PAYOS_CONFIG.returnUrl}?order_id=${order_id}`
+    }
+
+    const paymentLink = await payos.paymentRequests.create(paymentData)
+
+    await databaseService.payments.insertOne({
+      order_id: new ObjectId(order_id),
+      user_id: order.user_id,
+      amount: order.total_price,
+      payment_method: 'PAYOS',
+      payment_status: PaymentStatus.PENDING,
+      gateway_trans_id: String(orderCode),
+      raw_gateway_response: paymentLink,
+      created_at: new Date(),
+      updated_at: new Date()
+    })
+
+    return paymentLink
+  }
+
+  async handlePayOSReturn(query: Record<string, unknown>) {
+    const { code, status, orderCode, order_id } = query
+    if (!orderCode) {
+      throw new ErrorWithStatus({
+        message: 'Thiếu thông tin mã đơn hàng từ PayOS.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const numericOrderCode = Number(orderCode)
+    const payosInfo = await payos.paymentRequests.get(numericOrderCode)
+
+    if (!order_id || !ObjectId.isValid(order_id as string)) {
+      throw new ErrorWithStatus({
+        message: 'Mã đơn hàng không hợp lệ.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
+
+    const orderObjectId = new ObjectId(order_id as string)
+    const existingOrder = await databaseService.orders.findOne({ _id: orderObjectId })
+    if (!existingOrder) {
+      throw new ErrorWithStatus({
+        message: 'Đơn hàng không tồn tại.',
+        status: HTTP_STATUS.NOT_FOUND
+      })
+    }
+
+    const isSuccess = payosInfo.status === 'PAID'
+
+    if (isSuccess) {
+      if (existingOrder.payment_status !== PaymentStatus.COMPLETED) {
+        await databaseService.orders.updateOne(
+          { _id: orderObjectId },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              updated_at: new Date()
+            }
+          }
+        )
+
+        await databaseService.payments.updateOne(
+          { order_id: orderObjectId, payment_method: 'PAYOS' },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              gateway_trans_id: payosInfo.id,
+              updated_at: new Date()
+            }
+          }
+        )
+
+        // Gửi email xác nhận thanh toán thành công
+        this.sendPaymentConfirmationEmail(
+          order_id as string,
+          existingOrder.total_price.toString(),
+          payosInfo.id,
+          'Chuyển khoản (PayOS)',
+          'PayOS'
+        ).catch((err) => console.error('Gửi email xác nhận thanh toán PayOS thất bại:', err))
+      }
+      return {
+        resultCode: '0',
+        order_id: order_id as string,
+        amount: existingOrder.total_price,
+        transId: payosInfo.id,
+        gatewayMessage: 'Thanh toán PayOS thành công.'
+      }
+    } else {
+      return {
+        resultCode: '1',
+        order_id: order_id as string,
+        amount: existingOrder.total_price,
+        transId: payosInfo.id,
+        gatewayMessage: `Thanh toán thất bại (Trạng thái: ${payosInfo.status})`
+      }
+    }
+  }
+
+  async handlePayOSWebhook(webhookData: any) {
+    const verifiedData = await payos.webhooks.verify(webhookData)
+    if (verifiedData.code === '00') {
+      const orderCode = verifiedData.orderCode
+      const payment = await databaseService.payments.findOne({
+        payment_method: 'PAYOS',
+        $or: [
+          { gateway_trans_id: String(orderCode) },
+          { gateway_trans_id: String(verifiedData.paymentLinkId) },
+          { 'raw_gateway_response.orderCode': Number(orderCode) },
+          { 'raw_gateway_response.paymentLinkId': String(verifiedData.paymentLinkId) }
+        ]
+      })
+      if (payment) {
+        await databaseService.orders.updateOne(
+          { _id: payment.order_id },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              updated_at: new Date()
+            }
+          }
+        )
+
+        await databaseService.payments.updateOne(
+          { _id: payment._id },
+          {
+            $set: {
+              payment_status: PaymentStatus.COMPLETED,
+              updated_at: new Date()
+            }
+          }
+        )
+
+        const order = await databaseService.orders.findOne({ _id: payment.order_id })
+        if (order) {
+          this.sendPaymentConfirmationEmail(
+            payment.order_id.toString(),
+            order.total_price.toString(),
+            verifiedData.paymentLinkId,
+            'Chuyển khoản (PayOS)',
+            'PayOS'
+          ).catch((err) => console.error('Gửi email xác nhận thanh toán PayOS Webhook thất bại:', err))
+        }
+      }
+    }
   }
 }
 

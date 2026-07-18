@@ -4,6 +4,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { PAYMENT_MESSAGES } from '~/constants/messages'
 import paymentService from '~/services/payment.services'
 import paypalService from '~/services/paypal.services'
+import databaseService from '~/services/database.service'
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 const CLIENT_URL = stripEnv(process.env.CLIENT_URL) || 'http://localhost:5173'
@@ -98,5 +99,66 @@ export const mockMoMoPaymentSuccessController = async (req: Request<ParamsDictio
     result: {
       transId: result.transId
     }
+  })
+}
+
+export const createPayOSPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
+  const payosResponse = await paymentService.createPayOSPaymentUrl(((req.params as any).order_id as string))
+
+  res.status(HTTP_STATUS.OK).json({
+    message: 'Tạo liên kết thanh toán PayOS thành công!',
+    result: {
+      payUrl: payosResponse.checkoutUrl,
+      orderCode: payosResponse.orderCode
+    }
+  })
+}
+
+export const payosWebhookController = async (req: Request, res: Response) => {
+  await paymentService.handlePayOSWebhook(req.body)
+  res.sendStatus(HTTP_STATUS.NO_CONTENT)
+}
+
+export const payosReturnController = async (req: Request, res: Response) => {
+  try {
+    const result = await paymentService.handlePayOSReturn(req.query as Record<string, unknown>)
+    return redirectToOrderResult(res, {
+      resultCode: result.resultCode,
+      orderId: result.order_id,
+      amount: String(result.amount),
+      transId: result.transId,
+      message: result.gatewayMessage,
+      paymentMethod: 'PAYOS'
+    })
+  } catch (error: any) {
+    console.error('PayOS return error:', error?.message || error)
+    return redirectToOrderResult(res, {
+      resultCode: '1',
+      message: error?.message || 'Xác thực thanh toán PayOS thất bại.',
+      paymentMethod: 'PAYOS'
+    })
+  }
+}
+
+export const payosCancelController = async (req: Request, res: Response) => {
+  const orderCode = req.query.orderCode as string
+  let orderId = ''
+  if (orderCode) {
+    const payment = await databaseService.payments.findOne({
+      payment_method: 'PAYOS',
+      $or: [
+        { gateway_trans_id: String(orderCode) },
+        { 'raw_gateway_response.orderCode': Number(orderCode) }
+      ]
+    })
+    if (payment) {
+      orderId = payment.order_id.toString()
+    }
+  }
+  return redirectToOrderResult(res, {
+    resultCode: '1',
+    message: 'Người dùng hủy thanh toán PayOS.',
+    paymentMethod: 'PAYOS',
+    orderId
   })
 }

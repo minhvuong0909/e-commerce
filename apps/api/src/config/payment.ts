@@ -1,3 +1,5 @@
+import { PayOS } from '@payos/node'
+
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 
 /** URL public của API — dùng cho MoMo redirect/ipn, PayPal return. Không dùng domain frontend. */
@@ -62,6 +64,20 @@ export const PAYPAL_CONFIG = {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 25000
   })()
 }
+
+export const PAYOS_CONFIG = {
+  clientId: stripEnv(process.env.PAYOS_CLIENT_ID),
+  apiKey: stripEnv(process.env.PAYOS_API_KEY),
+  checksumKey: stripEnv(process.env.PAYOS_CHECKSUM_KEY),
+  cancelUrl: stripEnv(process.env.PAYOS_CANCEL_URL) || `${clientBaseUrl}/user/orders`,
+  returnUrl: stripEnv(process.env.PAYOS_RETURN_URL) || `${apiBaseUrl}/payment/payos/return`
+}
+
+export const payos = new PayOS({
+  clientId: PAYOS_CONFIG.clientId,
+  apiKey: PAYOS_CONFIG.apiKey,
+  checksumKey: PAYOS_CONFIG.checksumKey
+})
 
 export const assertMoMoProductionReady = () => {
   if (isPaymentProduction && !hasMoMoCredentials) {

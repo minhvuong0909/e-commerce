@@ -44,11 +44,8 @@ export default function AuthCallbackPage() {
 
         toast.success('Đăng nhập Google thành công!')
         navigate(getHomePathForRole(user?.role), { replace: true })
-      } catch (err: unknown) {
-        const message =
-          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-          'Xác thực với server thất bại.'
-        toast.error(message)
+      } catch {
+        toast.error('Xác thực với server thất bại. Vui lòng thử lại.')
         navigate(ROUTE_PATHS.AUTH_LOGIN, { replace: true })
       }
     }

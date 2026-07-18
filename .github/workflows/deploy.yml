@@ -72,6 +72,16 @@ jobs:
             upsert_api_env_if_present "GMAIL_USER" "${{ secrets.GMAIL_USER }}"
             upsert_api_env_if_present "GMAIL_PASS" "${{ secrets.GMAIL_PASS }}"
 
+            require_api_env() {
+              key="$1"
+              if ! grep -Eq "^[[:space:]]*${key}[[:space:]]*=[[:space:]]*[^[:space:]]" apps/api/.env; then
+                echo "::error::Missing required API env: ${key}"
+                exit 1
+              fi
+            }
+            require_api_env "GMAIL_USER"
+            require_api_env "GMAIL_PASS"
+
             docker compose up -d --build --remove-orphans
 
             echo "Đợi API container healthy..."

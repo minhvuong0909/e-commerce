@@ -31,10 +31,9 @@ class MediaServices {
         // console.log('Deleted: ' + Boolean(isDel))
 
         // return ra url cho ngta truy cập ảnh
+        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
         const url: Media = {
-          url: isProduction
-            ? `${process.env.HOST}/static/image/${newFilename}`
-            : `http://localhost:${process.env.PORT}/static/image/${newFilename}`,
+          url: `${apiBase}/static/image/${newFilename}`,
           type: MediaType.Image
         }
         return url
@@ -48,10 +47,9 @@ class MediaServices {
     const result = await Promise.all(
       files.map(async (file) => {
         // trả ra link
+        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
         const url: Media = {
-          url: isProduction
-            ? `${process.env.HOST}/static/video/${file.newFilename}`
-            : `http://localhost:${process.env.PORT}/static/video/${file.newFilename}`,
+          url: `${apiBase}/static/video/${file.newFilename}`,
           type: MediaType.Video
         }
         return url

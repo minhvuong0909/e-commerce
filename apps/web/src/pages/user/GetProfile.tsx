@@ -231,14 +231,24 @@ export default function ProfilePage() {
             </div>
 
             {!editing ? (
-              <button
-                type='button'
-                onClick={startEditing}
-                className='inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-md border border-[#3d3330] px-4 text-sm font-semibold text-[#3d3330] hover:bg-white/80 sm:self-center'
-              >
-                <PenLine size={15} />
-                Chỉnh sửa
-              </button>
+              <div className='flex flex-wrap gap-2 self-start sm:self-center'>
+                <button
+                  type='button'
+                  onClick={startEditing}
+                  className='inline-flex h-10 items-center gap-2 rounded-md border border-[#3d3330] px-4 text-sm font-semibold text-[#3d3330] hover:bg-white/80'
+                >
+                  <PenLine size={15} />
+                  Chỉnh sửa
+                </button>
+                <button
+                  type='button'
+                  onClick={handleLogout}
+                  className='inline-flex h-10 items-center gap-2 rounded-md border border-rose-200 bg-rose-50/50 px-4 text-sm font-semibold text-rose-600 hover:bg-rose-50'
+                >
+                  <LogOut size={15} />
+                  Đăng xuất
+                </button>
+              </div>
             ) : null}
           </div>
           <p className='mt-4 text-xs text-[#8a7a74]'>Beauty profile — quản lý routine và thông tin giao hàng của bạn.</p>

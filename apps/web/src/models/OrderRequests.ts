@@ -15,6 +15,7 @@ export const PaymentMethod = {
   CREDIT_CARD: 'CREDIT_CARD',
   PAYPAL: 'PAYPAL',
   MOMO: 'MOMO',
+  PAYOS: 'PAYOS',
   CASH_ON_DELIVERY: 'CASH_ON_DELIVERY'
 } as const
 

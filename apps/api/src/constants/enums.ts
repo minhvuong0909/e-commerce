@@ -51,6 +51,7 @@ export enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD', // thanh toán qua thẻ tín dụng
   PAYPAL = 'PAYPAL', // thanh toán qua Paypal,
   MOMO = 'MOMO', // thanh toán qua Momo
+  PAYOS = 'PAYOS', // thanh toán qua PayOS
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY' // thanh toán tiền mặt khi nhận hàng
 }
 

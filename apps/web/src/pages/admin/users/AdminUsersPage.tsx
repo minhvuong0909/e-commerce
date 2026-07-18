@@ -55,10 +55,11 @@ export default function AdminUsersPage() {
   const error = isError ? 'Không tải được danh sách người dùng' : ''
 
   const stats = useMemo(() => {
-    const banned = users.filter((u) => u.verify_status === 2).length
-    const verified = users.filter((u) => u.verify_status === 1).length
+    const list = data?.data || []
+    const banned = list.filter((u) => u.verify_status === 2).length
+    const verified = list.filter((u) => u.verify_status === 1).length
     return { banned, verified }
-  }, [users])
+  }, [data?.data])
 
   const handleBanToggle = async (user: AdminUser) => {
     const isBanned = user.verify_status === 2

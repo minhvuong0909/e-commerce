@@ -12,6 +12,7 @@ import { canTransitionOrderStatus, isValidOrderStatus } from '~/utils/orderStatu
 import { buildOrderSearchFilter } from '~/utils/listQuery'
 import shippingService from './shipping.services'
 import { createMailTransporter } from '~/config/mail'
+import { payos } from '~/config/payment'
 
 const mailTransporter = createMailTransporter()
 
@@ -19,6 +20,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   [PaymentMethod.CASH_ON_DELIVERY]: 'Thanh toán khi nhận hàng (COD)',
   [PaymentMethod.MOMO]: 'Ví MoMo',
   [PaymentMethod.PAYPAL]: 'PayPal',
+  [PaymentMethod.PAYOS]: 'Chuyển khoản (PayOS)',
   [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng'
 }
 class OrdersService {
@@ -510,6 +512,46 @@ class OrdersService {
         message: ORDER_MESSAGES.ORDER_NOT_REFUNDABLE,
         status: HTTP_STATUS.BAD_REQUEST
       })
+    }
+
+    if (order.payment_method === PaymentMethod.PAYOS) {
+      const payment = await databaseService.payments.findOne({
+        order_id: orderObjectId,
+        payment_method: 'PAYOS'
+      })
+      if (!payment || !payment.gateway_trans_id) {
+        throw new ErrorWithStatus({
+          message: 'Không tìm thấy giao dịch thanh toán PayOS hợp lệ của đơn hàng này.',
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
+
+      const orderCodeStr = payment.gateway_trans_id
+      try {
+        const payosPaymentLink = isNaN(Number(orderCodeStr))
+          ? await payos.paymentRequests.get(orderCodeStr)
+          : await payos.paymentRequests.get(Number(orderCodeStr))
+        const successTx = payosPaymentLink.transactions.find((tx) => tx.amount >= order.total_price) || payosPaymentLink.transactions[0]
+        
+        if (!successTx || !successTx.counterAccountNumber || !successTx.counterAccountBankId) {
+          throw new Error('Không tìm thấy thông tin tài khoản ngân hàng của khách hàng từ giao dịch PayOS (thiếu số tài khoản hoặc ngân hàng). Vui lòng hoàn tiền thủ công.')
+        }
+
+        // Call PayOS Payout API to refund
+        await payos.payouts.create({
+          referenceId: `REFUND-${order_id}-${Date.now()}`.substring(0, 35),
+          amount: order.total_price,
+          description: `Hoan tien don hang ${order.total_price} VND`.substring(0, 25),
+          toBin: successTx.counterAccountBankId,
+          toAccountNumber: successTx.counterAccountNumber
+        })
+      } catch (err: any) {
+        console.error('Lỗi hoàn tiền tự động PayOS:', err?.message || err)
+        throw new ErrorWithStatus({
+          message: `Hoàn tiền tự động thất bại qua PayOS. Chi tiết: ${err?.message || 'Lỗi kết nối API PayOS'}. Vui lòng kiểm tra lại cấu hình tài khoản hoặc hoàn tiền thủ công.`,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
     }
 
     if (order.status !== OrderStatus.Cancelled) {

@@ -7,3 +7,7 @@ export const getMomoPaymentUrlApi = (orderId: string) => {
 export const getPaypalPaymentUrlApi = (orderId: string) => {
   return api.post(`/payment/paypal/create/${orderId}`)
 }
+
+export const getPayosPaymentUrlApi = (orderId: string) => {
+  return api.post(`/payment/payos/create/${orderId}`)
+}

@@ -1,19 +1,12 @@
 import { motion } from 'framer-motion'
-
-import { Boxes, FolderTree, LayoutDashboard, ShoppingBag, Sparkles, Tags, UserRound, Users } from 'lucide-react'
-
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-
+import { Boxes, FolderTree, LayoutDashboard, LogOut, ShoppingBag, Sparkles, Tags, UserRound, Users } from 'lucide-react'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-
+import { toast } from 'sonner'
 import { pageMotion } from '../constants/motion'
-
 import { ROUTE_PATHS } from '../routes/route.paths'
-
-import { getMeApi } from '../services/auths.services'
-
-import { getRole, USER_ROLE } from '../utils/authSession'
-
+import { getMeApi, logoutApi } from '../services/auths.services'
+import { clearAuth, getRefreshToken, getRole, USER_ROLE } from '../utils/authSession'
 import cn from '../utils/cn'
 
 
@@ -49,12 +42,24 @@ function roleLabel(role: number | null | undefined) {
 
 
 export default function AdminLayout() {
-
   const location = useLocation()
-
+  const navigate = useNavigate()
   const storedRole = getRole()
-
   const isStaff = storedRole === USER_ROLE.Staff
+
+  const handleLogout = async () => {
+    const refresh_token = getRefreshToken()
+    if (refresh_token) {
+      try {
+        await logoutApi(refresh_token)
+      } catch {
+        // ignore
+      }
+    }
+    clearAuth()
+    toast.success('Đăng xuất thành công!')
+    navigate(ROUTE_PATHS.AUTH_LOGIN)
+  }
 
 
 
@@ -239,6 +244,16 @@ export default function AdminLayout() {
                   </div>
 
                 </div>
+
+                <button
+                  type='button'
+                  onClick={handleLogout}
+                  title='Đăng xuất'
+                  aria-label='Đăng xuất'
+                  className='grid h-10 w-10 place-items-center rounded-lg border border-rose-200 bg-rose-50/50 text-rose-600 transition hover:border-rose-300 hover:bg-rose-50'
+                >
+                  <LogOut size={17} />
+                </button>
 
               </div>
 

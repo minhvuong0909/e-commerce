@@ -63,7 +63,7 @@ export default function AdminOrdersPage() {
             className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
           >
             <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
-            Reload
+            Làm mới
           </button>
         </div>
 
@@ -121,7 +121,7 @@ export default function AdminOrdersPage() {
                           <div className='max-w-[220px] truncate font-semibold text-slate-600'>{order.user_id}</div>
                         </td>
                         <td className='px-5 py-4 font-mono font-black text-ink-950'>
-                          {money(order.total_price + order.shipping_fee)}
+                          {money(order.total_price)}
                         </td>
                         <td className='px-5 py-4'>
                           <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
