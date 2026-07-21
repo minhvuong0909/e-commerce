@@ -16,9 +16,10 @@ import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
 import { ROUTE_PATHS } from '../../routes/route.paths'
-import money from '../../utils/money'
 import cn from '../../utils/cn'
+import money from '../../utils/money'
 import { getApiErrorMessage } from '../../utils/apiError'
+import { formatImageUrl } from '../../utils/formatImageUrl'
 
 type ShippingForm = {
   recipient_name: string
@@ -359,12 +360,14 @@ export default function CheckoutPage() {
             <div className='space-y-3'>
               {cartItems.map((item) => {
                 const product = item.product_infor
-                const image = product.medias?.[0]?.url
+                const firstMedia = product.medias?.[0]
+                const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
+                const image = formatImageUrl(product.thumbnail || mediaUrl)
 
                 return (
                   <div key={item._id} className='flex gap-3 rounded-md border border-[#f0e4de] p-3 sm:items-center'>
                     <div className='aspect-[4/5] w-16 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6] sm:w-20'>
-                      {image ? <img src={image} alt={product.name} className='h-full w-full object-cover' /> : null}
+                      {image ? <img src={image} alt={product.name} referrerPolicy='no-referrer' className='h-full w-full object-cover' /> : null}
                     </div>
 
                     <div className='min-w-0 flex-1'>

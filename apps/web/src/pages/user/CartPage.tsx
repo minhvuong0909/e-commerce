@@ -14,6 +14,7 @@ import type { Product } from '../../models/ProductRequests'
 import { getApiErrorMessage } from '../../utils/apiError'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
+import { formatImageUrl } from '../../utils/formatImageUrl'
 
 const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
 
@@ -65,12 +66,14 @@ function CartAddOnRow({
   onAdd: () => void
   loading: boolean
 }) {
-  const image = product.medias?.[0]?.url
+  const firstMedia = product.medias?.[0]
+  const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
+  const image = formatImageUrl(product.thumbnail || mediaUrl)
 
   return (
     <div className={cn(panelClass, 'flex items-center gap-3 p-3')}>
       <div className='h-16 w-14 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6]'>
-        {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
+        {image ? <img src={image} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover' /> : null}
       </div>
       <div className='min-w-0 flex-1'>
         <p className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</p>
@@ -266,7 +269,9 @@ export default function CartPage() {
             <div className='space-y-3'>
               {cartItems.map((item) => {
                 const product = item.product_infor
-                const image = product.medias?.[0]?.url
+                const firstMedia = product.medias?.[0]
+                const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
+                const image = formatImageUrl(product.thumbnail || mediaUrl)
                 const isSelected = selectedItems.includes(item._id)
 
                 return (
@@ -291,7 +296,7 @@ export default function CartPage() {
 
                     <div className='aspect-[4/5] w-full overflow-hidden rounded-md bg-[#f5ebe6] sm:w-24'>
                       {image ? (
-                        <img src={image} alt={product.name} loading='lazy' className='h-full w-full object-cover' />
+                        <img src={image} alt={product.name} loading='lazy' referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                       ) : null}
                     </div>
 

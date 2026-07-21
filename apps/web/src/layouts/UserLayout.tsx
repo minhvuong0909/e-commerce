@@ -1,9 +1,7 @@
-import { AnimatePresence, motion } from 'framer-motion'
 import { type FormEvent, useState } from 'react'
 import { LogOut, PackageCheck, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, UserRound } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { pageMotion } from '../constants/motion'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { logoutApi } from '../services/auths.services'
 import { clearAuth, getRefreshToken, getToken } from '../utils/authSession'
@@ -195,11 +193,7 @@ export default function UserLayout() {
       </HeaderSearchControls>
 
       <main className='min-h-[calc(100vh-140px)]'>
-        <AnimatePresence mode='wait'>
-          <motion.div key={location.pathname} {...pageMotion}>
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+        <Outlet />
       </main>
 
       <footer className='border-t border-[#eaded8] bg-[#fffcfb]/90'>

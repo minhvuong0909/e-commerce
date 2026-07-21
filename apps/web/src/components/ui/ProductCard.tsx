@@ -9,6 +9,8 @@ import { BADGE_LABELS, BADGE_STYLES, getProductBadges } from '../../utils/produc
 import cn from '../../utils/cn'
 import money from '../../utils/money'
 
+import { formatImageUrl } from '../../utils/formatImageUrl'
+
 interface ProductCardProps {
   product: Product
 }
@@ -32,7 +34,9 @@ function StarRating({ value }: { value: number }) {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const image = product.medias?.[0]?.url
+  const firstMedia = product.medias?.[0]
+  const rawImage = product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url)
+  const image = formatImageUrl(rawImage)
   const outOfStock = product.quantity <= 0
   const badges = getProductBadges(product)
   const [favorited, setFavorited] = useState(false)
@@ -65,6 +69,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               <img
                 src={image}
                 alt={product.name}
+                referrerPolicy='no-referrer'
                 className='h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]'
                 loading='lazy'
               />
@@ -113,7 +118,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               className='flex h-10 w-full items-center justify-center gap-2 rounded-md bg-[#3d3330] text-sm font-semibold text-white transition hover:bg-[#2a2421] disabled:opacity-60'
             >
               <Plus size={16} />
-              {isAddingThis ? 'Đang thêm...' : 'Quick Add'}
+              {isAddingThis ? 'Đang thêm...' : 'Thêm vào giỏ hàng'}
             </button>
           </div>
         ) : null}

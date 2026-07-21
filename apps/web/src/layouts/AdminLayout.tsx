@@ -1,9 +1,7 @@
-import { motion } from 'framer-motion'
 import { Boxes, FolderTree, LayoutDashboard, LogOut, ShoppingBag, Sparkles, Tags, UserRound, Users } from 'lucide-react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { pageMotion } from '../constants/motion'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { getMeApi, logoutApi } from '../services/auths.services'
 import { clearAuth, getRefreshToken, getRole, USER_ROLE } from '../utils/authSession'
@@ -42,7 +40,6 @@ function roleLabel(role: number | null | undefined) {
 
 
 export default function AdminLayout() {
-  const location = useLocation()
   const navigate = useNavigate()
   const storedRole = getRole()
   const isStaff = storedRole === USER_ROLE.Staff
@@ -282,13 +279,7 @@ export default function AdminLayout() {
 
 
           <main className='mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-6'>
-
-            <motion.div key={location.pathname} {...pageMotion}>
-
-              <Outlet />
-
-            </motion.div>
-
+            <Outlet />
           </main>
 
 

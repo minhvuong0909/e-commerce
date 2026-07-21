@@ -29,12 +29,22 @@ export function buildProductMatchStage(q: ProductQueryParams): Record<string, an
     match.name = { $regex: escapeRegex(q.search.trim()), $options: 'i' }
   }
 
-  if (q.category_id && ObjectId.isValid(q.category_id)) {
-    match.category_id = new ObjectId(q.category_id)
+  if (q.category_id && q.category_id.trim()) {
+    const catId = q.category_id.trim()
+    if (ObjectId.isValid(catId)) {
+      match.category_id = { $in: [new ObjectId(catId), catId] }
+    } else {
+      match.category_id = catId
+    }
   }
 
-  if (q.brand_id && ObjectId.isValid(q.brand_id)) {
-    match.brand_id = new ObjectId(q.brand_id)
+  if (q.brand_id && q.brand_id.trim()) {
+    const bId = q.brand_id.trim()
+    if (ObjectId.isValid(bId)) {
+      match.brand_id = { $in: [new ObjectId(bId), bId] }
+    } else {
+      match.brand_id = bId
+    }
   }
 
   const min = q.minPrice !== undefined && q.minPrice !== '' ? Number(q.minPrice) : undefined

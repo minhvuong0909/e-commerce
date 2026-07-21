@@ -14,6 +14,7 @@ import { deleteProductApi, getAllProductsApi, type ProductFilters } from '../../
 import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
 import money from '../../../utils/money'
+import { formatImageUrl } from '../../../utils/formatImageUrl'
 
 const getStockType = (q: number) => (q <= 0 ? 'stock' : q <= 5 ? 'low' : 'active')
 
@@ -161,17 +162,21 @@ export default function AdminProductsPage() {
               ) : null}
 
               {!loading
-                ? products.map((product) => (
-                    <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
-                      <td className='px-5 py-4'>
-                        <div className='flex items-center gap-3'>
-                          <div className='h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100'>
-                            {product.medias?.[0]?.url ? (
-                              <img src={product.medias[0].url} alt={product.name} className='h-full w-full object-cover' />
-                            ) : (
-                              <div className='flex h-full w-full items-center justify-center text-[10px] font-bold text-slate-400'>N/A</div>
-                            )}
-                          </div>
+                ? products.map((product) => {
+                    const firstMedia = product.medias?.[0]
+                    const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
+                    const imgUrl = product.thumbnail || mediaUrl
+                    return (
+                      <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
+                        <td className='px-5 py-4'>
+                          <div className='flex items-center gap-3'>
+                            <div className='h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100'>
+                              {imgUrl ? (
+                                <img src={formatImageUrl(imgUrl)} alt={product.name} referrerPolicy='no-referrer' className='h-full w-full object-cover' />
+                              ) : (
+                                <div className='flex h-full w-full items-center justify-center text-[10px] font-bold text-slate-400'>N/A</div>
+                              )}
+                            </div>
 
                           <div className='min-w-0'>
                             <div className='truncate font-black text-ink-950'>{product.name}</div>
@@ -204,7 +209,8 @@ export default function AdminProductsPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                  )
+                })
                 : null}
             </tbody>
           </table>

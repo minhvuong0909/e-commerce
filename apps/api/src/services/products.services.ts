@@ -119,13 +119,6 @@ class ProductServices {
           },
           {
             $project: {
-              medias: {
-                $map: {
-                  input: '$medias_infor',
-                  as: 'media',
-                  in: '$$media.media'
-                }
-              },
               _id: 1,
               name: 1,
               quantity: 1,
@@ -141,7 +134,21 @@ class ProductServices {
               sold: 1,
               status: 1,
               category_id: 1,
-              ship_category_id: 1
+              ship_category_id: 1,
+              thumbnail: 1,
+              medias: {
+                $cond: {
+                  if: { $gt: [{ $size: '$medias_infor' }, 0] },
+                  then: {
+                    $map: {
+                      input: '$medias_infor',
+                      as: 'media',
+                      in: '$$media.media'
+                    }
+                  },
+                  else: '$medias'
+                }
+              }
             }
           }
         ],
@@ -157,6 +164,25 @@ class ProductServices {
   }
 
   async getProducts(req: Request) {
+    const catQuery = (req.query.category_id || req.query.category) as string | undefined
+    if (catQuery && catQuery.trim()) {
+      const trimmedCat = catQuery.trim()
+      if (ObjectId.isValid(trimmedCat)) {
+        req.query.category_id = trimmedCat
+      } else {
+        const catDoc = await databaseService.categories.findOne({
+          $or: [
+            { slug: trimmedCat },
+            { name: { $regex: new RegExp(`^${trimmedCat.replace(/-/g, ' ')}$`, 'i') } },
+            { name: { $regex: new RegExp(trimmedCat.replace(/-/g, '.*'), 'i') } }
+          ]
+        })
+        if (catDoc) {
+          req.query.category_id = catDoc._id.toString()
+        }
+      }
+    }
+
     const match = buildProductMatchStage(req.query as ProductQueryParams)
     const sortStage = buildProductSortStage(req.query.sort as string | undefined)
     const { page, limit, skip } = parsePagination(

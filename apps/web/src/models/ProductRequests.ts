@@ -5,11 +5,11 @@ export interface Product {
   quantity: number
   description: string
   rating_number: number
-  medias: {
-    url: string
-    type: number
-  }[]
+  thumbnail?: string
+  medias: Array<string | { url: string; type?: number }>
   origin: string
+  volume?: number
+  weight?: number
   soldNumber?: number
   created_at?: string
 }

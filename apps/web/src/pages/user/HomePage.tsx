@@ -15,17 +15,28 @@ import {
 } from 'lucide-react'
 import ProductCard from '../../components/ui/ProductCard'
 import SectionHeader from '../../components/ui/SectionHeader'
-import Button from '../../components/ui/Button'
+import PaginationBar from '../../components/ui/PaginationBar'
 import { fadeUpItem, staggerContainer } from '../../constants/motion'
 import { useProducts } from '../../hooks/useProducts'
 import type { ProductFilters } from '../../services/products.services'
 import { getCategoriesApi } from '../../services/categories.services'
+import { getToken } from '../../utils/authSession'
 import cn from '../../utils/cn'
 
-const GRID_LIMIT = 8
+const GRID_LIMIT = 10
 const SEARCH_LIMIT = 12
 
-type FilterOption = { id: string; name: string }
+type FilterOption = { id: string; slug: string; name: string }
+
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '')
+}
 
 const COSMETIC_CHIP_HINTS = [
   'Skincare',
@@ -55,11 +66,12 @@ function extractCategories(res: { data?: unknown }): FilterOption[] {
 
   return findArray(res.data)
     .map((item) => {
-      const row = item as { _id?: string; id?: string; name?: string; title?: string }
+      const row = item as { _id?: string; id?: string; slug?: string; name?: string; title?: string }
       const id = row._id || row.id
       const name = row.name || row.title
       if (!id || !name) return null
-      return { id, name }
+      const slug = row.slug || toSlug(name)
+      return { id, slug, name }
     })
     .filter((item): item is FilterOption => Boolean(item))
 }
@@ -119,9 +131,10 @@ export default function HomePage() {
         <SearchResultsSection key={`${urlSearch}-${categoryId}`} initialSearch={urlSearch} categoryId={categoryId} />
       ) : null}
       <ProductShowcase
+        key={categoryId || 'all'}
         id='new-arrivals'
         eyebrow='Mới về'
-        title='New Arrivals'
+        title='Sản phẩm mới'
         desc='Công thức mới, texture mềm mại — cập nhật routine làm đẹp của bạn.'
         sort='newest'
         categoryId={categoryId}
@@ -177,14 +190,30 @@ function HomeHero() {
           >
             <div className='grid grid-cols-2 gap-3'>
               {[
-                { label: 'Serum', tone: 'bg-[#fdf2f0]' },
-                { label: 'Cleanser', tone: 'bg-[#f7f3ee]' },
-                { label: 'SPF', tone: 'bg-[#eef4ef]' },
-                { label: 'Lip', tone: 'bg-[#faf0ee]' }
-              ].map(({ label, tone }) => (
-                <div key={label} className={cn('flex aspect-square flex-col justify-end rounded-md p-3', tone)}>
-                  <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>{label}</span>
-                  <span className='mt-1 text-sm font-semibold text-[#3d3330]'>Routine essentials</span>
+                { label: 'Serum', tone: 'bg-[#fdf2f0]', image: '/images/serum-routine-essentials.png' },
+                { label: 'Cleanser', tone: 'bg-[#f7f3ee]', image: '/images/cleanser-routine-essentials.jpg' },
+                { label: 'SPF', tone: 'bg-[#eef4ef]', image: '/images/spf-routine-essentials.png' },
+                { label: 'Lip', tone: 'bg-[#faf0ee]', image: '/images/lip-routine-essentials.png' }
+              ].map(({ label, tone, image }) => (
+                <div
+                  key={label}
+                  className={cn(
+                    'group relative flex aspect-square flex-col justify-end overflow-hidden rounded-md p-3',
+                    tone
+                  )}
+                >
+                  {image ? (
+                    <img
+                      src={image}
+                      alt={label}
+                      referrerPolicy='no-referrer'
+                      className='absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105'
+                    />
+                  ) : null}
+                  <div className='relative z-10 rounded-md bg-white/80 p-2 shadow-xs backdrop-blur-xs'>
+                    <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>{label}</span>
+                    <span className='mt-0.5 block text-xs font-semibold text-[#3d3330]'>Routine essentials</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -205,9 +234,12 @@ function CategoryChips({
 }: {
   categories: FilterOption[]
   selectedId: string
-  onSelect: (id: string) => void
+  onSelect: (val: string) => void
 }) {
-  const chips = categories.length > 0 ? categories : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', name }))
+  const chips =
+    categories.length > 0
+      ? categories
+      : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', slug: toSlug(name), name }))
 
   return (
     <section className='mx-auto max-w-7xl px-4 pt-6 md:px-6' aria-label='Danh mục mỹ phẩm'>
@@ -237,14 +269,15 @@ function CategoryChips({
           Tất cả
         </button>
         {chips.map((chip) => {
-          const isActive = Boolean(chip.id) && chip.id === selectedId
-          const isStatic = !chip.id
+          const targetValue = chip.slug || chip.id
+          const isActive = Boolean(targetValue) && (selectedId === chip.slug || selectedId === chip.id)
+          const isStatic = !targetValue
           return (
             <button
-              key={chip.id || chip.name}
+              key={chip.slug || chip.id || chip.name}
               type='button'
               disabled={isStatic}
-              onClick={() => chip.id && onSelect(isActive ? '' : chip.id)}
+              onClick={() => targetValue && onSelect(isActive ? '' : targetValue)}
               className={cn(
                 'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition',
                 isActive
@@ -277,6 +310,12 @@ function ProductShowcase({
   sort: NonNullable<ProductFilters['sort']>
   categoryId: string
 }) {
+  const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    setPage(1)
+  }, [categoryId])
+
   const filters = useMemo<ProductFilters>(
     () => ({
       sort,
@@ -285,8 +324,9 @@ function ProductShowcase({
     [sort, categoryId]
   )
 
-  const { data, isLoading } = useProducts(1, GRID_LIMIT, filters)
+  const { data, isLoading } = useProducts(page, GRID_LIMIT, filters)
   const products = data?.products ?? []
+  const pagination = data?.pagination
 
   return (
     <section id={id} className='mx-auto max-w-7xl scroll-mt-28 px-4 py-8 md:px-6'>
@@ -299,19 +339,30 @@ function ProductShowcase({
             Chưa có sản phẩm trong danh mục này.
           </div>
         ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial='hidden'
-            whileInView='show'
-            viewport={{ once: true, margin: '-40px' }}
-            className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
-          >
-            {products.map((product) => (
-              <motion.div key={product._id} variants={fadeUpItem}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              variants={staggerContainer}
+              initial='hidden'
+              whileInView='show'
+              viewport={{ once: true, margin: '-40px' }}
+              className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
+            >
+              {products.map((product) => (
+                <motion.div key={product._id} variants={fadeUpItem}>
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
+            </motion.div>
+            {pagination && pagination.totalPages > 1 ? (
+              <PaginationBar
+                pagination={pagination}
+                page={page}
+                onPageChange={setPage}
+                isLoading={isLoading}
+                itemLabel='sản phẩm'
+              />
+            ) : null}
+          </>
         )}
       </div>
     </section>
@@ -320,6 +371,10 @@ function ProductShowcase({
 
 function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: string; categoryId: string }) {
   const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    setPage(1)
+  }, [initialSearch, categoryId])
 
   const filters = useMemo<ProductFilters>(
     () => ({
@@ -349,39 +404,31 @@ function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: st
             Không tìm thấy sản phẩm phù hợp.
           </div>
         ) : (
-          <motion.div
-            variants={staggerContainer}
-            initial='hidden'
-            animate='show'
-            className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
-          >
-            {products.map((product) => (
-              <motion.div key={product._id} variants={fadeUpItem}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </motion.div>
+          <>
+            <motion.div
+              variants={staggerContainer}
+              initial='hidden'
+              animate='show'
+              className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
+            >
+              {products.map((product) => (
+                <motion.div key={product._id} variants={fadeUpItem}>
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
+            </motion.div>
+            {pagination && pagination.totalPages > 1 ? (
+              <PaginationBar
+                pagination={pagination}
+                page={page}
+                onPageChange={setPage}
+                isLoading={isLoading}
+                itemLabel='sản phẩm'
+              />
+            ) : null}
+          </>
         )}
       </div>
-      {pagination && pagination.totalPages > 1 ? (
-        <div className='mt-6 flex items-center justify-between gap-3'>
-          <p className='text-sm font-medium text-[#8a7a74]'>
-            Trang {pagination.page}/{pagination.totalPages}
-          </p>
-          <div className='flex gap-2'>
-            <Button variant='secondary' disabled={page <= 1 || isLoading} onClick={() => setPage((p) => p - 1)}>
-              Trước
-            </Button>
-            <Button
-              variant='secondary'
-              disabled={page >= pagination.totalPages || isLoading}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Sau
-            </Button>
-          </div>
-        </div>
-      ) : null}
     </section>
   )
 }
@@ -445,6 +492,7 @@ function BrandStory() {
 }
 
 function PromoStrip() {
+  const hasToken = Boolean(getToken())
   const items = [
     { icon: MapPin, title: 'Giao trong 25km', desc: 'Phí ship tính theo khoảng cách, minh bạch.' },
     { icon: ShieldCheck, title: 'Hàng chính hãng', desc: 'Nguồn gốc rõ ràng, kiểm soát chất lượng.' },
@@ -477,15 +525,23 @@ function PromoStrip() {
             <Sun size={18} />
           </span>
           <div>
-            <p className='font-semibold text-[#3d3330]'>Đăng nhập để lưu routine &amp; theo dõi đơn hàng</p>
-            <p className='mt-1 text-sm text-[#8a7a74]'>Ưu đãi dành riêng cho thành viên Vibrant Mart.</p>
+            <p className='font-semibold text-[#3d3330]'>
+              {hasToken
+                ? 'Chào mừng bạn trở lại Vibrant Mart!'
+                : 'Đăng nhập để lưu routine & theo dõi đơn hàng'}
+            </p>
+            <p className='mt-1 text-sm text-[#8a7a74]'>
+              {hasToken
+                ? 'Theo dõi trạng thái giao hàng và quản lý tài khoản của bạn.'
+                : 'Ưu đãi dành riêng cho thành viên Vibrant Mart.'}
+            </p>
           </div>
         </div>
         <Link
-          to='/auth/login'
+          to={hasToken ? '/user/my-orders' : '/auth/login'}
           className='inline-flex h-10 items-center rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
         >
-          Đăng nhập
+          {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập'}
         </Link>
       </div>
     </section>
