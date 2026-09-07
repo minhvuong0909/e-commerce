@@ -2,6 +2,7 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: { serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'] },
       colors: {
         ink: {
           50: '#faf9f8',
@@ -10,14 +11,14 @@ export default {
           500: '#8c7d70',
           700: '#594d42',
           900: '#2b2621',
-          950: '#1a1713'
+          950: '#2B2118'
         },
         brand: {
-          50: '#f2f8f4',
-          100: '#e0f0e5',
-          500: '#75b38a',
-          600: '#5a966d',
-          900: '#2f523a'
+          50: '#FAF7F2',
+          100: '#EFE9E0',
+          500: '#9A8069',
+          600: '#786452',
+          900: '#2B2118'
         },
         mint: {
           50: '#f0fdf6',

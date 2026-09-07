@@ -10,6 +10,13 @@ import { getAllOrdersApi } from './../../services/orders.services'
 import { getAllProductsApi } from './../../services/products.services'
 import formatDate from './../../utils/date'
 import money from './../../utils/money'
+import cn from './../../utils/cn'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function formatShortDate(date: Date) {
+  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+}
 
 export default function AdminDashboardPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -66,16 +73,46 @@ export default function AdminDashboardPage() {
     () =>
       [...orders]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, ORDER_LIMIT),
+        .slice(0, 5),
     [orders]
   )
 
-  const lowStock = useMemo(
+  const revenueChart = useMemo(() => {
+    const today = new Date()
+    const days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(today.getTime() - (6 - index) * DAY_MS)
+      date.setHours(0, 0, 0, 0)
+      return {
+        key: date.toISOString().slice(0, 10),
+        label: formatShortDate(date),
+        revenue: 0,
+        orders: 0
+      }
+    })
+
+    for (const order of orders) {
+      const orderDate = new Date(order.created_at)
+      orderDate.setHours(0, 0, 0, 0)
+      const key = orderDate.toISOString().slice(0, 10)
+      const day = days.find((item) => item.key === key)
+      if (day) {
+        day.revenue += order.total_price + order.shipping_fee
+        day.orders += 1
+      }
+    }
+
+    const maxRevenue = Math.max(...days.map((day) => day.revenue), 1)
+    return days.map((day) => ({
+      ...day,
+      height: Math.round((day.revenue / maxRevenue) * 100)
+    }))
+  }, [orders])
+
+  const topSelling = useMemo(
     () =>
       [...products]
-        .filter((product) => product.quantity <= LOW_STOCK_THRESHOLD)
-        .sort((a, b) => a.quantity - b.quantity)
-        .slice(0, PRODUCT_LIMIT),
+        .sort((a, b) => (b.soldNumber || 0) - (a.soldNumber || 0))
+        .slice(0, 5),
     [products]
   )
 
@@ -102,10 +139,10 @@ export default function AdminDashboardPage() {
 
   return (
     <div className='space-y-6'>
-      <section className='surface-strong animate-fade-up rounded-3xl p-6 md:p-8'>
+      <section className='animate-fade-up py-2'>
         <div className='flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between'>
           <div>
-            <div className='inline-flex items-center gap-2 rounded-full border border-[#eaded8] bg-[#fdf8f6] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#b07a72]'>
+            <div className='inline-flex items-center gap-2 rounded-full border border-[#e4e4e7] bg-[#fafafa] px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[#52525b]'>
               Tổng quan cửa hàng
             </div>
             <h1 className='mt-4 text-3xl font-semibold tracking-tight text-[#3d3330]'>Dashboard</h1>
@@ -116,7 +153,7 @@ export default function AdminDashboardPage() {
 
           <Link
             to='/admin/orders'
-            className='inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-[#eaded8] bg-white px-5 text-sm font-semibold text-[#3d3330] transition hover:border-[#cbb8af] hover:bg-[#fdf8f6]'
+            className='inline-flex h-10 w-fit items-center justify-center gap-2 rounded-lg border border-[#e4e4e7] bg-white px-5 text-sm font-semibold text-[#3d3330] transition hover:border-[#cbb8af] hover:bg-[#fafafa]'
           >
             Xem đơn hàng <ArrowRight size={16} />
           </Link>
@@ -127,12 +164,12 @@ export default function AdminDashboardPage() {
         {stats.map((card) => {
           const Icon = card.icon
           return (
-            <div key={card.label} className='surface-card interactive-lift rounded-3xl p-5'>
+            <div key={card.label} className='surface-card rounded-2xl p-4'>
               <div className='flex items-start justify-between gap-3'>
                 <div>
                   <p className='text-xs font-black uppercase tracking-[0.14em] text-slate-400'>{card.label}</p>
-                  <h3 className='mt-3 text-2xl font-black tracking-tight text-ink-950'>{card.value}</h3>
-                  <p className='mt-2 text-xs font-semibold text-slate-500'>{card.sub}</p>
+                  <h3 className='mt-2 text-2xl font-semibold tracking-tight text-ink-950'>{card.value}</h3>
+                  <p className='mt-1 text-xs font-medium text-slate-500'>{card.sub}</p>
                 </div>
                 <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
                   <Icon size={19} />
@@ -145,6 +182,68 @@ export default function AdminDashboardPage() {
 
       <section className='grid gap-4 xl:grid-cols-[1.55fr_1fr]'>
         <div className='surface-card rounded-3xl p-5 md:p-6'>
+          <div className='mb-6 rounded-3xl border border-[#eaded8] bg-white p-5 shadow-xs'>
+            <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between border-b border-[#f2e7e1] pb-4'>
+              <div>
+                <h2 className='text-lg font-bold text-[#3d3330]'>Doanh thu 7 ngày gần nhất</h2>
+                <p className='mt-1 text-xs text-[#8a7a74]'>Thống kê chi tiết doanh thu thực tế và số đơn phát sinh theo ngày.</p>
+              </div>
+              <div className='flex items-center gap-3'>
+                <div className='rounded-2xl border border-[#eaded8] bg-[#fdf8f6] px-4 py-2 text-right shadow-xs'>
+                  <p className='text-[10px] font-bold uppercase tracking-wider text-[#8a7a74]'>Tổng 7 ngày</p>
+                  <p className='mt-0.5 text-sm font-black text-[#c65f4a]'>
+                    {money(revenueChart.reduce((sum, day) => sum + day.revenue, 0))}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className='mt-6 flex h-64 items-end gap-2.5 sm:gap-4 rounded-2xl bg-[#faf5f3] p-4 sm:p-6 border border-[#eaded8]/60'>
+              {revenueChart.map((day) => {
+                const hasRevenue = day.revenue > 0
+                const barHeight = Math.max(day.height, hasRevenue ? 12 : 4)
+
+                return (
+                  <div key={day.key} className='flex h-full min-w-0 flex-1 flex-col justify-end gap-2'>
+                    {/* Amount tag on top of active bar */}
+                    <div className='text-center min-h-6 flex items-center justify-center'>
+                      {hasRevenue ? (
+                        <span className='rounded-full bg-[#c65f4a] px-2 py-0.5 text-[10px] font-bold text-white shadow-xs animate-in fade-in'>
+                          {money(day.revenue)}
+                        </span>
+                      ) : (
+                        <span className='text-[10px] font-semibold text-[#a89890]'>0đ</span>
+                      )}
+                    </div>
+
+                    {/* Chart Bar track container */}
+                    <div className='group relative flex flex-1 items-end justify-center rounded-2xl bg-white border border-[#eaded8] p-1 shadow-inner overflow-visible'>
+                      <div
+                        className={cn(
+                          'w-full max-w-10 rounded-xl transition-all duration-500 group-hover:brightness-110',
+                          hasRevenue
+                            ? 'bg-gradient-to-t from-[#3d3330] via-[#594944] to-[#c65f4a] shadow-md shadow-[#c65f4a]/20'
+                            : 'bg-[#eaded8]/50'
+                        )}
+                        style={{ height: `${barHeight}%` }}
+                      />
+
+                      {/* Tooltip on Hover */}
+                      <div className='pointer-events-none absolute bottom-[calc(100%+6px)] z-20 hidden rounded-xl bg-[#3d3330] px-3 py-2 text-center text-xs font-bold text-white shadow-xl group-hover:block'>
+                        <div className='text-[#f0b3a4]'>{day.label}</div>
+                        <div>{money(day.revenue)}</div>
+                        <div className='mt-0.5 text-[10px] font-normal text-white/80'>{day.orders} đơn hàng</div>
+                      </div>
+                    </div>
+
+                    {/* Date label */}
+                    <div className='text-center text-[11px] font-bold text-[#5c504a]'>{day.label}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           <div className='mb-5 flex items-start justify-between gap-3'>
             <div>
               <h2 className='text-lg font-black text-ink-950'>Đơn hàng gần đây</h2>
@@ -194,37 +293,42 @@ export default function AdminDashboardPage() {
         <div className='surface-card rounded-3xl p-5 md:p-6'>
           <div className='mb-5 flex items-start justify-between gap-3'>
             <div>
-              <h2 className='text-lg font-black text-ink-950'>Sản phẩm sắp hết hàng</h2>
-              <p className='mt-1 text-sm text-slate-500'>Tồn kho thấp nhất trong hệ thống</p>
+              <h2 className='text-lg font-black text-ink-950'>Top 5 sản phẩm bán chạy</h2>
+              <p className='mt-1 text-sm text-slate-500'>Dùng để demo mặt hàng chủ lực cho chủ shop</p>
             </div>
             <TrendingUp size={18} className='text-slate-400' />
           </div>
 
           <div className='space-y-3'>
-            {lowStock.length === 0 ? (
+            {topSelling.length === 0 ? (
               <div className='rounded-2xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-500'>
-                Không có sản phẩm sắp hết hàng.
+                Chưa có dữ liệu sản phẩm.
               </div>
             ) : (
-              lowStock.map((product) => {
-                const isEmpty = product.quantity === 0
-                const pct = Math.min((product.quantity / LOW_STOCK_THRESHOLD) * 100, 100)
+              topSelling.map((product, index) => {
+                const maxSold = Math.max(...topSelling.map((item) => item.soldNumber || 0), 1)
+                const pct = Math.max(8, Math.round(((product.soldNumber || 0) / maxSold) * 100))
                 return (
                   <div key={product._id} className='rounded-3xl border border-slate-200 bg-slate-50 p-4'>
                     <div className='flex items-center justify-between gap-3'>
-                      <div className='min-w-0'>
+                      <div className='flex min-w-0 items-center gap-3'>
+                        <span className='grid h-8 w-8 shrink-0 place-items-center rounded-2xl bg-[#3d3330] text-xs font-black text-white'>
+                          #{index + 1}
+                        </span>
+                        <div className='min-w-0'>
                         <div className='truncate text-sm font-black text-ink-950'>{product.name}</div>
                         <div className='mt-0.5 font-mono text-xs font-semibold text-slate-500'>
-                          #{product._id.slice(-6).toUpperCase()}
+                          Tồn kho: {product.quantity}
+                        </div>
                         </div>
                       </div>
-                      <span className={isEmpty ? 'text-sm font-black text-rose-600' : 'text-sm font-black text-amber-700'}>
-                        {isEmpty ? 'Hết hàng' : `${product.quantity} còn lại`}
+                      <span className='text-sm font-black text-[#c65f4a]'>
+                        {product.soldNumber || 0} bán
                       </span>
                     </div>
 
                     <div className='mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white'>
-                      <div className={isEmpty ? 'h-full rounded-full bg-rose-500' : 'h-full rounded-full bg-amber-500'} style={{ width: isEmpty ? '100%' : `${pct}%` }} />
+                      <div className='h-full rounded-full bg-[#c65f4a]' style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )

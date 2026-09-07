@@ -12,17 +12,12 @@ import { wrapAsync } from '~/utils/handlers'
 
 const cartsRouter = Router()
 
-/* 
-// khi client add to cart thì sẽ tạo cart cho user và thêm cart item vào cart đó
-    Description: create cart item
-    method: POST
-    body: {
-        user_id: string;
-        created_at?: Date;
-        updated_at?: Date;
-        }   
-*/
-
+/**
+ * POST /carts/create
+ * Add a product to the current customer's cart.
+ * Auth: access token, verified email, User role.
+ * Features: creates the user's active cart when needed and appends/merges cart items.
+ */
 cartsRouter.post(
   '/create',
   accessTokenValidator,
@@ -31,13 +26,12 @@ cartsRouter.post(
   wrapAsync(createCartController)
 )
 
-/* 
-    Description: update cart item
-    method: PUT
-    body: {
-        qwanitity: number;
-        }   
-*/
+/**
+ * PUT /carts/items/update/:id
+ * Update cart item quantity.
+ * Auth: access token, verified email, User role.
+ * Features: changes quantity before checkout and recalculates cart totals on the client.
+ */
 cartsRouter.put(
   '/items/update/:id',
   accessTokenValidator,
@@ -46,12 +40,12 @@ cartsRouter.put(
   wrapAsync(updateCartItemController)
 )
 
-/*
-    Description: delete cart item
-    method: DELETE
-    body: {
-        }
-*/
+/**
+ * DELETE /carts/items/delete/:id
+ * Remove one item from the cart.
+ * Auth: access token, verified email, User role.
+ * Features: supports cart cleanup before checkout.
+ */
 cartsRouter.delete(
   '/items/delete/:id',
   accessTokenValidator,
@@ -60,11 +54,12 @@ cartsRouter.delete(
   wrapAsync(deleteCartItemController)
 )
 
-/*
-    Description: clear all items in the user's active cart
-    method: DELETE
-    path: /carts/clear
-*/
+/**
+ * DELETE /carts/clear
+ * Clear the current customer's active cart.
+ * Auth: access token, verified email, User role.
+ * Features: removes every item after checkout completion or manual reset.
+ */
 cartsRouter.delete(
   '/clear',
   accessTokenValidator,
@@ -73,11 +68,12 @@ cartsRouter.delete(
   wrapAsync(clearCartController)
 )
 
-/* 
-
-    Description: get cart items by user id
-    method: GET
-*/
+/**
+ * GET /carts/me
+ * Current customer's cart.
+ * Auth: access token, verified email, User role.
+ * Features: returns cart items for navbar badge, cart page and checkout.
+ */
 cartsRouter.get(
   '/me',
   accessTokenValidator,

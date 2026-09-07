@@ -13,26 +13,27 @@ import { CreateProductBody } from '~/models/requests/Products.requests'
 import { wrapAsync } from '~/utils/handlers'
 const productRouter = express.Router()
 
-/*
-  description: create product
-  path: products/create
-  method: POST
-  body: createProductBody
-*/
+/**
+ * POST /products/create
+ * Create a product from the admin product form.
+ * Auth: access token.
+ * Features: stores name, price, inventory, media, category, brand, shipping size and publish status.
+ */
 productRouter.post('/create', accessTokenValidator, createProductValidator, wrapAsync(createProductController))
 
-/*
-Description: get a product by id
-    path: /products/:id
-    method: GET
-*/
+/**
+ * GET /products/:id
+ * Public product detail.
+ * Features: returns product information used by the storefront detail page, cart and checkout.
+ */
 productRouter.get('/:id', getProductByIdValidator, wrapAsync(getProductByIdController))
 
-/*
-Description: update a product by id
-    path: /products/update/:id
-    method: patch
-*/
+/**
+ * PATCH /products/update/:id
+ * Update an existing product.
+ * Auth: access token.
+ * Features: edits product content, images, price, inventory, category/brand mapping and visible status.
+ */
 productRouter.patch(
   '/update/:id',
   filterMiddleware<CreateProductBody>([
@@ -57,17 +58,18 @@ productRouter.patch(
   wrapAsync(updateProductController)
 )
 
-/*
-Description: delete a product by id
-    path: /products/delete/:id
-    method: delete
-*/
+/**
+ * DELETE /products/delete/:id
+ * Delete a product.
+ * Auth: access token.
+ * Features: removes the product from the catalog when admin no longer sells it.
+ */
 productRouter.delete('/delete/:id', accessTokenValidator, wrapAsync(deleteProductController))
 
-/*
-Description: get all products
-    path: /
-    method: get
-*/
+/**
+ * GET /products
+ * Public product catalog.
+ * Features: supports storefront listing/search/filter/pagination and admin catalog views.
+ */
 productRouter.get('/', wrapAsync(getProductsController))
 export default productRouter

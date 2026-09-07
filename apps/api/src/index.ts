@@ -1,5 +1,6 @@
 import express from 'express'
 import dotenv from 'dotenv'
+import cors from 'cors'
 import { swaggerSpec, swaggerUi } from './config/swagger.ui'
 import databaseService from './services/database.service'
 import userRouter from './routes/users.routers'
@@ -12,12 +13,15 @@ import brandsRouter from './routes/brands.routers'
 import cartsRouter from './routes/carts.routers'
 import ordersRouter from './routes/orders.routers'
 import { seedDeliverysController } from './controllers/delivery_methods.controllers'
-import deliveyRoutes from './routes/deliveries.routes'
+import deliveryRoutes from './routes/deliveries.routes'
 import paymentRouter from './routes/payment.routers'
 import shippingRouter from './routes/shipping.routers'
+import shopSettingsRouter from './routes/shop_settings.routers'
+import vouchersRouter from './routes/vouchers.routers'
+import reviewsRouter from './routes/reviews.routers'
+import aiRouter from './routes/ai.routers'
 
 dotenv.config()
-const cors = require('cors')
 
 const app = express() //dùng express tạo 1 server
 const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
@@ -36,7 +40,7 @@ const defaultOrigins = [
   'http://127.0.0.1:5173',
   'https://vuongdev.top',
   'http://vuongdev.top',
-  'http://160.22.106.238:8080'
+  'http://160.22.107.250:8080'
 ]
 const envOrigins = [
   ...splitOrigins(process.env.CORS_ORIGINS),
@@ -85,11 +89,19 @@ app.use('/carts', cartsRouter)
 
 app.use('/orders', ordersRouter)
 
-app.use('/delivery-methods', deliveyRoutes)
+app.use('/delivery-methods', deliveryRoutes)
 
 app.use('/payment', paymentRouter)
 
 app.use('/shipping', shippingRouter)
+
+app.use('/shop-settings', shopSettingsRouter)
+
+app.use('/vouchers', vouchersRouter)
+
+app.use('/reviews', reviewsRouter)
+
+app.use('/ai', aiRouter)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // error handler tập trung
@@ -98,3 +110,5 @@ app.use(defaultErrorHandler)
 app.listen(Number(port), '0.0.0.0', () => {
   console.log(`Server backend đang chạy trên port ${port}`)
 })
+
+// Trigger nodemon server restart for /ai/chat route

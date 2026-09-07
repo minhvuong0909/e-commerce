@@ -4,7 +4,7 @@ import { PaymentStatus } from '~/constants/enums'
 interface PaymentType {
   _id?: ObjectId
   order_id: ObjectId
-  user_id: ObjectId
+  user_id?: ObjectId
   amount: number
   payment_method: string // MOMO, COD, PAYPAL
   payment_status: PaymentStatus
@@ -17,7 +17,7 @@ interface PaymentType {
 export default class Payment {
   _id?: ObjectId
   order_id: ObjectId
-  user_id: ObjectId
+  user_id?: ObjectId
   amount: number
   payment_method: string
   payment_status: PaymentStatus

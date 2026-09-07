@@ -64,6 +64,7 @@ export default class Product {
     this.thumbnail = product.thumbnail
     this.medias = product.medias || []
     this.soldNumber = product.soldNumber || 0
+    this.status = product.status ?? PRODUCT_STATUS.Active
     this.category_id = product.category_id || new ObjectId()
     this.ship_category_id = product.ship_category_id || new ObjectId()
     this.created_at = product.created_at || date

@@ -10,10 +10,11 @@ import {
   MapPin,
   RefreshCw,
   ShieldCheck,
-  Sparkles,
   Sun
 } from 'lucide-react'
 import ProductCard from '../../components/ui/ProductCard'
+import ProductCardSkeleton from '../../components/ui/ProductCardSkeleton'
+import HomeHero from '../../components/ui/HomeHero'
 import SectionHeader from '../../components/ui/SectionHeader'
 import PaginationBar from '../../components/ui/PaginationBar'
 import { fadeUpItem, staggerContainer } from '../../constants/motion'
@@ -23,7 +24,7 @@ import { getCategoriesApi } from '../../services/categories.services'
 import { getToken } from '../../utils/authSession'
 import cn from '../../utils/cn'
 
-const GRID_LIMIT = 10
+const GRID_LIMIT = 8
 const SEARCH_LIMIT = 12
 
 type FilterOption = { id: string; slug: string; name: string }
@@ -94,11 +95,7 @@ function ProductGridSkeleton() {
   return (
     <div className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'>
       {Array.from({ length: 8 }).map((_, index) => (
-        <div key={index} className='h-72 animate-pulse rounded-lg border border-[#eaded8] bg-white/80 p-3'>
-          <div className='h-40 rounded-md bg-[#f5ebe6]' />
-          <div className='mt-3 h-3 w-3/4 rounded bg-[#f0e4de]' />
-          <div className='mt-2 h-3 w-1/2 rounded bg-[#f0e4de]' />
-        </div>
+        <ProductCardSkeleton key={index} />
       ))}
     </div>
   )
@@ -124,7 +121,7 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className='home-cosmetics pb-14 [--home-blush:#fdf2f0]'>
+    <div className='home-cosmetics [--home-blush:#fdf2f0]'>
       <HomeHero />
       <CategoryChips categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
       {urlSearch ? (
@@ -145,87 +142,6 @@ export default function HomePage() {
   )
 }
 
-function HomeHero() {
-  return (
-    <section className='mx-auto max-w-7xl px-4 pt-5 md:px-6 md:pt-8'>
-      <div className='relative overflow-hidden rounded-lg border border-[#eaded8]'>
-        <div className='absolute inset-0 bg-[linear-gradient(125deg,#fff9f7_0%,#fdf2f0_42%,#faf6f1_100%)]' />
-        <div className='absolute -right-16 top-8 h-56 w-56 rounded-full bg-[#f5d5cf]/30 blur-3xl' />
-        <div className='absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[#e8f0ea]/40 blur-2xl' />
-
-        <div className='relative grid gap-8 px-5 py-10 md:grid-cols-[1.1fr_0.9fr] md:items-center md:px-10 md:py-14'>
-          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            <p className='inline-flex items-center gap-2 rounded-full border border-[#e8c4bc]/60 bg-white/70 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.14em] text-[#a66b62]'>
-              <Sparkles size={14} />
-              Skincare &amp; Cosmetics
-            </p>
-            <h1 className='mt-5 text-3xl font-semibold leading-[1.15] tracking-tight text-[#3d3330] md:text-5xl'>
-              Làn da dịu nhẹ,
-              <span className='block text-[#b07a72]'>vẻ đẹp tự nhiên.</span>
-            </h1>
-            <p className='mt-4 max-w-lg text-sm leading-7 text-[#6b5f59] md:text-base'>
-              Công thức lành tính lấy cảm hứng từ thiên nhiên — serum, sữa rửa mặt và makeup nhẹ nhàng cho mọi routine.
-            </p>
-            <div className='mt-7 flex flex-wrap gap-3'>
-              <a
-                href='#new-arrivals'
-                className='inline-flex h-11 items-center gap-2 rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
-              >
-                Khám phá sản phẩm <ArrowRight size={16} />
-              </a>
-              <a
-                href='#new-arrivals'
-                className='inline-flex h-11 items-center rounded-md border border-[#dccbc4] bg-white/80 px-5 text-sm font-semibold text-[#4a403c] transition hover:bg-white'
-              >
-                Xem hàng mới
-              </a>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.45, delay: 0.08 }}
-            className='relative mx-auto w-full max-w-md rounded-lg border border-[#eaded8] bg-white/75 p-5 md:max-w-none'
-          >
-            <div className='grid grid-cols-2 gap-3'>
-              {[
-                { label: 'Serum', tone: 'bg-[#fdf2f0]', image: '/images/serum-routine-essentials.png' },
-                { label: 'Cleanser', tone: 'bg-[#f7f3ee]', image: '/images/cleanser-routine-essentials.jpg' },
-                { label: 'SPF', tone: 'bg-[#eef4ef]', image: '/images/spf-routine-essentials.png' },
-                { label: 'Lip', tone: 'bg-[#faf0ee]', image: '/images/lip-routine-essentials.png' }
-              ].map(({ label, tone, image }) => (
-                <div
-                  key={label}
-                  className={cn(
-                    'group relative flex aspect-square flex-col justify-end overflow-hidden rounded-md p-3',
-                    tone
-                  )}
-                >
-                  {image ? (
-                    <img
-                      src={image}
-                      alt={label}
-                      referrerPolicy='no-referrer'
-                      className='absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105'
-                    />
-                  ) : null}
-                  <div className='relative z-10 rounded-md bg-white/80 p-2 shadow-xs backdrop-blur-xs'>
-                    <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>{label}</span>
-                    <span className='mt-0.5 block text-xs font-semibold text-[#3d3330]'>Routine essentials</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className='mt-4 text-center text-xs font-medium text-[#8a7a74]'>
-              Ảnh sản phẩm thật hiển thị tại các mục bên dưới
-            </p>
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  )
-}
 
 function CategoryChips({
   categories,
@@ -242,7 +158,8 @@ function CategoryChips({
       : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', slug: toSlug(name), name }))
 
   return (
-    <section className='mx-auto max-w-7xl px-4 pt-6 md:px-6' aria-label='Danh mục mỹ phẩm'>
+    <section className='bg-[#fdfbf7] px-4 pt-6 md:px-6' aria-label='Danh mục mỹ phẩm'>
+      <div className='mx-auto max-w-7xl'>
       <div className='flex items-center justify-between gap-3'>
         <h2 className='text-sm font-semibold text-[#5c504a]'>Mua theo danh mục</h2>
         {selectedId ? (
@@ -269,8 +186,8 @@ function CategoryChips({
           Tất cả
         </button>
         {chips.map((chip) => {
-          const targetValue = chip.slug || chip.id
-          const isActive = Boolean(targetValue) && (selectedId === chip.slug || selectedId === chip.id)
+          const targetValue = chip.id
+          const isActive = Boolean(selectedId) && (selectedId === chip.slug || selectedId === chip.id)
           const isStatic = !targetValue
           return (
             <button
@@ -290,6 +207,7 @@ function CategoryChips({
             </button>
           )
         })}
+      </div>
       </div>
     </section>
   )
@@ -311,10 +229,12 @@ function ProductShowcase({
   categoryId: string
 }) {
   const [page, setPage] = useState(1)
+  const [prevCategoryId, setPrevCategoryId] = useState(categoryId)
 
-  useEffect(() => {
+  if (prevCategoryId !== categoryId) {
+    setPrevCategoryId(categoryId)
     setPage(1)
-  }, [categoryId])
+  }
 
   const filters = useMemo<ProductFilters>(
     () => ({
@@ -324,16 +244,22 @@ function ProductShowcase({
     [sort, categoryId]
   )
 
-  const { data, isLoading } = useProducts(page, GRID_LIMIT, filters)
+  const { data, isLoading, isError, refetch } = useProducts(page, GRID_LIMIT, filters)
   const products = data?.products ?? []
   const pagination = data?.pagination
 
   return (
-    <section id={id} className='mx-auto max-w-7xl scroll-mt-28 px-4 py-8 md:px-6'>
+    <section id={id} className='scroll-mt-28 bg-white px-4 py-8 md:px-6'>
+      <div className='mx-auto max-w-7xl'>
       <SectionHeader eyebrow={eyebrow} title={title} desc={desc} />
       <div className='mt-6'>
         {isLoading ? (
           <ProductGridSkeleton />
+        ) : isError ? (
+          <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-8 text-center text-sm text-[#786452]'>
+            <p>Chưa tải được sản phẩm. Vui lòng thử lại.</p>
+            <button type='button' onClick={() => void refetch()} className='mt-3 rounded-full border border-[#D6CCC2] px-5 py-2 font-medium text-[#2B2118]'>Tải lại</button>
+          </div>
         ) : products.length === 0 ? (
           <div className='rounded-lg border border-dashed border-[#dccbc4] bg-white/70 p-10 text-center text-sm font-medium text-[#8a7a74]'>
             Chưa có sản phẩm trong danh mục này.
@@ -343,8 +269,7 @@ function ProductShowcase({
             <motion.div
               variants={staggerContainer}
               initial='hidden'
-              whileInView='show'
-              viewport={{ once: true, margin: '-40px' }}
+              animate='show'
               className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
             >
               {products.map((product) => (
@@ -365,16 +290,20 @@ function ProductShowcase({
           </>
         )}
       </div>
+      </div>
     </section>
   )
 }
 
 function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: string; categoryId: string }) {
   const [page, setPage] = useState(1)
+  const currentKey = `${initialSearch}:${categoryId}`
+  const [prevKey, setPrevKey] = useState(currentKey)
 
-  useEffect(() => {
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey)
     setPage(1)
-  }, [initialSearch, categoryId])
+  }
 
   const filters = useMemo<ProductFilters>(
     () => ({
@@ -390,7 +319,8 @@ function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: st
   const pagination = data?.pagination
 
   return (
-    <section id='featured-products' className='mx-auto max-w-7xl scroll-mt-28 px-4 py-6 md:px-6'>
+    <section id='featured-products' className='scroll-mt-28 bg-white px-4 py-6 md:px-6'>
+      <div className='mx-auto max-w-7xl'>
       <SectionHeader
         eyebrow='Tìm kiếm'
         title={`Kết quả cho "${initialSearch}"`}
@@ -429,6 +359,7 @@ function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: st
           </>
         )}
       </div>
+      </div>
     </section>
   )
 }
@@ -453,8 +384,8 @@ function BrandStory() {
   ]
 
   return (
-    <section className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-      <div className='overflow-hidden rounded-lg border border-[#eaded8] bg-[linear-gradient(180deg,#fffcfb,#faf6f2)]'>
+    <section className='bg-[#f7f3ee] px-4 py-8 md:px-6'>
+      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#eaded8] bg-[linear-gradient(135deg,#fffcfb,#eef4ef)]'>
         <div className='grid gap-8 p-6 md:grid-cols-2 md:p-10'>
           <div>
             <p className='text-xs font-bold uppercase tracking-[0.16em] text-[#b07a72]'>Our story</p>
@@ -501,7 +432,8 @@ function PromoStrip() {
   ]
 
   return (
-    <section className='mx-auto max-w-7xl px-4 pb-2 md:px-6' aria-label='Cam kết dịch vụ'>
+    <section className='bg-[#f7f3ee] px-4 pb-8 md:px-6' aria-label='Cam kết dịch vụ'>
+      <div className='mx-auto max-w-7xl'>
       <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
         {items.map(({ icon: Icon, title, desc }) => (
           <div
@@ -543,6 +475,7 @@ function PromoStrip() {
         >
           {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập'}
         </Link>
+      </div>
       </div>
     </section>
   )

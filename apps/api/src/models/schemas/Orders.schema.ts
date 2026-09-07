@@ -14,9 +14,16 @@ export interface ShippingAddress {
   address_source?: 'manual' | 'map'
 }
 
+export interface GuestCustomer {
+  name: string
+  phone: string
+  email?: string
+}
+
 interface OrderType {
   _id?: ObjectId
-  user_id: ObjectId
+  user_id?: ObjectId
+  guest_customer?: GuestCustomer
   delivery_method_id?: ObjectId
   payment_method: PaymentMethod
   payment_status: PaymentStatus
@@ -30,7 +37,8 @@ interface OrderType {
 
 export default class Order {
   _id?: ObjectId
-  user_id: ObjectId
+  user_id?: ObjectId
+  guest_customer?: GuestCustomer
   delivery_method_id?: ObjectId
   payment_method: PaymentMethod
   payment_status: PaymentStatus
@@ -44,6 +52,7 @@ export default class Order {
     const date = new Date()
     this._id = order._id || new ObjectId()
     this.user_id = order.user_id
+    this.guest_customer = order.guest_customer
     this.delivery_method_id = order.delivery_method_id
     this.payment_method = order.payment_method
     this.payment_status = order.payment_status

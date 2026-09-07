@@ -66,7 +66,7 @@ jobs:
             upsert_api_env "HOST" "https://api.vuongdev.top"
             upsert_api_env "API_URL" "https://api.vuongdev.top"
             upsert_api_env "CLIENT_URL" "https://vuongdev.top"
-            upsert_api_env "CORS_ORIGINS" "https://vuongdev.top,http://vuongdev.top,http://160.22.106.238:8080"
+            upsert_api_env "CORS_ORIGINS" "https://vuongdev.top,http://vuongdev.top,http://160.22.107.250:8080"
             upsert_api_env "SUPABASE_URL" "${{ secrets.VITE_SUPABASE_URL }}"
             upsert_api_env "SUPABASE_ANON_KEY" "${{ secrets.VITE_SUPABASE_ANON_KEY }}"
             upsert_api_env_if_present "GMAIL_USER" "${{ secrets.GMAIL_USER }}"

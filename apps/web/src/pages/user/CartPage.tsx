@@ -15,8 +15,10 @@ import { getApiErrorMessage } from '../../utils/apiError'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
 import { formatImageUrl } from '../../utils/formatImageUrl'
+import { validateVoucherApi, type VoucherValidationResult } from '../../services/vouchers.services'
 
 const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
+const FREE_SHIPPING_THRESHOLD = 500000
 
 function CartListSkeleton() {
   return (
@@ -100,6 +102,8 @@ export default function CartPage() {
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
   const [promoCode, setPromoCode] = useState('')
+  const [voucher, setVoucher] = useState<VoucherValidationResult | null>(null)
+  const [voucherLoading, setVoucherLoading] = useState(false)
 
   const selectedItems = useMemo(
     () => cartItems.filter((item) => !deselectedIds.has(item._id)).map((item) => item._id),
@@ -184,6 +188,10 @@ export default function CartPage() {
     () => selectedCartItems.reduce((sum, item) => sum + item.product_infor.price * item.quantity, 0),
     [selectedCartItems]
   )
+  const discount = voucher?.discount || 0
+  const estimatedTotal = Math.max(0, subtotal - discount)
+  const remainingForFreeShip = Math.max(0, FREE_SHIPPING_THRESHOLD - estimatedTotal)
+  const freeShipProgress = Math.min(100, (estimatedTotal / FREE_SHIPPING_THRESHOLD) * 100)
 
   const stockFail = selectedCartItems.some((item) => item.quantity > item.product_infor.quantity)
 
@@ -192,16 +200,26 @@ export default function CartPage() {
       toast.error('Vui lòng chọn sản phẩm để thanh toán')
       return
     }
-    navigate('/user/checkout', { state: { items: selectedItems } })
+    navigate('/user/checkout', { state: { items: selectedItems, voucher_code: voucher?.voucher.code } })
   }
 
-  const handleApplyPromo = (e: FormEvent) => {
+  const handleApplyPromo = async (e: FormEvent) => {
     e.preventDefault()
     if (!promoCode.trim()) {
       toast.error('Vui lòng nhập mã giảm giá')
       return
     }
-    toast.message('Mã giảm giá sắp ra mắt — chưa áp dụng vào tổng tiền.')
+    try {
+      setVoucherLoading(true)
+      const res = await validateVoucherApi(promoCode, subtotal)
+      setVoucher(res.data.result)
+      toast.success(`Đã áp dụng mã ${res.data.result.voucher.code}`)
+    } catch (err) {
+      setVoucher(null)
+      toast.error(getApiErrorMessage(err, 'Mã giảm giá không hợp lệ'))
+    } finally {
+      setVoucherLoading(false)
+    }
   }
 
   const showEmpty = !isLoading && cartItems.length === 0
@@ -294,7 +312,7 @@ export default function CartPage() {
                       <Check size={12} strokeWidth={3} />
                     </span>
 
-                    <div className='aspect-[4/5] w-full overflow-hidden rounded-md bg-[#f5ebe6] sm:w-24'>
+                    <div className='aspect-square w-24 overflow-hidden rounded-md bg-[#f5ebe6] sm:w-24'>
                       {image ? (
                         <img src={image} alt={product.name} loading='lazy' referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                       ) : null}
@@ -355,7 +373,7 @@ export default function CartPage() {
           <CartAddOns cartProductIds={cartProductIds} />
         </div>
 
-        <aside className={cn(panelClass, 'h-fit p-5 lg:sticky lg:top-28')}>
+        <aside className={cn(panelClass, 'h-fit rounded-2xl p-6 shadow-sm lg:sticky lg:top-28')}>
           <div className='flex items-center gap-2'>
             <span className='grid h-9 w-9 place-items-center rounded-md bg-[#3d3330] text-white'>
               <Sparkles size={16} />
@@ -380,12 +398,28 @@ export default function CartPage() {
               </div>
               <button
                 type='submit'
+                disabled={voucherLoading || subtotal <= 0}
                 className='shrink-0 rounded-md border border-[#3d3330] px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
               >
-                Áp dụng
+                {voucherLoading ? '...' : 'Áp dụng'}
               </button>
             </div>
+            {voucher ? (
+              <p className='mt-2 text-xs font-semibold text-emerald-600'>
+                Đã giảm {money(discount)} với mã {voucher.voucher.code}
+              </p>
+            ) : null}
           </form>
+
+          <div className='mt-5 rounded-2xl border border-[#f0d7ce] bg-[#fff7f4] p-4'>
+            <div className='flex items-center justify-between gap-3 text-xs font-black text-[#3d3330]'>
+              <span>{remainingForFreeShip > 0 ? `Mua thêm ${money(remainingForFreeShip)} để được Freeship` : 'Bạn đã đạt ưu đãi Freeship'}</span>
+              <span>{Math.round(freeShipProgress)}%</span>
+            </div>
+            <div className='mt-3 h-2 overflow-hidden rounded-full bg-white'>
+              <div className='h-full rounded-full bg-[#c65f4a] transition-all' style={{ width: `${freeShipProgress}%` }} />
+            </div>
+          </div>
 
           <div className='mt-5 space-y-2 text-sm'>
             <div className='flex justify-between'>
@@ -394,22 +428,28 @@ export default function CartPage() {
             </div>
             <div className='flex justify-between'>
               <span className='text-[#8a7a74]'>Phí vận chuyển</span>
-              <span className='font-medium text-[#b07a72]'>Tính ở checkout</span>
+              <span className='font-medium text-[#b07a72]'>Tính khi thanh toán</span>
             </div>
+            {discount > 0 ? (
+              <div className='flex justify-between'>
+                <span className='text-[#8a7a74]'>Giảm giá</span>
+                <span className='font-semibold text-emerald-600'>-{money(discount)}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className='my-4 h-px bg-[#f0e4de]' />
 
           <div className='flex items-end justify-between'>
             <span className='text-sm text-[#8a7a74]'>Tổng tạm tính</span>
-            <span className='text-xl font-bold text-[#3d3330]'>{money(subtotal)}</span>
+            <span className='text-xl font-bold text-[#3d3330]'>{money(estimatedTotal)}</span>
           </div>
 
           <button
             type='button'
             disabled={isLoading || selectedItems.length === 0 || stockFail}
             onClick={handleCheckout}
-            className='mt-5 flex h-11 w-full items-center justify-center rounded-md bg-[#3d3330] text-sm font-semibold text-white transition hover:bg-[#2a2421] disabled:opacity-50'
+            className='mt-5 flex h-12 w-full items-center justify-center rounded-2xl bg-[#2B2118] text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#433528] disabled:opacity-50'
           >
             Thanh toán ({selectedItems.length})
           </button>

@@ -188,7 +188,7 @@ export const registerValidator = validate(
     },
     password: passwordSchema,
     confirm_password: confirmPasswordSchema,
-    date_of_birth: dateOfBirthSchema
+    date_of_birth: { ...dateOfBirthSchema, optional: true }
   })
 )
 

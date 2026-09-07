@@ -11,6 +11,7 @@ export interface Product {
   volume?: number
   weight?: number
   soldNumber?: number
+  status?: number
   created_at?: string
 }
 

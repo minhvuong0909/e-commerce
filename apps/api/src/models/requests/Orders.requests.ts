@@ -15,4 +15,18 @@ export interface ShippingAddressInput {
 export interface CreateOrderReqBody extends ShippingAddressInput {
   payment_method: PaymentMethod
   delivery_method_id: string
+  voucher_code?: string
+}
+
+export interface GuestOrderItemInput {
+  product_id: string
+  quantity: number
+}
+
+export interface CreateGuestOrderReqBody extends ShippingAddressInput {
+  items: GuestOrderItemInput[]
+  payment_method: PaymentMethod
+  delivery_method_id: string
+  voucher_code?: string
+  email?: string
 }

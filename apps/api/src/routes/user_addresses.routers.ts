@@ -10,32 +10,36 @@ import { wrapAsync } from '~/utils/handlers'
 
 const userAddressesRouter = Router()
 
-userAddressesRouter.get(
-  '/',
-  accessTokenValidator,
-  requireVerifiedEmail,
-  wrapAsync(getSavedAddressesController)
-)
+/**
+ * GET /users/addresses
+ * Saved address list for the current customer.
+ * Auth: access token and verified email.
+ * Features: returns reusable checkout addresses.
+ */
+userAddressesRouter.get('/', accessTokenValidator, requireVerifiedEmail, wrapAsync(getSavedAddressesController))
 
-userAddressesRouter.post(
-  '/',
-  accessTokenValidator,
-  requireVerifiedEmail,
-  wrapAsync(createSavedAddressController)
-)
+/**
+ * POST /users/addresses
+ * Create a saved customer address.
+ * Auth: access token and verified email.
+ * Features: stores a shipping address that can be reused at checkout.
+ */
+userAddressesRouter.post('/', accessTokenValidator, requireVerifiedEmail, wrapAsync(createSavedAddressController))
 
-userAddressesRouter.patch(
-  '/:id',
-  accessTokenValidator,
-  requireVerifiedEmail,
-  wrapAsync(updateSavedAddressController)
-)
+/**
+ * PATCH /users/addresses/:id
+ * Update a saved customer address.
+ * Auth: access token and verified email.
+ * Features: edits recipient, phone, address text or location data.
+ */
+userAddressesRouter.patch('/:id', accessTokenValidator, requireVerifiedEmail, wrapAsync(updateSavedAddressController))
 
-userAddressesRouter.delete(
-  '/:id',
-  accessTokenValidator,
-  requireVerifiedEmail,
-  wrapAsync(deleteSavedAddressController)
-)
+/**
+ * DELETE /users/addresses/:id
+ * Delete a saved customer address.
+ * Auth: access token and verified email.
+ * Features: removes an address from the customer's checkout profile.
+ */
+userAddressesRouter.delete('/:id', accessTokenValidator, requireVerifiedEmail, wrapAsync(deleteSavedAddressController))
 
 export default userAddressesRouter

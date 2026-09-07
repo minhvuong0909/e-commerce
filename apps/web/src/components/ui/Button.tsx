@@ -24,9 +24,9 @@ export default function Button({
 
   const variants: Record<ButtonVariant, string> = {
     primary:
-      'bg-ink-950 text-white shadow-card hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-lift active:translate-y-0',
+      'bg-[#3d3330] text-white shadow-md shadow-[#3d3330]/10 hover:-translate-y-0.5 hover:bg-[#2b2118] hover:shadow-lg active:translate-y-0',
     gradient:
-      'bg-ink-950 text-white shadow-card hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-lift active:translate-y-0',
+      'bg-gradient-to-r from-[#3d3330] via-[#4e403c] to-[#c65f4a] text-white shadow-md shadow-[#3d3330]/15 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#c65f4a]/25 active:translate-y-0',
     secondary:
       'border border-slate-200 bg-white text-ink-950 shadow-sm hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-card active:translate-y-0',
     outline:

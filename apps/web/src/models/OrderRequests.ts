@@ -27,6 +27,22 @@ export interface CreateOrderPayload extends ShippingAddress {
   delivery_method_id: string
   lat: number
   lng: number
+  voucher_code?: string
+}
+
+export interface GuestOrderItemInput {
+  product_id: string
+  quantity: number
+}
+
+export interface CreateGuestOrderPayload extends ShippingAddress {
+  items: GuestOrderItemInput[]
+  payment_method: PaymentMethod
+  delivery_method_id: string
+  lat: number
+  lng: number
+  email?: string
+  voucher_code?: string
 }
 
 export type OrderApiResponse = {

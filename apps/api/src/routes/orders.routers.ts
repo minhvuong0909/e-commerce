@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { USER_ROLE } from '~/constants/enums'
 import {
+  createGuestOrderController,
   createOrderController,
   deleteOrderController,
   getAllMyOrdersController,
@@ -13,14 +14,13 @@ import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/
 import { wrapAsync } from '~/utils/handlers'
 
 const ordersRouter = Router()
-/*
-    description: create order
-    method: POST
-    body: {
-        items: [cart_item_id1,..],
-        payment_method: string,
-    }
-*/
+
+/**
+ * POST /orders/create
+ * Create an authenticated customer order from cart items.
+ * Auth: access token, verified email, User role.
+ * Features: persists order lines, shipping/payment method and triggers order notification flow.
+ */
 ordersRouter.post(
   '/create',
   accessTokenValidator,
@@ -29,10 +29,19 @@ ordersRouter.post(
   wrapAsync(createOrderController)
 )
 
-/*
-    description: update order status (duyệt đơn hàng)
-    method: PUT
-*/
+/**
+ * POST /orders/guest
+ * Create a guest checkout order.
+ * Features: lets customers order with name, phone and address without registering an account.
+ */
+ordersRouter.post('/guest', wrapAsync(createGuestOrderController))
+
+/**
+ * PUT /orders/status/:id
+ * Update order status from admin/staff operations.
+ * Auth: access token, verified email, Staff or Admin role.
+ * Features: approves, processes or changes fulfillment status.
+ */
 ordersRouter.put(
   '/status/:id',
   accessTokenValidator,
@@ -41,6 +50,12 @@ ordersRouter.put(
   wrapAsync(updateOrderController)
 )
 
+/**
+ * PATCH /orders/status/:id
+ * Partially update order status from admin/staff operations.
+ * Auth: access token, verified email, Staff or Admin role.
+ * Features: same status workflow as PUT for clients that use PATCH semantics.
+ */
 ordersRouter.patch(
   '/status/:id',
   accessTokenValidator,
@@ -49,10 +64,12 @@ ordersRouter.patch(
   wrapAsync(updateOrderController)
 )
 
-/*
-    description: delete order (hủy đơn hàng)
-    method: DELETE
-*/
+/**
+ * DELETE /orders/:id
+ * Cancel a customer's order.
+ * Auth: access token, verified email, User role.
+ * Features: supports customer-side order cancellation.
+ */
 ordersRouter.delete(
   '/:id',
   accessTokenValidator,
@@ -61,10 +78,12 @@ ordersRouter.delete(
   wrapAsync(deleteOrderController)
 )
 
-/*
-    description: get order by id
-    method: GET
-*/
+/**
+ * GET /orders/:id
+ * Order detail.
+ * Auth: access token, verified email, User/Staff/Admin role.
+ * Features: returns line items, totals, delivery and payment data for detail screens.
+ */
 ordersRouter.get(
   '/:id',
   accessTokenValidator,
@@ -73,10 +92,12 @@ ordersRouter.get(
   wrapAsync(getOrderByIdController)
 )
 
-/*
-    description: get all orders user of user 
-    method: GET
-*/
+/**
+ * GET /orders/me/my-orders
+ * Current customer's order history.
+ * Auth: access token, verified email, User role.
+ * Features: powers "My orders" in the storefront account area.
+ */
 ordersRouter.get(
   '/me/my-orders',
   accessTokenValidator,
@@ -85,10 +106,12 @@ ordersRouter.get(
   wrapAsync(getAllMyOrdersController)
 )
 
-/*
-    description: get all orders (admin, staff)
-    method: GET
-*/
+/**
+ * GET /orders/all/all-orders
+ * Admin/staff order management list.
+ * Auth: access token, Staff or Admin role.
+ * Features: lists customer orders for dashboard, search, filtering and fulfillment operations.
+ */
 ordersRouter.get(
   '/all/all-orders',
   accessTokenValidator,
@@ -96,6 +119,12 @@ ordersRouter.get(
   wrapAsync(getAllOrdersController)
 )
 
+/**
+ * POST /orders/:id/refund
+ * Refund an order.
+ * Auth: access token, verified email, Admin role.
+ * Features: triggers refund logic for paid orders and updates order/payment status.
+ */
 ordersRouter.post(
   '/:id/refund',
   accessTokenValidator,

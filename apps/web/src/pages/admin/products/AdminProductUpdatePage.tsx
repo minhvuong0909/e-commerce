@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ImagePlus, RefreshCw, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, RefreshCw, Save, Sparkles, Trash2 } from 'lucide-react'
 import { useForm, useWatch, type UseFormRegisterReturn } from 'react-hook-form'
 import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
@@ -17,6 +17,7 @@ import { getBrandsApi } from '../../../services/brands.services'
 import { getCategoriesApi } from '../../../services/categories.services'
 import { uploadImageApi } from '../../../services/medias.services'
 import { deleteProductApi, updateProductApi } from '../../../services/products.services'
+import { generateProductDescriptionApi } from '../../../services/ai.services'
 import type { Product } from '../../../models/ProductRequests'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import { ROUTE_PATHS } from '../../../routes/route.paths'
@@ -161,11 +162,13 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
   const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([])
   const [optionLoading, setOptionLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
 
   const {
     register,
     handleSubmit,
     control,
+    setValue,
     formState: { errors, isSubmitting, isValid }
   } = useForm<CreateProductFormInput, unknown, CreateProductFormValues>({
     resolver: zodResolver(createProductSchema),
@@ -176,6 +179,31 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
 
   const watchedValues = useWatch({ control })
   const canSubmit = useMemo(() => isValid && !isSubmitting, [isValid, isSubmitting])
+
+  const handleGenerateDescription = async () => {
+    const name = String(watchedValues?.name || '').trim()
+    if (!name) {
+      setSubmitError('Nhập tên sản phẩm trước khi dùng AI viết mô tả.')
+      return
+    }
+
+    try {
+      setAiLoading(true)
+      setSubmitError('')
+      const brand = brandOptions.find((item) => item.id === watchedValues?.brand_id)?.name
+      const res = await generateProductDescriptionApi({
+        name,
+        brand,
+        ingredients: watchedValues?.description || undefined,
+        benefits: 'làm sạch, phục hồi hàng rào bảo vệ da, hỗ trợ routine skincare'
+      })
+      setValue('description', res.data.result.description, { shouldDirty: true, shouldValidate: true })
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error, 'AI chưa tạo được mô tả'))
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -344,7 +372,18 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
               />
 
               <label className='md:col-span-2'>
-                <div className='mb-2 text-sm font-black text-ink-950'>Mô tả</div>
+                <div className='mb-2 flex items-center justify-between gap-3'>
+                  <span className='text-sm font-black text-ink-950'>Mô tả</span>
+                  <button
+                    type='button'
+                    onClick={handleGenerateDescription}
+                    disabled={aiLoading}
+                    className='inline-flex items-center gap-1.5 rounded-full border border-[#eaded8] bg-white px-3 py-1 text-xs font-bold text-[#b07a72] transition hover:bg-[#fdf2f0] disabled:opacity-50'
+                  >
+                    <Sparkles size={13} />
+                    {aiLoading ? 'AI đang viết...' : 'AI viết mô tả'}
+                  </button>
+                </div>
                 <textarea rows={7} {...register('description')} className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-4 text-base font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10' />
                 <InputError message={errors.description?.message} />
               </label>

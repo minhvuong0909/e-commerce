@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ImagePlus, RotateCcw, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, ImagePlus, RotateCcw, Save, Sparkles, Trash2 } from 'lucide-react'
 import { useForm, useWatch, type UseFormRegisterReturn } from 'react-hook-form'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import Button from '../../../components/ui/Button'
@@ -15,6 +15,7 @@ import { getBrandsApi } from '../../../services/brands.services'
 import { getCategoriesApi } from '../../../services/categories.services'
 import { uploadImageApi } from '../../../services/medias.services'
 import { createProductApi } from '../../../services/products.services'
+import { generateProductDescriptionApi } from '../../../services/ai.services'
 
 type MediaPreview = {
   id: string
@@ -122,12 +123,14 @@ export default function AdminProductCreatePage() {
   const [brandOptions, setBrandOptions] = useState<SelectOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([])
   const [optionLoading, setOptionLoading] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
 
   const {
     register,
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors, isSubmitting, isValid }
   } = useForm<CreateProductFormInput, unknown, CreateProductFormValues>({
     resolver: zodResolver(createProductSchema),
@@ -138,6 +141,32 @@ export default function AdminProductCreatePage() {
 
   const watchedValues = useWatch({ control })
   const canSubmit = useMemo(() => isValid && !isSubmitting, [isValid, isSubmitting])
+
+  const handleGenerateDescription = async () => {
+    const name = String(watchedValues.name || '').trim()
+    if (!name) {
+      setSubmitError('Nhập tên sản phẩm trước khi dùng AI viết mô tả.')
+      return
+    }
+
+    try {
+      setAiLoading(true)
+      setSubmitError('')
+      const brand = brandOptions.find((item) => item.id === watchedValues.brand_id)?.name
+      const res = await generateProductDescriptionApi({
+        name,
+        brand,
+        ingredients: watchedValues.description || undefined,
+        benefits: 'làm sạch, phục hồi hàng rào bảo vệ da, hỗ trợ routine skincare'
+      })
+      setValue('description', res.data.result.description, { shouldDirty: true, shouldValidate: true })
+    } catch (error) {
+      console.error(error)
+      setSubmitError('AI chưa tạo được mô tả. Có thể thiếu OPENAI_API_KEY hoặc backend chưa chạy.')
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -324,7 +353,18 @@ export default function AdminProductCreatePage() {
               />
 
               <label className='md:col-span-2'>
-                <div className='mb-2 text-sm font-black text-ink-950'>Mô tả sản phẩm</div>
+                <div className='mb-2 flex items-center justify-between gap-3'>
+                  <span className='text-sm font-black text-ink-950'>Mô tả sản phẩm</span>
+                  <button
+                    type='button'
+                    onClick={handleGenerateDescription}
+                    disabled={aiLoading}
+                    className='inline-flex items-center gap-1.5 rounded-full border border-[#eaded8] bg-white px-3 py-1 text-xs font-bold text-[#b07a72] transition hover:bg-[#fdf2f0] disabled:opacity-50'
+                  >
+                    <Sparkles size={13} />
+                    {aiLoading ? 'AI đang viết...' : 'AI viết mô tả'}
+                  </button>
+                </div>
                 <textarea
                   rows={7}
                   {...register('description')}

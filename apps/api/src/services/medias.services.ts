@@ -8,6 +8,28 @@ import { isProduction } from '~/config/config'
 import { MediaType } from '~/constants/enums'
 import { cleanupTempFolder } from '~/utils/cleanupTemp'
 class MediaServices {
+  private async uploadToCloudinary(filePath: string, folder: string) {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim()
+    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim()
+    if (!cloudName || !uploadPreset) return null
+
+    const form = new FormData()
+    const bytes = await fs.promises.readFile(filePath)
+    form.append('file', new Blob([bytes]), 'image.jpg')
+    form.append('upload_preset', uploadPreset)
+    form.append('folder', folder)
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      method: 'POST',
+      body: form
+    })
+    if (!res.ok) {
+      throw new Error(`Cloudinary upload failed: ${res.status}`)
+    }
+    const data = await res.json()
+    return data.secure_url as string
+  }
+
   // sharp sẽ xử lý trong service
   async hanleUploadImage(req: Request) {
     // lấy file từ req đã lọc qua formidable
@@ -32,8 +54,14 @@ class MediaServices {
 
         // return ra url cho ngta truy cập ảnh
         const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+        const cloudinaryUrl = await this.uploadToCloudinary(newPath, process.env.CLOUDINARY_FOLDER || 'vibrant-mart/products').catch(
+          (err) => {
+            console.error('Cloudinary upload error:', err?.message || err)
+            return null
+          }
+        )
         const url: Media = {
-          url: `${apiBase}/static/image/${newFilename}`,
+          url: cloudinaryUrl || `${apiBase}/static/image/${newFilename}`,
           type: MediaType.Image
         }
         return url

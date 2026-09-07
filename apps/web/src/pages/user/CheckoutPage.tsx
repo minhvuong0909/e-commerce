@@ -8,10 +8,11 @@ import ShippingMapPicker from '../../components/checkout/ShippingMapPicker'
 import SavedAddressesPanel from '../../components/profile/SavedAddressesPanel'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
-import { createOrderApi } from '../../services/orders.services'
+import { createGuestOrderApi, createOrderApi } from '../../services/orders.services'
 import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
 import { createSavedAddressApi, getSavedAddressesApi, type SavedAddress } from '../../services/user_addresses.services'
 import { getPayosPaymentUrlApi } from '../../services/payment.services'
+import { validateVoucherApi, type VoucherValidationResult } from '../../services/vouchers.services'
 import type { CartItem } from '../../models/CartRequests'
 import type { DeliveryMethod } from '../../models/DeliveryRequests'
 import { PaymentMethod } from '../../models/OrderRequests'
@@ -20,6 +21,7 @@ import cn from '../../utils/cn'
 import money from '../../utils/money'
 import { getApiErrorMessage } from '../../utils/apiError'
 import { formatImageUrl } from '../../utils/formatImageUrl'
+import { getToken } from '../../utils/authSession'
 
 type ShippingForm = {
   recipient_name: string
@@ -74,6 +76,9 @@ export default function CheckoutPage() {
   const location = useLocation()
 
   const selectedIds: string[] = useMemo(() => location.state?.items || [], [location.state])
+  const guestItems: CartItem[] = useMemo(() => location.state?.guestItems || [], [location.state])
+  const isGuestCheckout = guestItems.length > 0
+  const initialVoucherCode: string = useMemo(() => location.state?.voucher_code || '', [location.state])
 
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([])
@@ -96,6 +101,9 @@ export default function CheckoutPage() {
   })
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
   const [saveThisAddress, setSaveThisAddress] = useState(false)
+  const [voucherCode, setVoucherCode] = useState(initialVoucherCode)
+  const [voucher, setVoucher] = useState<VoucherValidationResult | null>(null)
+  const [voucherLoading, setVoucherLoading] = useState(false)
 
   const applySavedAddress = useCallback((address: SavedAddress) => {
     setSelectedAddressId(address._id)
@@ -120,21 +128,21 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (selectedIds.length === 0) {
+        if (!isGuestCheckout && selectedIds.length === 0) {
           toast.error('Không có sản phẩm được chọn')
           navigate(ROUTE_PATHS.USER_CART)
           return
         }
 
         const [cartRes, deliveryRes, storeRes, addressesRes] = await Promise.all([
-          getCartApi(),
+          isGuestCheckout ? Promise.resolve(null) : getCartApi(),
           getDeliveryMethodsApi(),
           getStoreInfoApi(),
-          getSavedAddressesApi().catch(() => null)
+          getToken() ? getSavedAddressesApi().catch(() => null) : Promise.resolve(null)
         ])
 
-        const allItems: CartItem[] = cartRes.data.data.cartItems
-        const filtered = allItems.filter((item) => selectedIds.includes(item._id))
+        const allItems: CartItem[] = isGuestCheckout ? guestItems : cartRes?.data.data.cartItems || []
+        const filtered = isGuestCheckout ? allItems : allItems.filter((item) => selectedIds.includes(item._id))
 
         if (filtered.length === 0) {
           toast.error('Sản phẩm không hợp lệ')
@@ -164,7 +172,7 @@ export default function CheckoutPage() {
     }
 
     fetchData()
-  }, [navigate, selectedIds, applySavedAddress])
+  }, [navigate, selectedIds, guestItems, isGuestCheckout, applySavedAddress])
 
   const subtotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.product_infor.price * item.quantity, 0),
@@ -172,7 +180,34 @@ export default function CheckoutPage() {
   )
 
   const shippingFee = quote?.shipping_fee ?? 0
-  const total = subtotal + shippingFee
+  const discount = voucher?.discount || 0
+  const total = Math.max(0, subtotal - discount) + shippingFee
+
+  const applyVoucher = useCallback(async () => {
+    if (!voucherCode.trim() || subtotal <= 0) return
+    try {
+      setVoucherLoading(true)
+      const res = await validateVoucherApi(voucherCode, subtotal)
+      setVoucher(res.data.result)
+      toast.success(`Đã áp dụng mã ${res.data.result.voucher.code}`)
+    } catch (err) {
+      setVoucher(null)
+      toast.error(getApiErrorMessage(err, 'Mã giảm giá không hợp lệ'))
+    } finally {
+      setVoucherLoading(false)
+    }
+  }, [subtotal, voucherCode])
+
+  const hasAutoAppliedVoucher = useRef(false)
+  useEffect(() => {
+    if (initialVoucherCode && subtotal > 0 && !voucher && !voucherLoading && !hasAutoAppliedVoucher.current) {
+      hasAutoAppliedVoucher.current = true
+      const timer = setTimeout(() => {
+        void applyVoucher()
+      }, 0)
+      return () => clearTimeout(timer)
+    }
+  }, [applyVoucher, initialVoucherCode, subtotal, voucher, voucherLoading])
 
   const fetchQuote = useCallback(async () => {
     if (!selectedDelivery) return
@@ -267,8 +302,7 @@ export default function CheckoutPage() {
     try {
       setLoading(true)
 
-      const res = await createOrderApi({
-        items: selectedIds,
+      const commonPayload = {
         payment_method: paymentMethod,
         delivery_method_id: selectedDelivery,
         recipient_name,
@@ -279,13 +313,24 @@ export default function CheckoutPage() {
         district: shipping.district.trim() || undefined,
         lat: quote.lat,
         lng: quote.lng,
-        address_source: addressMode
-      })
+        address_source: addressMode,
+        voucher_code: voucher?.voucher.code
+      }
+
+      const res = isGuestCheckout
+        ? await createGuestOrderApi({
+            ...commonPayload,
+            items: cartItems.map((item) => ({ product_id: item.product_infor._id, quantity: item.quantity }))
+          })
+        : await createOrderApi({
+            ...commonPayload,
+            items: selectedIds
+          })
 
       const orderId = res.data?.result?.insertedId as string | undefined
       toast.success('Đặt hàng thành công!')
 
-      if (saveThisAddress && !selectedAddressId && quote) {
+      if (!isGuestCheckout && saveThisAddress && !selectedAddressId && quote) {
         try {
           await createSavedAddressApi({
             recipient_name,
@@ -326,7 +371,9 @@ export default function CheckoutPage() {
         return
       }
 
-      navigate(ROUTE_PATHS.USER_ORDERS)
+      navigate(isGuestCheckout ? ROUTE_PATHS.USER_ORDER_RESULT : ROUTE_PATHS.USER_ORDERS, {
+        state: { orderId, isGuestCheckout }
+      })
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'Đặt hàng thất bại'))
     } finally {
@@ -339,7 +386,9 @@ export default function CheckoutPage() {
       <div className='mb-6 flex flex-col gap-4'>
         <div>
           <p className='text-xs font-semibold uppercase tracking-[0.14em] text-[#b07a72]'>Secure checkout</p>
-          <h1 className='mt-1 text-3xl font-semibold tracking-tight text-[#3d3330]'>Thanh toán</h1>
+          <h1 className='mt-1 text-3xl font-semibold tracking-tight text-[#3d3330]'>
+            {isGuestCheckout ? 'Mua nhanh' : 'Thanh toán'}
+          </h1>
           <p className='mt-2 max-w-2xl text-sm leading-6 text-[#8a7a74]'>
             Nhập địa chỉ hoặc chọn trên bản đồ. Phí ship được tính theo khoảng cách từ cửa hàng (tối đa 25 km).
           </p>
@@ -396,8 +445,16 @@ export default function CheckoutPage() {
             </div>
 
             <div className='mb-5'>
-              <p className='mb-3 text-sm font-semibold text-[#6b5f59]'>Chọn từ sổ địa chỉ</p>
-              <SavedAddressesPanel selectable selectedId={selectedAddressId} onSelect={applySavedAddress} />
+              {!isGuestCheckout ? (
+                <>
+                  <p className='mb-3 text-sm font-semibold text-[#6b5f59]'>Chọn từ sổ địa chỉ</p>
+                  <SavedAddressesPanel selectable selectedId={selectedAddressId} onSelect={applySavedAddress} />
+                </>
+              ) : (
+                <div className='rounded-md border border-[#eaded8] bg-[#fdf8f6] px-4 py-3 text-sm font-medium text-[#6b5f59]'>
+                  Khách vãng lai chỉ cần nhập họ tên, số điện thoại và địa chỉ để đặt hàng.
+                </div>
+              )}
             </div>
 
             <div className='mb-4 grid grid-cols-2 gap-1 rounded-md bg-[#fdf8f6] p-1'>
@@ -466,7 +523,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {!selectedAddressId ? (
+            {!isGuestCheckout && !selectedAddressId ? (
               <label className='mt-4 flex cursor-pointer items-center gap-3 rounded-md border border-[#eaded8] bg-[#fdf8f6] px-4 py-3'>
                 <input
                   type='checkbox'
@@ -596,6 +653,31 @@ export default function CheckoutPage() {
                 {quoteLoading ? 'Đang tính...' : quote ? money(shippingFee) : 'Chưa tính'}
               </span>
             </div>
+            <div>
+              <label className='text-xs font-semibold text-[#6b5f59]'>Mã giảm giá</label>
+              <div className='mt-2 flex gap-2'>
+                <input
+                  value={voucherCode}
+                  onChange={(e) => setVoucherCode(e.target.value)}
+                  placeholder='Nhập mã'
+                  className='h-10 min-w-0 flex-1 rounded-md border border-[#eaded8] px-3 text-sm outline-none focus:border-[#cbb8af] focus:ring-2 focus:ring-[#f5d5cf]/50'
+                />
+                <button
+                  type='button'
+                  onClick={applyVoucher}
+                  disabled={voucherLoading || subtotal <= 0}
+                  className='rounded-md border border-[#3d3330] px-3 text-xs font-semibold text-[#3d3330] disabled:opacity-50'
+                >
+                  {voucherLoading ? '...' : 'Áp dụng'}
+                </button>
+              </div>
+            </div>
+            {discount > 0 ? (
+              <div className='flex justify-between'>
+                <span className='text-[#8a7a74]'>Giảm giá</span>
+                <span className='font-semibold text-emerald-600'>-{money(discount)}</span>
+              </div>
+            ) : null}
             {quote ? (
               <div className='rounded-md bg-[#fdf8f6] px-3 py-2 text-xs font-medium text-[#8a7a74]'>
                 {quote.distance_km} km từ cửa hàng · Giao trong bán kính 25 km

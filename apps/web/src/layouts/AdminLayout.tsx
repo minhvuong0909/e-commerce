@@ -1,4 +1,4 @@
-import { Boxes, FolderTree, LayoutDashboard, LogOut, ShoppingBag, Sparkles, Tags, UserRound, Users } from 'lucide-react'
+import { Boxes, FolderTree, LayoutDashboard, LogOut, Settings, ShoppingBag, Sparkles, Tags, UserRound, Users } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -21,7 +21,8 @@ const allNav = [
 
   { to: ROUTE_PATHS.ADMIN_ORDERS, label: 'Đơn hàng', icon: ShoppingBag, staffAllowed: true },
 
-  { to: ROUTE_PATHS.ADMIN_USERS, label: 'Người dùng', icon: Users, staffAllowed: false, adminOnly: true }
+  { to: ROUTE_PATHS.ADMIN_USERS, label: 'Người dùng', icon: Users, staffAllowed: false, adminOnly: true },
+  { to: ROUTE_PATHS.ADMIN_SETTINGS, label: 'Cài đặt shop', icon: Settings, staffAllowed: false, adminOnly: true }
 
 ]
 
@@ -104,9 +105,13 @@ export default function AdminLayout() {
 
       isActive
 
-        ? 'bg-[#b07a72] text-white shadow-sm'
+        ? compact
+          ? 'bg-[#b07a72] text-white shadow-sm'
+          : 'bg-white text-[#1E1E24] shadow-sm'
 
-        : 'text-[#6b5f59] hover:bg-[#fdf8f6] hover:text-[#3d3330]'
+        : compact
+          ? 'text-[#6b5f59] hover:bg-[#fdf8f6] hover:text-[#3d3330]'
+          : 'text-white/64 hover:bg-white/10 hover:text-white'
 
     )
 
@@ -118,11 +123,11 @@ export default function AdminLayout() {
 
       <div className='flex min-h-screen'>
 
-        <aside className='sticky top-0 hidden h-screen w-[272px] shrink-0 border-r border-[#eaded8] bg-white p-4 md:block'>
+        <aside className='sticky top-0 hidden h-screen w-[272px] shrink-0 border-r border-[#15151a] bg-[#1E1E24] p-4 text-white md:block'>
 
-          <Link to={ROUTE_PATHS.ADMIN} className='flex items-center gap-3 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-4'>
+          <Link to={ROUTE_PATHS.ADMIN} className='flex items-center gap-3 rounded-2xl border border-white/10 bg-white/8 p-4'>
 
-            <span className='grid h-10 w-10 place-items-center rounded-md bg-[#b07a72] text-white'>
+            <span className='grid h-10 w-10 place-items-center rounded-xl bg-[#c65f4a] text-white'>
 
               <Sparkles size={18} />
 
@@ -130,9 +135,9 @@ export default function AdminLayout() {
 
             <span>
 
-              <span className='block text-sm font-semibold tracking-tight'>Vibrant Mart</span>
+              <span className='block text-sm font-semibold tracking-tight text-white'>Vibrant Mart</span>
 
-              <span className='block text-xs text-[#8a7a74]'>Skincare admin</span>
+              <span className='block text-xs text-white/52'>Skincare admin</span>
 
             </span>
 
@@ -158,11 +163,11 @@ export default function AdminLayout() {
 
 
 
-          <div className='mt-8 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-4'>
+          <div className='mt-8 rounded-2xl border border-white/10 bg-white/8 p-4'>
 
-            <div className='text-sm font-semibold text-[#3d3330]'>Gợi ý vận hành</div>
+            <div className='text-sm font-semibold text-white'>Gợi ý vận hành</div>
 
-            <div className='mt-2 space-y-2 text-xs leading-5 text-[#8a7a74]'>
+            <div className='mt-2 space-y-2 text-xs leading-5 text-white/58'>
 
               {isStaff ? (
 
@@ -299,5 +304,3 @@ export default function AdminLayout() {
   )
 
 }
-
-

@@ -13,6 +13,9 @@ import OrderItems from '~/models/schemas/OrderItems.Schema'
 import Delivery from '~/models/schemas/Deliverys.schema'
 import Payment from '~/models/schemas/Payments.schema'
 import UserAddress from '~/models/schemas/UserAddresses.schema'
+import ShopSettings from '~/models/schemas/ShopSettings.schema'
+import Voucher from '~/models/schemas/Vouchers.schema'
+import Review from '~/models/schemas/Reviews.schema'
 
 dotenv.config()
 
@@ -102,6 +105,18 @@ class DatabaseService {
 
   get user_addresses(): Collection<UserAddress> {
     return this.db.collection(process.env.DB_USER_ADDRESSES_COLLECTION as string || 'user_addresses')
+  }
+
+  get shop_settings(): Collection<ShopSettings> {
+    return this.db.collection(process.env.DB_SHOP_SETTINGS_COLLECTION || 'shop_settings')
+  }
+
+  get vouchers(): Collection<Voucher> {
+    return this.db.collection(process.env.DB_VOUCHERS_COLLECTION || 'vouchers')
+  }
+
+  get reviews(): Collection<Review> {
+    return this.db.collection(process.env.DB_REVIEWS_COLLECTION || 'reviews')
   }
 }
 

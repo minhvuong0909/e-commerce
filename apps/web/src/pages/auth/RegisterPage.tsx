@@ -1,18 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Controller, useForm, useWatch } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
-import DatePicker from '../../components/ui/DatePicker'
 import Input from '../../components/ui/Input'
 import PasswordStrength from '../../components/ui/PasswordStrength'
 import { registerSchema, type RegisterFormValues } from '../../middlewares/auth.middlewares'
 import { ROUTES } from '../../routes/route.paths'
 import { registerApi } from '../../services/auths.services'
-import { parseLocalDateString } from '../../utils/date'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -31,7 +28,7 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      const res = await registerApi(data)
+      const res = await registerApi({ ...data, confirm_password: data.password })
       const emailSent = res.data?.data?.email_sent !== false
 
       if (emailSent) {
@@ -50,7 +47,7 @@ export default function RegisterPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-5'>
-        <h2 className='text-2xl font-black tracking-tight text-ink-950'>Tạo tài khoản</h2>
+        <h2 className='font-serif text-3xl font-normal tracking-tight text-ink-950'>Tạo tài khoản</h2>
         <p className='mt-2 text-sm leading-6 text-slate-500'>Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi dành riêng cho bạn.</p>
       </div>
 
@@ -74,19 +71,6 @@ export default function RegisterPage() {
           error={errors.email?.message}
         />
 
-        <Controller
-          name='date_of_birth'
-          control={control}
-          render={({ field }) => (
-            <DatePicker
-              label='Ngày sinh'
-              value={parseLocalDateString(field.value)}
-              onChange={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-              error={errors.date_of_birth?.message}
-            />
-          )}
-        />
-
         <div className='space-y-2'>
           <Input
             label='Mật khẩu'
@@ -98,15 +82,6 @@ export default function RegisterPage() {
           />
           <PasswordStrength password={passwordValue} />
         </div>
-
-        <Input
-          label='Nhập lại mật khẩu'
-          type='password'
-          placeholder='Nhập lại mật khẩu'
-          autoComplete='new-password'
-          {...register('confirm_password')}
-          error={errors.confirm_password?.message}
-        />
 
         <Button full type='submit' disabled={isSubmitting} loading={isSubmitting}>
           Đăng ký

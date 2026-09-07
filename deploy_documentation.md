@@ -15,10 +15,10 @@ Dành cho bạn để quản trị hệ thống và cấu hình CI/CD tự độ
 
 | Phương thức | Các bước thực hiện | Lệnh / Cấu hình chi tiết |
 | :--- | :--- | :--- |
-| **Kết nối VPS qua SSH** | Dùng Terminal (Windows PowerShell hoặc biểu tượng CLI) để kết nối trực tiếp vào VPS. | `ssh root@160.22.106.238`<br>*(Nhập mật khẩu khi được hỏi)* |
+| **Kết nối VPS qua SSH** | Dùng Terminal (Windows PowerShell hoặc biểu tượng CLI) để kết nối trực tiếp vào VPS. | `ssh root@160.22.107.250`<br>*(Nhập mật khẩu khi được hỏi)* |
 | **Deploy thủ công trên VPS** | SSH vào VPS, kéo mã nguồn mới nhất từ GitHub và khởi động lại các container. | ```bash<br>cd /root/e-commerce<br>git pull origin main<br>docker compose up -d --build --remove-orphans<br>``` |
 | **Deploy tự động (CI/CD)** | Mỗi lần bạn `git push` code lên nhánh `main`, GitHub Actions sẽ tự động SSH vào VPS để deploy mà không cần làm gì thêm. | Đã cấu hình tệp tin `.github/workflows/deploy.yml` tự động build & deploy zero-downtime. |
-| **Cấu hình GitHub Secrets** | Để GitHub Actions có quyền kết nối VPS của bạn, cần điền các biến này vào **GitHub Repo -> Settings -> Secrets and variables -> Actions**: | *   `VPS_HOST`: `160.22.106.238`<br>*   `VPS_USER`: `root`<br>*   `VPS_SSH_KEY`: *(Nội dung private key SSH)*<br>*   `VITE_BASE_URL_API`: `https://api.vuongdev.top`<br>*   `VITE_SUPABASE_URL`: `https://lyskkkoagnrxbxxkjdao.supabase.co`<br>*   `VITE_SUPABASE_ANON_KEY`: *(Key Supabase)* |
+| **Cấu hình GitHub Secrets** | Để GitHub Actions có quyền kết nối VPS của bạn, cần điền các biến này vào **GitHub Repo -> Settings -> Secrets and variables -> Actions**: | *   `VPS_HOST`: `160.22.107.250`<br>*   `VPS_USER`: `root`<br>*   `VPS_SSH_KEY`: *(Nội dung private key SSH)*<br>*   `VITE_BASE_URL_API`: `https://api.vuongdev.top`<br>*   `VITE_SUPABASE_URL`: `https://lyskkkoagnrxbxxkjdao.supabase.co`<br>*   `VITE_SUPABASE_ANON_KEY`: *(Key Supabase)* |
 | **Quản lý & Giám sát Logs** | Xem log hệ thống và dọn dẹp dung lượng ổ đĩa định kỳ. | *   Xem logs: `docker compose logs -f api`<br>*   Xem trạng thái: `docker ps`<br>*   Dọn dẹp rác: `docker system prune -f --volumes` |
 
 ---

@@ -236,7 +236,6 @@ export const resetPasswordController = async (
 ) => {
   const { forgot_password_token, password } = req.body
   const { user_id } = req.decode_forgot_password_token as TokenPayload
-  console.log('User: ', user_id)
 
   // tìm user
   const user = await usersService.findUserById(user_id)

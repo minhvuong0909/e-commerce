@@ -37,97 +37,64 @@ import { wrapAsync } from '~/utils/handlers'
 import { authLimiter, forgotPasswordLimiter } from '~/middlewares/rateLimit.middlewares'
 import userAddressesRouter from './user_addresses.routers'
 
-// chia dự án thành nhìu router
 const userRouter = express.Router()
 
-/*
-  description: login
-  path: users/login
-  method: POST
-  body: {
-    email: string,
-    password: string
-  }
-
-*/
+/**
+ * POST /users/login
+ * Customer/admin login.
+ * Features: rate-limited authentication that returns access/refresh tokens for the web app.
+ */
 userRouter.post('/login', authLimiter, loginValidator, wrapAsync(loginController))
 
-/*
-  description: register
-  path: users/register
-  method: POST
-  body: {
-    name: string,
-    email: string,
-    password: string,
-    confirm_password: string,
-    date_of_birth: date
-  }
-*/
+/**
+ * POST /users/register
+ * Customer registration.
+ * Features: creates an account with name, email and password, then starts the email verification flow.
+ */
 userRouter.post('/register', registerValidator, wrapAsync(registerController))
 
-/*
-  desc: verify email => khi người dùng bấm vào link trong email.
-thì họ gửi email_verify_token thông qua query
-để mình kiểm tra, vậy thì trong query sẽ có token đó
-mình sẽ verify và lưu payload vào decode_email_verify_token
-  path: users/verify-email/?email_verify_token=string
-  method: GET
-*/
+/**
+ * GET /users/verify-email
+ * Email verification callback.
+ * Features: validates email_verify_token from the query string and marks the user email as verified.
+ */
 userRouter.get('/verify-email', emailVerifyTokenValidator, wrapAsync(verifyEmailController))
 
-/*
-  desc: logout => người dùng bấm logout thì kiểm tra at và rf có trùng user kh 
-      nếu trùng thì xóa rf 
-    path: users/logout
-  method: post
-  header: {Authorization: Bearer </access_token>} ==> 
-  body: {
-    refreshToken: string
-  }
-*/
+/**
+ * POST /users/logout
+ * End the current session.
+ * Auth: access token and refresh token.
+ * Features: revokes the refresh token so the user cannot refresh the session after logout.
+ */
 userRouter.post('/logout', accessTokenValidator, refreshTokenValidator, wrapAsync(logoutController))
 
-/*
-  desc: gửi lại link verify email khi người dùng muốn nhấn vào nút gửi lại email
-  path: users/resend-verify-email
-  method: POTST
-  header: {
-    Authorization: 'Bearer <access_token>'
-  }
-*/
+/**
+ * POST /users/resend-verify-email
+ * Resend email verification.
+ * Auth: access token.
+ * Features: sends a new verification link when the customer did not receive or lost the first one.
+ */
 userRouter.post('/resend-verify-email', accessTokenValidator, wrapAsync(resendEmailVerifyController))
 
-/* desc: thông báo bị quên mật khẩu, yêu cầu lấy lại
-server kiểm tra email có tồn tại trong hệ thống k 
-gửi link khôi phục account qua email cho người dùng
-gửi lên email
-  path: users/forgot-password
-  body: {email: string}
-  method: POST
-*/
+/**
+ * POST /users/forgot-password
+ * Start password recovery.
+ * Features: rate-limited flow that sends a reset link when the email exists in the system.
+ */
 userRouter.post('/forgot-password', forgotPasswordLimiter, forgotPasswordValidator, wrapAsync(forgotPasswordController))
 
-/*
-  desc: Verify link in email to reset password
-  path: /verify-forgot-password
-  method: POST
-  body: {
-    verify_forgot_password_token
-  }
-*/
+/**
+ * POST /users/verify-forgot-password
+ * Verify password reset token.
+ * Features: checks whether the forgot-password token from email is still valid before allowing reset.
+ */
 userRouter.post('/verify-forgot-password', forgotPasswordTokenValidator, wrapAsync(verifyForgotPasswordTokenController))
 
-/*
-  desc: Reset password khi gửi đã verify forgot password token đã gửi qua mail
-  path: rest-password
-  method: POST
-  body: {
-    password: string,
-    confirm_password: string,
-    forgot_password_token: string
-  }
-*/
+/**
+ * POST /users/reset-password
+ * Complete password recovery.
+ * Features: replaces the user's password after a valid forgot-password token is supplied.
+ */
 userRouter.post(
   '/reset-password',
   resetPasswordValidator,
@@ -135,30 +102,20 @@ userRouter.post(
   wrapAsync(resetPasswordController)
 )
 
-/*
-  desc: get profile của user
-  path: /me
-  method: GET
-  header: Authorization <access_token>
-  body: {}
-*/
+/**
+ * POST /users/me
+ * Current user profile.
+ * Auth: access token.
+ * Features: returns account/profile data used by account menus and protected screens.
+ */
 userRouter.post('/me', accessTokenValidator, wrapAsync(getProfileController))
 
-/*
-des: update profile của user
-path: '/me'
-method: patch
-Header: {Authorization: Bearer <access_token>}
-body: {
-  name?: string
-  date_of_birth?: Date
-  bio?: string // optional
-  location?: string // optional
-  website?: string // optional
-  username?: string // optional
-  avatar?: string // optional
-  cover_photo?: string // optional}
-*/
+/**
+ * PATCH /users/me
+ * Update current user profile.
+ * Auth: access token.
+ * Features: edits public profile fields, avatar, cover photo and optional personal information.
+ */
 userRouter.patch(
   '/me',
   filterMiddleware<UpdateProfileRequestBody>([
@@ -176,44 +133,43 @@ userRouter.patch(
   wrapAsync(updateProfileController)
 )
 
-/*
-  desc: change password
-  path: users/change-password
-  method: PUT
-  headers: {Authorization: 'Bear <access_token>'}
-  body: {
-    old_password: string,
-    password: string
-    confirm_password: string
-  }
-*/
+/**
+ * PUT /users/change-password
+ * Change password while logged in.
+ * Auth: access token.
+ * Features: validates old password before saving the new password.
+ */
 userRouter.put('/change-password', accessTokenValidator, changePasswordValidator, wrapAsync(changePasswordController))
 
-/*
-  desc: refresh token khi gửi request lên 
-    khi mà accesstoken hết hạn thì dùng refresh token này
-  path: users/refresh-token
-  method: post
-  body: {
-    refresh_token: string
-  }
-*/
+/**
+ * POST /users/refresh-token
+ * Refresh an expired access token.
+ * Features: validates refresh_token and returns a new authenticated session token pair.
+ */
 userRouter.post('/refresh-token', refreshTokenValidator, wrapAsync(refreshTokenController))
 
-/*
-  desc: get list users 
-  path: users
-  method: get
-*/
+/**
+ * GET /users
+ * Admin user management list.
+ * Auth: access token, Admin role.
+ * Features: returns all users for dashboard moderation and account management.
+ */
 userRouter.get('', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(getUsers))
 
-userRouter.patch(
-  '/:user_id/ban',
-  accessTokenValidator,
-  checkPermissions(USER_ROLE.Admin),
-  wrapAsync(banUserController)
-)
+/**
+ * PATCH /users/:user_id/ban
+ * Ban a user account.
+ * Auth: access token, Admin role.
+ * Features: blocks an account from normal authenticated usage.
+ */
+userRouter.patch('/:user_id/ban', accessTokenValidator, checkPermissions(USER_ROLE.Admin), wrapAsync(banUserController))
 
+/**
+ * PATCH /users/:user_id/unban
+ * Unban a user account.
+ * Auth: access token, Admin role.
+ * Features: restores a previously banned account.
+ */
 userRouter.patch(
   '/:user_id/unban',
   accessTokenValidator,
@@ -221,16 +177,18 @@ userRouter.patch(
   wrapAsync(unbanUserController)
 )
 
-/*
-  desc: login with google
-  path: users/login-with-google
-  method: post
-  body: {
-    token: string
-  }
-*/
+/**
+ * POST /users/login-with-google
+ * Google OAuth login.
+ * Features: verifies Google token and signs the user into the same access/refresh token flow.
+ */
 userRouter.post('/login-with-google', wrapAsync(loginWithGoogleController))
 
+/**
+ * /users/addresses
+ * Nested saved-address routes.
+ * Features: customer checkout address CRUD lives in user_addresses.routers.ts.
+ */
 userRouter.use('/addresses', userAddressesRouter)
 
 export default userRouter

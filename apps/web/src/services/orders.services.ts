@@ -1,10 +1,14 @@
 import api from '../configs/api'
 
-import type { CreateOrderPayload } from '../models/OrderRequests'
+import type { CreateGuestOrderPayload, CreateOrderPayload } from '../models/OrderRequests'
 import type { PaginationMeta } from '../models/Pagination'
 
 export const createOrderApi = (data: CreateOrderPayload) => {
   return api.post('/orders/create', data)
+}
+
+export const createGuestOrderApi = (data: CreateGuestOrderPayload) => {
+  return api.post('/orders/guest', data)
 }
 
 export const getMyOrdersApi = () => {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
+import { Eye, EyeOff, Pencil, RefreshCw, Search, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import PaginationBar from '../../../components/ui/PaginationBar'
@@ -10,7 +10,7 @@ import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import type { Product } from '../../../models/ProductRequests'
 import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { ROUTES } from '../../../routes/route.paths'
-import { deleteProductApi, getAllProductsApi, type ProductFilters } from '../../../services/products.services'
+import { deleteProductApi, getAllProductsApi, updateProductApi, type ProductFilters } from '../../../services/products.services'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
 import money from '../../../utils/money'
@@ -23,6 +23,22 @@ function StockBadge({ quantity }: { quantity: number }) {
   return (
     <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-black', STOCK_BADGE[type])}>
       {STOCK_LABEL(quantity)}
+    </span>
+  )
+}
+
+function VisibilityBadge({ status }: { status?: number }) {
+  const isVisible = status !== 1
+  return (
+    <span
+      className={cn(
+        'inline-flex rounded-full border px-3 py-1 text-xs font-black',
+        isVisible
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          : 'border-slate-200 bg-slate-100 text-slate-500'
+      )}
+    >
+      {isVisible ? 'Đang bán' : 'Đang ẩn'}
     </span>
   )
 }
@@ -44,6 +60,7 @@ export default function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [togglingId, setTogglingId] = useState<string | null>(null)
   const debouncedSearch = useDebouncedValue(search)
 
   const filters = useMemo<ProductFilters>(() => {
@@ -86,6 +103,20 @@ export default function AdminProductsPage() {
       toast.error(getApiErrorMessage(err, 'Không thể xóa sản phẩm'))
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  const handleToggleVisibility = async (product: Product) => {
+    const nextStatus = product.status === 1 ? 0 : 1
+    try {
+      setTogglingId(product._id)
+      await updateProductApi(product._id, { status: nextStatus })
+      toast.success(nextStatus === 1 ? 'Đã ẩn sản phẩm' : 'Đã bật hiển thị sản phẩm')
+      refetch()
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Không thể đổi trạng thái sản phẩm'))
+    } finally {
+      setTogglingId(null)
     }
   }
 
@@ -142,8 +173,8 @@ export default function AdminProductsPage() {
           <table className='w-full text-sm'>
             <thead>
               <tr className='border-b border-slate-200 bg-slate-50/80'>
-                {['Sản phẩm', 'Xuất xứ', 'Giá', 'Tồn kho', ''].map((heading, index) => (
-                  <th key={heading} className={cn('px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-slate-400', index === 4 ? 'text-right' : 'text-left')}>
+                {['Sản phẩm', 'Xuất xứ', 'Giá', 'Tồn kho', 'Hiển thị', 'Thao tác'].map((heading, index) => (
+                  <th key={heading} className={cn('px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-slate-400', index === 5 ? 'text-right' : 'text-left')}>
                     {heading}
                   </th>
                 ))}
@@ -155,7 +186,7 @@ export default function AdminProductsPage() {
 
               {!loading && products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
+                  <td colSpan={6} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
                     Không tìm thấy sản phẩm nào.
                   </td>
                 </tr>
@@ -170,7 +201,7 @@ export default function AdminProductsPage() {
                       <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
                         <td className='px-5 py-4'>
                           <div className='flex items-center gap-3'>
-                            <div className='h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100'>
+                            <div className='h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100'>
                               {imgUrl ? (
                                 <img src={formatImageUrl(imgUrl)} alt={product.name} referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                               ) : (
@@ -193,18 +224,52 @@ export default function AdminProductsPage() {
                         <StockBadge quantity={product.quantity} />
                       </td>
 
+                      <td className='px-5 py-4'>
+                        <div className='flex flex-col gap-2'>
+                          <VisibilityBadge status={product.status} />
+                          <button
+                            type='button'
+                            onClick={() => handleToggleVisibility(product)}
+                            disabled={togglingId === product._id}
+                            className={cn(
+                              'relative h-7 w-12 rounded-full border transition disabled:opacity-50',
+                              product.status === 1
+                                ? 'border-slate-200 bg-slate-200'
+                                : 'border-emerald-300 bg-emerald-500'
+                            )}
+                            aria-label={product.status === 1 ? 'Bật hiển thị sản phẩm' : 'Ẩn sản phẩm'}
+                          >
+                            <span
+                              className={cn(
+                                'absolute top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px] shadow transition',
+                                product.status === 1 ? 'left-1 text-slate-400' : 'left-6 text-emerald-600'
+                              )}
+                            >
+                              {product.status === 1 ? <EyeOff size={11} /> : <Eye size={11} />}
+                            </span>
+                          </button>
+                        </div>
+                      </td>
+
                       <td className='px-5 py-4 text-right'>
                         <div className='flex items-center justify-end gap-2'>
-                          <Link to={`/admin/products/${product._id}/edit`} className='rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
-                            Sửa
+                          <Link
+                            to={`/admin/products/${product._id}/edit`}
+                            className='grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'
+                            aria-label='Sửa sản phẩm'
+                            title='Sửa'
+                          >
+                            <Pencil size={16} />
                           </Link>
                           <button
                             type='button'
                             disabled={deletingId === product._id}
                             onClick={() => handleDelete(product._id)}
-                            className='rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-50'
+                            className='grid h-10 w-10 place-items-center rounded-xl border border-rose-200 bg-rose-50 text-rose-700 transition hover:bg-rose-100 disabled:opacity-50'
+                            aria-label='Xóa sản phẩm'
+                            title={deletingId === product._id ? 'Đang xóa...' : 'Xóa'}
                           >
-                            {deletingId === product._id ? 'Đang xóa...' : 'Xóa'}
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>

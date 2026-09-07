@@ -30,7 +30,7 @@ export default class User {
   _id?: ObjectId
   name: string
   email: string
-  date_of_birth: Date
+  date_of_birth?: Date
   password: string
   role?: USER_ROLE
   created_at?: Date
@@ -51,7 +51,7 @@ export default class User {
     this._id = user._id || new ObjectId()
     this.name = user.name || ''
     this.email = user.email
-    this.date_of_birth = user.date_of_birth || date
+    this.date_of_birth = user.date_of_birth
     this.password = user.password
     this.role = user.role ?? USER_ROLE.User
     this.created_at = user.created_at || date

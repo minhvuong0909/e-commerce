@@ -17,7 +17,8 @@ export const useProducts = (page: number, limit: number, filters: ProductFilters
   return useQuery({
     queryKey: ['products', page, limit, searchKey, sortKey, catKey, brandKey, minKey, maxKey, statusKey],
     queryFn: async () => {
-      const res = await getAllProductsApi(limit, page, filters)
+      const storefrontFilters = filters.status === undefined ? { ...filters, status: 0 } : filters
+      const res = await getAllProductsApi(limit, page, storefrontFilters)
       return {
         products: (res.data.result ?? []) as Product[],
         pagination: res.data.pagination as ProductPagination | undefined

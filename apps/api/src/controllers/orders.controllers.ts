@@ -22,6 +22,18 @@ export const createOrderController = async (
   })
 }
 
+export const createGuestOrderController = async (
+  req: Request<ParamsDictionary, any, any>,
+  res: Response,
+  next: NextFunction
+) => {
+  const order = await ordersService.createGuestOrder(req.body)
+  res.status(HTTP_STATUS.CREATED).json({
+    message: ORDER_MESSAGES.CREATE_ORDER_SUCCESS,
+    result: order
+  })
+}
+
 // cập nhật trạng thái đơn hàng
 export const updateOrderController = async (
   req: Request<ParamsDictionary, any, any>,

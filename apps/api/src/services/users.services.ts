@@ -314,7 +314,7 @@ class UserServices {
         email_verify_token,
         ...payload,
         password: passwordHashed,
-        date_of_birth: new Date(payload.date_of_birth)
+        date_of_birth: payload.date_of_birth ? new Date(payload.date_of_birth) : undefined
       })
     )
     // sau khi insert vào db thì sign token cho nó

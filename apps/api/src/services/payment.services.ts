@@ -260,16 +260,17 @@ class PaymentService {
     const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
     if (!order) return
 
-    // Tìm user để lấy email
-    const user = await databaseService.users.findOne({ _id: order.user_id })
-    if (!user || !user.email) return
+    // Tìm user/email nhận thông báo. Guest order không có user_id.
+    const user = order.user_id ? await databaseService.users.findOne({ _id: order.user_id }) : null
+    const recipientEmail = user?.email || order.guest_customer?.email
+    if (!recipientEmail) return
 
     const formattedAmount = Number(amount).toLocaleString('vi-VN')
     const orderDate = new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER as string,
-      to: user.email,
+      to: recipientEmail,
       subject: `Thanh toán thành công - Đơn hàng #${order_id.slice(-6).toUpperCase()}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
@@ -318,7 +319,7 @@ class PaymentService {
         </div>
       `
     })
-    console.log(`📧 Đã gửi email xác nhận thanh toán đến ${user.email}`)
+    console.log(`📧 Đã gửi email xác nhận thanh toán đến ${recipientEmail}`)
   }
 
   // callback
