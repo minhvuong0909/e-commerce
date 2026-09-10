@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import { ArrowRight, ChevronLeft, ChevronRight, Droplets, Leaf, ShieldCheck, Sparkles, Sun, Tag } from 'lucide-react'
 
 interface SlideItem {
@@ -29,14 +28,14 @@ const HERO_SLIDES: SlideItem[] = [
     badgeIcon: Sparkles,
     title: 'Làn da dịu nhẹ,',
     highlightTitle: 'vẻ đẹp tự nhiên.',
-    description: 'Một chút chăm sóc mỗi ngày. Khám phá những sản phẩm phù hợp để xây dựng routine chuẩn chuyên gia riêng cho làn da của bạn.',
+    description: 'Một chút chăm sóc mỗi ngày. Khám phá những sản phẩm chuẩn chuyên gia nuôi dưỡng vẻ đẹp thuần khiết.',
     buttonText: 'Khám phá ngay',
     buttonLink: '#new-arrivals',
     image: '/images/hero_slide_routine.jpg',
     footerIcon1: Leaf,
-    footerText1: 'Chăm sóc mỗi ngày',
+    footerText1: 'Thành phần hữu cơ lành tính',
     footerIcon2: ShieldCheck,
-    footerText2: 'Thông tin minh bạch',
+    footerText2: 'Minh bạch nguồn gốc 100%',
     cardIcon: Droplets,
     cardTitle: 'Chăm da từ những điều giản dị',
     cardSub: 'Làm sạch · Dưỡng ẩm · Bảo vệ'
@@ -104,9 +103,9 @@ export default function HomeHero() {
   const CardIcon = slide.cardIcon
 
   return (
-    <section className='bg-white px-4 py-6 md:px-6 md:py-8'>
+    <section className='bg-[#FAF7F2] px-4 py-6 md:px-6 md:py-8'>
       <div
-        className='group relative mx-auto grid max-w-7xl items-center gap-8 overflow-hidden rounded-[32px] border border-[#EFECE6] bg-[#FAF7F2] p-6 md:grid-cols-[1.1fr_0.9fr] md:p-10 lg:gap-14 lg:p-14'
+        className='group relative mx-auto grid max-w-7xl items-center gap-8 overflow-hidden rounded-[32px] border border-[#EFECE6] bg-[#FFFFFF] p-6 shadow-soft md:grid-cols-[1.1fr_0.9fr] md:p-10 lg:gap-14 lg:p-14'
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
@@ -114,49 +113,42 @@ export default function HomeHero() {
         <AnimatePresence mode='wait'>
           <motion.div
             key={slide.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.35 }}
           >
-            <p className='inline-flex items-center gap-2 rounded-full bg-[#EFE9E0] px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#786452]'>
-              <BadgeIcon size={14} className='text-[#c65f4a]' />
+            <p className='inline-flex items-center gap-2 rounded-full border border-[#EFECE6] bg-[#FAF7F2] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#9A8069]'>
+              <BadgeIcon size={14} className='text-[#9A8069]' />
               <span>{slide.badge}</span>
             </p>
 
-            <h1 className='mt-6 text-3xl font-bold leading-[1.15] tracking-tight text-[#2B2118] sm:text-5xl lg:text-6xl'>
+            <h1 className='mt-6 font-display text-4xl font-extrabold leading-[1.15] tracking-tight text-[#2B2118] sm:text-5xl lg:text-6xl'>
               {slide.title}<br />
-              <span className='font-medium text-[#c65f4a]'>{slide.highlightTitle}</span>
+              <span className='italic font-serif text-[#9A8069]'>{slide.highlightTitle}</span>
             </h1>
 
-            <p className='mt-5 max-w-md text-sm leading-7 text-[#786452] md:text-base'>
+            <p className='mt-5 max-w-md text-sm leading-relaxed text-[#594D42] md:text-base'>
               {slide.description}
             </p>
 
-            <div className='mt-8 flex flex-wrap items-center gap-3'>
+            <div className='mt-8 flex flex-wrap items-center gap-3.5'>
               <a
                 href={slide.buttonLink}
-                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-7 text-sm font-bold text-white shadow-md transition duration-200 hover:-translate-y-0.5 hover:bg-[#433528] hover:shadow-lg'
+                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-8 text-sm font-bold text-[#FAF7F2] shadow-md transition-all duration-300 hover:bg-[#9A8069] hover:shadow-lg hover:-translate-y-0.5'
               >
                 <span>{slide.buttonText}</span>
                 <ArrowRight size={16} />
               </a>
-
-              <Link
-                to='/admin'
-                className='inline-flex min-h-12 items-center justify-center rounded-full border border-[#D6CCC2] bg-white/80 px-6 text-sm font-bold text-[#2B2118] transition hover:bg-white'
-              >
-                Khám phá trang quản trị
-              </Link>
             </div>
 
-            <div className='mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#e6dfd6] pt-5 text-xs font-semibold text-[#786452]'>
+            <div className='mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#EFECE6] pt-5 text-xs font-semibold text-[#8C7D70]'>
               <span className='inline-flex items-center gap-2'>
-                <FooterIcon1 size={15} className='text-[#c65f4a]' />
+                <FooterIcon1 size={16} className='text-[#9A8069]' />
                 <span>{slide.footerText1}</span>
               </span>
               <span className='inline-flex items-center gap-2'>
-                <FooterIcon2 size={15} className='text-[#c65f4a]' />
+                <FooterIcon2 size={16} className='text-[#9A8069]' />
                 <span>{slide.footerText2}</span>
               </span>
             </div>
@@ -164,13 +156,13 @@ export default function HomeHero() {
         </AnimatePresence>
 
         {/* Right image carousel */}
-        <div className='relative aspect-[4/3] w-full overflow-hidden rounded-2xl md:aspect-auto md:h-[420px]'>
+        <div className='relative aspect-[4/3] w-full overflow-hidden rounded-2xl md:aspect-auto md:h-[420px] bg-[#F5EFE6] border border-[#EFECE6]'>
           <AnimatePresence mode='wait'>
             <motion.div
               key={slide.id}
-              initial={{ opacity: 0, scale: 1.03 }}
+              initial={{ opacity: 0, scale: 1.02 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
+              exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.4 }}
               className='h-full w-full'
             >
@@ -182,23 +174,23 @@ export default function HomeHero() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Floating badge inside image */}
-          <div className='absolute bottom-4 left-4 right-4 flex items-center gap-3 rounded-2xl border border-[#EFECE6] bg-white/95 p-3.5 shadow-lg backdrop-blur-md'>
-            <span className='grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#c65f4a]'>
-              <CardIcon size={20} />
+          {/* Floating spec badge card */}
+          <div className='absolute bottom-4 left-4 right-4 flex items-center gap-3 rounded-2xl border border-[#EFECE6] bg-white/95 p-4 shadow-lg backdrop-blur-md'>
+            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#9A8069] border border-[#EFECE6]'>
+              <CardIcon size={21} />
             </span>
             <div className='min-w-0 flex-1'>
               <p className='truncate text-xs font-bold text-[#2B2118]'>{slide.cardTitle}</p>
-              <p className='mt-0.5 truncate text-[11px] text-[#786452]'>{slide.cardSub}</p>
+              <p className='mt-0.5 truncate text-[11px] font-medium text-[#8C7D70]'>{slide.cardSub}</p>
             </div>
           </div>
         </div>
 
-        {/* Arrow Navigation Controls (Visible on hover) */}
+        {/* Navigation arrows */}
         <button
           type='button'
           onClick={handlePrev}
-          className='absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#eaded8] bg-white/90 text-[#3d3330] shadow-md opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-white hover:text-[#c65f4a] z-10'
+          className='absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#EFECE6] bg-white/90 text-[#2B2118] shadow-md opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#2B2118] hover:text-white z-10'
           aria-label='Slide trước'
         >
           <ChevronLeft size={20} />
@@ -207,13 +199,13 @@ export default function HomeHero() {
         <button
           type='button'
           onClick={handleNext}
-          className='absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#eaded8] bg-white/90 text-[#3d3330] shadow-md opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-white hover:text-[#c65f4a] z-10'
+          className='absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#EFECE6] bg-white/90 text-[#2B2118] shadow-md opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#2B2118] hover:text-white z-10'
           aria-label='Slide sau'
         >
           <ChevronRight size={20} />
         </button>
 
-        {/* Dots Indicator */}
+        {/* Dots indicator */}
         <div className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10'>
           {HERO_SLIDES.map((s, idx) => (
             <button
@@ -221,7 +213,7 @@ export default function HomeHero() {
               type='button'
               onClick={() => setCurrentIndex(idx)}
               className={`h-2 rounded-full transition-all duration-300 ${
-                currentIndex === idx ? 'w-7 bg-[#c65f4a]' : 'w-2 bg-[#d6ccc2] hover:bg-[#b07a72]'
+                currentIndex === idx ? 'w-7 bg-[#9A8069]' : 'w-2 bg-[#E6DFD7] hover:bg-[#8C7D70]'
               }`}
               aria-label={`Chuyển sang slide ${idx + 1}`}
             />

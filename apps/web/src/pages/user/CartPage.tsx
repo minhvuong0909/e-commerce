@@ -17,14 +17,14 @@ import cn from '../../utils/cn'
 import { formatImageUrl } from '../../utils/formatImageUrl'
 import { validateVoucherApi, type VoucherValidationResult } from '../../services/vouchers.services'
 
-const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
+const panelClass = 'rounded-2xl border border-[#EFECE6] bg-white shadow-soft'
 const FREE_SHIPPING_THRESHOLD = 500000
 
 function CartListSkeleton() {
   return (
     <div className='space-y-3' aria-busy='true' aria-label='Đang tải giỏ hàng'>
       {Array.from({ length: 3 }).map((_, index) => (
-        <div key={index} className={cn(panelClass, 'h-32 animate-pulse bg-[#fdf8f6]')} />
+        <div key={index} className={cn(panelClass, 'h-32 animate-pulse bg-[#F5EFE6]')} />
       ))}
     </div>
   )
@@ -43,8 +43,8 @@ function CartAddOns({ cartProductIds }: { cartProductIds: Set<string> }) {
 
   return (
     <section className='mt-8'>
-      <h2 className='text-sm font-semibold text-[#3d3330]'>Gợi ý thêm cho routine</h2>
-      <p className='mt-1 text-xs text-[#8a7a74]'>Son dưỡng, sữa rửa mặt, kem chống nắng — thêm nhanh vào giỏ.</p>
+      <h2 className='font-display text-base font-bold text-[#2B2118]'>Gợi ý thêm cho Routine của bạn</h2>
+      <p className='mt-1 text-xs text-[#8C7D70]'>Son dưỡng, sữa rửa mặt, kem chống nắng — thêm nhanh vào giỏ.</p>
       <div className='mt-4 grid gap-3 sm:grid-cols-2'>
         {addons.map((product) => (
           <CartAddOnRow
@@ -73,19 +73,19 @@ function CartAddOnRow({
   const image = formatImageUrl(product.thumbnail || mediaUrl)
 
   return (
-    <div className={cn(panelClass, 'flex items-center gap-3 p-3')}>
-      <div className='h-16 w-14 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6]'>
+    <div className={cn(panelClass, 'flex items-center gap-3 p-3.5')}>
+      <div className='h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#EFECE6]'>
         {image ? <img src={image} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover' /> : null}
       </div>
       <div className='min-w-0 flex-1'>
-        <p className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</p>
-        <p className='mt-0.5 text-sm font-bold text-[#3d3330]'>{money(product.price)}</p>
+        <p className='line-clamp-2 text-xs font-bold text-[#2B2118]'>{product.name}</p>
+        <p className='mt-0.5 text-xs font-extrabold text-[#C47A5A]'>{money(product.price)}</p>
       </div>
       <button
         type='button'
         onClick={onAdd}
         disabled={loading || product.quantity <= 0}
-        className='shrink-0 rounded-md border border-[#3d3330] px-3 py-1.5 text-xs font-semibold text-[#3d3330] transition hover:bg-[#3d3330] hover:text-white disabled:opacity-50'
+        className='shrink-0 rounded-full border border-[#2B2118] bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#2B2118] transition hover:bg-[#2B2118] hover:text-white disabled:opacity-50'
       >
         {loading ? '...' : 'Thêm'}
       </button>
@@ -226,17 +226,17 @@ export default function CartPage() {
 
   if (showEmpty) {
     return (
-      <div className='mx-auto max-w-5xl px-4 py-10 md:px-6'>
+      <div className='mx-auto max-w-5xl px-4 py-12 md:px-6 bg-[#FAF7F2] min-h-screen'>
         <EmptyState
-          icon={<PackageOpen size={26} />}
-          title='Giỏ hàng trống'
-          desc='Khám phá sản phẩm skincare và thêm vào giỏ để bắt đầu routine làm đẹp.'
+          icon={<PackageOpen size={28} className='text-[#9A8069]' />}
+          title='Giỏ hàng của bạn đang trống'
+          desc='Khám phá bộ sưu tập mỹ phẩm cao cấp và bắt đầu routine dưỡng da chuẩn chuyên gia.'
           action={
             <Link
               to='/user/home'
-              className='inline-flex min-h-11 items-center justify-center rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
+              className='inline-flex min-h-12 items-center justify-center rounded-full bg-[#2B2118] px-8 text-xs font-bold uppercase tracking-wider text-[#FAF7F2] shadow-md transition hover:bg-[#9A8069]'
             >
-              Bắt đầu mua sắm
+              Khám phá ngay
             </Link>
           }
         />
@@ -245,19 +245,19 @@ export default function CartPage() {
   }
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
       <div className='mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-[0.14em] text-[#b07a72]'>Your bag</p>
-          <h1 className='mt-1 text-3xl font-semibold tracking-tight text-[#3d3330]'>Giỏ hàng</h1>
-          <p className='mt-2 text-sm text-[#8a7a74]'>
-            {isLoading ? 'Đang tải...' : `${cartItems.length} sản phẩm`}
+          <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#9A8069]'>Maison Shopping Bag</p>
+          <h1 className='mt-1 font-display text-3xl font-extrabold tracking-tight text-[#2B2118] md:text-4xl'>Giỏ Hàng Của Bạn</h1>
+          <p className='mt-2 text-xs text-[#8C7D70]'>
+            {isLoading ? 'Đang tải sản phẩm...' : `${cartItems.length} sản phẩm trong giỏ`}
           </p>
         </div>
 
         {!isLoading && cartItems.length > 0 ? (
-          <div className='flex items-center gap-4 text-sm font-semibold'>
-            <button type='button' onClick={toggleAll} className='text-[#b07a72] hover:text-[#8f5f58]'>
+          <div className='flex items-center gap-4 text-xs font-bold uppercase tracking-wider'>
+            <button type='button' onClick={toggleAll} className='text-[#9A8069] hover:underline'>
               {selectedItems.length === cartItems.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
             </button>
             <button
@@ -284,7 +284,7 @@ export default function CartPage() {
           {isLoading ? (
             <CartListSkeleton />
           ) : (
-            <div className='space-y-3'>
+            <div className='space-y-3.5'>
               {cartItems.map((item) => {
                 const product = item.product_infor
                 const firstMedia = product.medias?.[0]
@@ -297,22 +297,22 @@ export default function CartPage() {
                     key={item._id}
                     className={cn(
                       panelClass,
-                      'grid cursor-pointer gap-4 p-4 transition sm:grid-cols-[auto_96px_1fr_auto] sm:items-center',
-                      isSelected ? 'border-[#3d3330] ring-1 ring-[#3d3330]/10' : 'hover:border-[#cbb8af]'
+                      'grid cursor-pointer gap-4 p-4 transition-all sm:grid-cols-[auto_96px_1fr_auto] sm:items-center',
+                      isSelected ? 'border-[#2B2118] ring-1 ring-[#2B2118]/15' : 'hover:border-[#9A8069]'
                     )}
                   >
                     <input type='checkbox' checked={isSelected} onChange={() => toggleItem(item._id)} className='sr-only' />
 
                     <span
                       className={cn(
-                        'grid h-5 w-5 place-items-center rounded border transition',
-                        isSelected ? 'border-[#3d3330] bg-[#3d3330] text-white' : 'border-[#dccbc4] bg-white text-transparent'
+                        'grid h-5 w-5 place-items-center rounded border transition-all',
+                        isSelected ? 'border-[#2B2118] bg-[#2B2118] text-white' : 'border-[#EFECE6] bg-white text-transparent'
                       )}
                     >
                       <Check size={12} strokeWidth={3} />
                     </span>
 
-                    <div className='aspect-square w-24 overflow-hidden rounded-md bg-[#f5ebe6] sm:w-24'>
+                    <div className='aspect-square w-24 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#EFECE6] sm:w-24'>
                       {image ? (
                         <img src={image} alt={product.name} loading='lazy' referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                       ) : null}
@@ -320,28 +320,28 @@ export default function CartPage() {
 
                     <div className='min-w-0'>
                       {product.origin ? (
-                        <p className='text-[10px] font-semibold uppercase tracking-wider text-[#b07a72]'>{product.origin}</p>
+                        <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#9A8069]'>{product.origin}</p>
                       ) : null}
-                      <div className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{product.name}</div>
-                      <p className='mt-1 text-xs text-[#8a7a74]'>{money(product.price)} / sản phẩm</p>
+                      <div className='line-clamp-2 font-display text-sm font-bold text-[#2B2118]'>{product.name}</div>
+                      <p className='mt-1 text-xs text-[#8C7D70]'>{money(product.price)} / sản phẩm</p>
 
-                      <div className='mt-3 inline-flex items-center rounded-md border border-[#eaded8]' onClick={(e) => e.preventDefault()}>
+                      <div className='mt-3 inline-flex items-center rounded-full border border-[#EFECE6] bg-[#FAF7F2] p-0.5' onClick={(e) => e.preventDefault()}>
                         <button
                           type='button'
                           aria-label='Giảm số lượng'
                           disabled={mutatingId === item._id || item.quantity <= 1}
                           onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                          className='grid h-8 w-8 place-items-center text-[#5c504a] hover:bg-[#fdf8f6] disabled:opacity-40'
+                          className='grid h-8 w-8 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:opacity-40'
                         >
                           <Minus size={14} />
                         </button>
-                        <span className='w-8 text-center text-sm font-semibold'>{item.quantity}</span>
+                        <span className='w-8 text-center text-xs font-bold text-[#2B2118]'>{item.quantity}</span>
                         <button
                           type='button'
                           aria-label='Tăng số lượng'
                           disabled={mutatingId === item._id || item.quantity >= product.quantity}
                           onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                          className='grid h-8 w-8 place-items-center text-[#5c504a] hover:bg-[#fdf8f6] disabled:opacity-40'
+                          className='grid h-8 w-8 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:opacity-40'
                         >
                           <Plus size={14} />
                         </button>
@@ -349,7 +349,7 @@ export default function CartPage() {
                     </div>
 
                     <div className='flex flex-col items-start sm:items-end'>
-                      <p className='text-base font-bold text-[#3d3330]'>{money(product.price * item.quantity)}</p>
+                      <p className='text-base font-extrabold text-[#C47A5A]'>{money(product.price * item.quantity)}</p>
                       <button
                         type='button'
                         onClick={(e) => {
@@ -358,7 +358,7 @@ export default function CartPage() {
                           handleRemoveItem(item._id)
                         }}
                         disabled={mutatingId === item._id}
-                        className='mt-2 inline-flex items-center gap-1 text-xs font-semibold text-rose-600 hover:text-rose-700 disabled:opacity-50'
+                        className='mt-2 inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline disabled:opacity-50'
                       >
                         <Trash2 size={13} />
                         Xóa
@@ -373,89 +373,90 @@ export default function CartPage() {
           <CartAddOns cartProductIds={cartProductIds} />
         </div>
 
-        <aside className={cn(panelClass, 'h-fit rounded-2xl p-6 shadow-sm lg:sticky lg:top-28')}>
-          <div className='flex items-center gap-2'>
-            <span className='grid h-9 w-9 place-items-center rounded-md bg-[#3d3330] text-white'>
-              <Sparkles size={16} />
+        <aside className={cn(panelClass, 'h-fit p-6 lg:sticky lg:top-28')}>
+          <div className='flex items-center gap-3 border-b border-[#EFECE6] pb-4'>
+            <span className='grid h-10 w-10 place-items-center rounded-xl bg-[#2B2118] text-[#FAF7F2]'>
+              <Sparkles size={18} className='text-[#9A8069]' />
             </span>
             <div>
-              <p className='font-semibold text-[#3d3330]'>Tóm tắt đơn</p>
-              <p className='text-xs text-[#8a7a74]'>{selectedItems.length} sản phẩm đã chọn</p>
+              <p className='font-display text-base font-bold text-[#2B2118]'>Tóm Tắt Đơn Hàng</p>
+              <p className='text-xs text-[#8C7D70]'>{selectedItems.length} sản phẩm được chọn</p>
             </div>
           </div>
 
           <form onSubmit={handleApplyPromo} className='mt-5'>
-            <label className='text-xs font-semibold text-[#6b5f59]'>Mã giảm giá</label>
+            <label className='text-xs font-bold uppercase tracking-wider text-[#594D42]'>Mã Voucher / Ưu Đãi</label>
             <div className='mt-2 flex gap-2'>
               <div className='relative min-w-0 flex-1'>
-                <Tag className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#a89890]' size={15} />
+                <Tag className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8C7D70]' size={15} />
                 <input
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
-                  placeholder='Nhập mã'
-                  className='h-10 w-full rounded-md border border-[#eaded8] bg-white pl-9 pr-3 text-sm outline-none focus:border-[#cbb8af] focus:ring-2 focus:ring-[#f5d5cf]/50'
+                  placeholder='Nhập mã giảm giá'
+                  className='h-10 w-full rounded-xl border border-[#EFECE6] bg-white pl-9 pr-3 text-xs text-[#2B2118] outline-none focus:border-[#9A8069]'
                 />
               </div>
               <button
                 type='submit'
                 disabled={voucherLoading || subtotal <= 0}
-                className='shrink-0 rounded-md border border-[#3d3330] px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
+                className='shrink-0 rounded-xl border border-[#2B2118] bg-[#2B2118] px-4 text-xs font-bold text-white hover:bg-[#9A8069] transition-colors'
               >
                 {voucherLoading ? '...' : 'Áp dụng'}
               </button>
             </div>
             {voucher ? (
-              <p className='mt-2 text-xs font-semibold text-emerald-600'>
+              <p className='mt-2 text-xs font-bold text-emerald-600'>
                 Đã giảm {money(discount)} với mã {voucher.voucher.code}
               </p>
             ) : null}
           </form>
 
-          <div className='mt-5 rounded-2xl border border-[#f0d7ce] bg-[#fff7f4] p-4'>
-            <div className='flex items-center justify-between gap-3 text-xs font-black text-[#3d3330]'>
-              <span>{remainingForFreeShip > 0 ? `Mua thêm ${money(remainingForFreeShip)} để được Freeship` : 'Bạn đã đạt ưu đãi Freeship'}</span>
+          {/* Freeship Progress Bar */}
+          <div className='mt-5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4'>
+            <div className='flex items-center justify-between gap-3 text-xs font-bold text-[#2B2118]'>
+              <span>{remainingForFreeShip > 0 ? `Mua thêm ${money(remainingForFreeShip)} để Freeship` : 'Đã đủ điều kiện Miễn Phí Vận Chuyển 🚚'}</span>
               <span>{Math.round(freeShipProgress)}%</span>
             </div>
-            <div className='mt-3 h-2 overflow-hidden rounded-full bg-white'>
-              <div className='h-full rounded-full bg-[#c65f4a] transition-all' style={{ width: `${freeShipProgress}%` }} />
+            <div className='mt-3 h-2.5 overflow-hidden rounded-full bg-white border border-[#EFECE6]'>
+              <div className='h-full rounded-full bg-[#9A8069] transition-all duration-500' style={{ width: `${freeShipProgress}%` }} />
             </div>
           </div>
 
-          <div className='mt-5 space-y-2 text-sm'>
+          <div className='mt-5 space-y-2.5 text-xs font-medium text-[#594D42]'>
             <div className='flex justify-between'>
-              <span className='text-[#8a7a74]'>Tạm tính</span>
-              <span className='font-semibold text-[#3d3330]'>{money(subtotal)}</span>
+              <span>Tạm tính sản phẩm</span>
+              <span className='font-bold text-[#2B2118]'>{money(subtotal)}</span>
             </div>
             <div className='flex justify-between'>
-              <span className='text-[#8a7a74]'>Phí vận chuyển</span>
-              <span className='font-medium text-[#b07a72]'>Tính khi thanh toán</span>
+              <span>Cước phí vận chuyển</span>
+              <span className='font-bold text-[#9A8069]'>Tính tại trang checkout</span>
             </div>
             {discount > 0 ? (
-              <div className='flex justify-between'>
-                <span className='text-[#8a7a74]'>Giảm giá</span>
-                <span className='font-semibold text-emerald-600'>-{money(discount)}</span>
+              <div className='flex justify-between text-emerald-600 font-bold'>
+                <span>Voucher giảm giá</span>
+                <span>-{money(discount)}</span>
               </div>
             ) : null}
           </div>
 
-          <div className='my-4 h-px bg-[#f0e4de]' />
+          <div className='my-4 h-px bg-[#EFECE6]' />
 
           <div className='flex items-end justify-between'>
-            <span className='text-sm text-[#8a7a74]'>Tổng tạm tính</span>
-            <span className='text-xl font-bold text-[#3d3330]'>{money(estimatedTotal)}</span>
+            <span className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Tổng Tạm Tính</span>
+            <span className='text-2xl font-extrabold text-[#C47A5A]'>{money(estimatedTotal)}</span>
           </div>
 
           <button
             type='button'
             disabled={isLoading || selectedItems.length === 0 || stockFail}
             onClick={handleCheckout}
-            className='mt-5 flex h-12 w-full items-center justify-center rounded-2xl bg-[#2B2118] text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#433528] disabled:opacity-50'
+            className='mt-6 flex h-12 w-full items-center justify-center rounded-full bg-[#2B2118] text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#9A8069] shadow-md disabled:opacity-50'
           >
-            Thanh toán ({selectedItems.length})
+            Tiến Hành Thanh Toán ({selectedItems.length})
           </button>
 
-          <p className='mt-3 text-center text-[11px] leading-5 text-[#8a7a74]'>
-            Hàng chính hãng · Thanh toán bảo mật · Giao trong bán kính 25km
+          <p className='mt-4 text-center text-[11px] leading-relaxed text-[#8C7D70]'>
+            Cam kết sản phẩm chính hãng · Bảo mật thanh toán SSL
           </p>
         </aside>
       </div>

@@ -5,11 +5,9 @@ import {
   ArrowLeft,
   Check,
   CreditCard,
-  ExternalLink,
   Headphones,
   MapPin,
   Package,
-  RotateCcw,
   ShoppingBag,
   Smartphone
 } from 'lucide-react'
@@ -48,13 +46,13 @@ type OrderLineItem = {
   product?: OrderLineProduct
 }
 
-const panelClass = 'rounded-lg border border-[#eaded8] bg-white'
+const panelClass = 'rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
 
 const TIMELINE_STEPS = [
-  { label: 'Ordered', labelVi: 'Đã đặt' },
-  { label: 'Confirmed', labelVi: 'Xác nhận' },
-  { label: 'Shipping', labelVi: 'Đang giao' },
-  { label: 'Delivered', labelVi: 'Đã giao' }
+  { label: 'Ordered', labelVi: 'Đã Đặt Hàng' },
+  { label: 'Confirmed', labelVi: 'Đã Xác Nhận' },
+  { label: 'Shipping', labelVi: 'Đang Vận Chuyển' },
+  { label: 'Delivered', labelVi: 'Giao Thành Công' }
 ] as const
 
 type StepState = 'done' | 'current' | 'upcoming' | 'cancelled'
@@ -76,11 +74,13 @@ function mapPaymentMethodLabel(method: PaymentMethod | string) {
     case 'CASH_ON_DELIVERY':
       return 'Thanh toán khi nhận hàng (COD)'
     case 'CREDIT_CARD':
-      return 'Thẻ tín dụng'
+      return 'Thẻ tín dụng / Visa'
     case 'PAYPAL':
       return 'PayPal'
     case 'MOMO':
       return 'Ví MoMo'
+    case 'PAYOS':
+      return 'Chuyển Khoản QR Code (PayOS)'
     default:
       return method ? String(method).replaceAll('_', ' ') : 'Không xác định'
   }
@@ -107,13 +107,13 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
   const isCancelled = rawStatus === ORDER_STATUS_CODE.CANCELLED
 
   return (
-    <section className={cn(panelClass, 'p-5 md:p-6')}>
-      <h2 className='text-sm font-semibold text-[#3d3330]'>Tiến trình đơn hàng</h2>
+    <section className={panelClass}>
+      <h2 className='font-display text-base font-bold text-[#2B2118]'>Tiến Trình Xử Lý Đơn Hàng</h2>
       {isCancelled ? (
-        <p className='mt-2 text-xs text-rose-700'>Đơn hàng đã được hủy và sẽ không tiếp tục giao.</p>
+        <p className='mt-2 text-xs font-bold text-rose-600'>Đơn hàng đã được hủy và ngừng giao dịch.</p>
       ) : null}
 
-      <ol className='mt-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-2'>
+      <ol className='mt-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-2'>
         {TIMELINE_STEPS.map((step, index) => {
           const state = getTimelineStepState(rawStatus, index)
           const isLast = index === TIMELINE_STEPS.length - 1
@@ -124,7 +124,7 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                 <span
                   className={cn(
                     'absolute left-[15px] top-8 hidden h-px w-[calc(100%-2rem)] md:left-[calc(50%+1rem)] md:top-4 md:block md:h-0.5 md:w-[calc(100%-2rem)]',
-                    state === 'done' ? 'bg-[#b07a72]' : 'bg-[#eaded8]'
+                    state === 'done' ? 'bg-[#9A8069]' : 'bg-[#EFECE6]'
                   )}
                   aria-hidden
                 />
@@ -133,10 +133,10 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
               <div className='flex items-start gap-3 md:flex-col md:items-center md:gap-2'>
                 <span
                   className={cn(
-                    'relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 text-xs font-bold',
-                    state === 'done' && 'border-[#b07a72] bg-[#b07a72] text-white',
-                    state === 'current' && 'border-[#b07a72] bg-[#fdf8f6] text-[#b07a72]',
-                    state === 'upcoming' && 'border-[#eaded8] bg-white text-[#a89890]',
+                    'relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-xs font-bold transition-all',
+                    state === 'done' && 'border-[#9A8069] bg-[#2B2118] text-[#FAF7F2] shadow-sm',
+                    state === 'current' && 'border-[#9A8069] bg-[#FAF7F2] text-[#9A8069]',
+                    state === 'upcoming' && 'border-[#EFECE6] bg-white text-[#8C7D70]',
                     state === 'cancelled' && 'border-rose-200 bg-rose-50 text-rose-400'
                   )}
                 >
@@ -145,13 +145,13 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                 <div className='min-w-0 pt-0.5 md:pt-0'>
                   <p
                     className={cn(
-                      'text-sm font-semibold',
-                      state === 'cancelled' ? 'text-rose-400 line-through' : 'text-[#3d3330]'
+                      'font-display text-xs font-bold',
+                      state === 'cancelled' ? 'text-rose-400 line-through' : 'text-[#2B2118]'
                     )}
                   >
                     {step.labelVi}
                   </p>
-                  <p className='text-[10px] uppercase tracking-wider text-[#a89890]'>{step.label}</p>
+                  <p className='text-[10px] uppercase tracking-wider text-[#8C7D70]'>{step.label}</p>
                 </div>
               </div>
             </li>
@@ -167,43 +167,43 @@ function OrderLineRow({ item }: { item: OrderLineItem }) {
   const subtitle = productSubtitle(item.product)
 
   return (
-    <li className='flex gap-3 rounded-md border border-[#f0e4de] bg-[#fdf8f6] p-3'>
-      <div className='aspect-[4/5] w-16 shrink-0 overflow-hidden rounded-md bg-[#f5ebe6] sm:w-20'>
+    <li className='flex gap-3.5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4'>
+      <div className='aspect-square w-16 shrink-0 overflow-hidden rounded-xl bg-white border border-[#EFECE6] sm:w-20'>
         {image ? (
           <img src={image} alt='' className='h-full w-full object-cover' />
         ) : (
-          <div className='flex h-full items-center justify-center text-[#cbb8af]'>
+          <div className='flex h-full items-center justify-center text-[#8C7D70]'>
             <Package size={20} />
           </div>
         )}
       </div>
       <div className='min-w-0 flex-1'>
-        <p className='line-clamp-2 text-sm font-semibold text-[#3d3330]'>{item.product?.name || 'Sản phẩm'}</p>
-        {subtitle ? <p className='mt-0.5 text-xs text-[#8a7a74]'>{subtitle}</p> : null}
-        <p className='mt-1 text-xs text-[#8a7a74]'>
+        <p className='line-clamp-2 font-display text-xs font-bold text-[#2B2118]'>{item.product?.name || 'Sản phẩm'}</p>
+        {subtitle ? <p className='mt-0.5 text-xs text-[#8C7D70]'>{subtitle}</p> : null}
+        <p className='mt-1 text-xs text-[#8C7D70]'>
           {money(item.price)} × {item.quantity}
         </p>
       </div>
-      <p className='shrink-0 self-center text-sm font-bold text-[#3d3330]'>{money(item.price * item.quantity)}</p>
+      <p className='shrink-0 self-center text-sm font-extrabold text-[#C47A5A]'>{money(item.price * item.quantity)}</p>
     </li>
   )
 }
 
 function DetailSkeleton() {
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-      <div className='mb-6 h-5 w-40 animate-pulse rounded bg-[#eaded8]' />
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] min-h-screen'>
+      <div className='mb-6 h-5 w-40 animate-pulse rounded bg-[#EFECE6]' />
       <div className='mb-6 space-y-2'>
-        <div className='h-8 w-64 animate-pulse rounded bg-[#eaded8]' />
-        <div className='h-4 w-40 animate-pulse rounded bg-[#f0e4de]' />
+        <div className='h-8 w-64 animate-pulse rounded bg-[#EFECE6]' />
+        <div className='h-4 w-40 animate-pulse rounded bg-[#EFECE6]' />
       </div>
       <div className='grid gap-6 lg:grid-cols-[1fr_340px]'>
         <div className='space-y-4'>
-          <div className={cn(panelClass, 'h-28 animate-pulse bg-[#fdf8f6]')} />
-          <div className={cn(panelClass, 'h-48 animate-pulse bg-[#fdf8f6]')} />
-          <div className={cn(panelClass, 'h-36 animate-pulse bg-[#fdf8f6]')} />
+          <div className={cn(panelClass, 'h-28 animate-pulse bg-white')} />
+          <div className={cn(panelClass, 'h-48 animate-pulse bg-white')} />
+          <div className={cn(panelClass, 'h-36 animate-pulse bg-white')} />
         </div>
-        <div className={cn(panelClass, 'h-64 animate-pulse bg-[#fdf8f6]')} />
+        <div className={cn(panelClass, 'h-64 animate-pulse bg-white')} />
       </div>
     </div>
   )
@@ -275,7 +275,7 @@ export default function OrderDetailPage() {
       const payosResult = res.data?.result || res.data?.data || res.data
       const payUrl = payosResult?.payUrl
       if (payUrl) {
-        toast.success('Đang mở trang thanh toán PayOS...')
+        toast.success('Đang chuyển hướng tới cổng thanh toán PayOS...')
         window.location.href = payUrl
       } else {
         toast.error('Không thể tạo liên kết thanh toán PayOS.')
@@ -389,13 +389,13 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className='mx-auto max-w-4xl px-4 py-8 md:px-6'>
+      <div className='mx-auto max-w-4xl px-4 py-8 md:px-6 bg-[#FAF7F2] min-h-screen'>
         <div className={cn(panelClass, 'space-y-5 p-6')}>
           <Alert variant='error' title='Có lỗi xảy ra' desc={error || 'Không tìm thấy đơn hàng.'} />
           <Link
             to={ROUTE_PATHS.USER_ORDERS}
             preventScrollReset
-            className='inline-flex items-center gap-2 text-sm font-semibold text-[#8a7a74] hover:text-[#3d3330]'
+            className='inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8C7D70] hover:text-[#2B2118]'
           >
             <ArrowLeft size={16} />
             Quay lại danh sách đơn hàng
@@ -408,21 +408,21 @@ export default function OrderDetailPage() {
   const lineItems = order.items as OrderLineItem[]
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
       <Link
         to={ROUTE_PATHS.USER_ORDERS}
         preventScrollReset
-        className='mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#8a7a74] transition hover:text-[#3d3330]'
+        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8C7D70] transition hover:text-[#2B2118]'
       >
         <ArrowLeft size={17} />
-        Quay lại đơn hàng
+        Quay lại đơn hàng của tôi
       </Link>
 
       <header className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
         <div>
-          <p className='text-xs font-semibold uppercase tracking-[0.14em] text-[#b07a72]'>Order detail</p>
-          <h1 className='mt-1 text-2xl font-semibold tracking-tight text-[#3d3330] sm:text-3xl'>Đơn {order.code}</h1>
-          <p className='mt-2 text-sm text-[#8a7a74]'>Đặt ngày {order.createdAt}</p>
+          <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#9A8069]'>Chi Tiết Đơn Hàng Mua Sắm</p>
+          <h1 className='mt-1 font-display text-2xl font-extrabold tracking-tight text-[#2B2118] sm:text-3xl'>Đơn hàng {order.code}</h1>
+          <p className='mt-1 text-xs text-[#8C7D70]'>Khởi tạo ngày {order.createdAt}</p>
         </div>
         <StatusBadge tone={order.status} className={ORDER_BADGE_CLASS[order.status]}>
           {order.statusLabel}
@@ -430,227 +430,180 @@ export default function OrderDetailPage() {
       </header>
 
       <div className='grid gap-6 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px]'>
-        <div className='space-y-5'>
+        <div className='space-y-6'>
           <OrderTimeline rawStatus={order.rawStatus} />
 
-          <section className={cn(panelClass, 'p-5 md:p-6')}>
-            <h2 className='text-sm font-semibold text-[#3d3330]'>Sản phẩm ({lineItems.length})</h2>
+          <section className={panelClass}>
+            <h2 className='font-display text-base font-bold text-[#2B2118] mb-4'>Danh Sách Sản Phẩm ({lineItems.length})</h2>
             {lineItems.length > 0 ? (
-              <ul className='mt-4 space-y-3'>
+              <ul className='space-y-3'>
                 {lineItems.map((item) => (
                   <OrderLineRow key={item._id ?? `${item.product?.name}-${item.price}`} item={item} />
                 ))}
               </ul>
             ) : (
-              <p className='mt-4 text-sm text-[#8a7a74]'>Không có dữ liệu sản phẩm.</p>
+              <p className='text-xs text-[#8C7D70]'>Không có dữ liệu chi tiết sản phẩm.</p>
             )}
           </section>
 
-          <section className={cn(panelClass, 'p-5 md:p-6')}>
+          <section className={panelClass}>
             <div className='mb-3 flex items-center gap-2'>
-              <MapPin size={17} className='text-[#b07a72]' />
-              <h2 className='text-sm font-semibold text-[#3d3330]'>Địa chỉ giao hàng</h2>
+              <MapPin size={18} className='text-[#9A8069]' />
+              <h2 className='font-display text-base font-bold text-[#2B2118]'>Địa Chỉ Nhận Hàng</h2>
             </div>
             {order.shippingAddress ? (
-              <div className='rounded-md border border-[#f0e4de] bg-[#fdf8f6] p-4 text-sm leading-6 text-[#6b5f59]'>
+              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4 text-xs leading-relaxed text-[#594D42]'>
                 <p>
-                  <span className='font-semibold text-[#3d3330]'>{order.shippingAddress.recipient_name}</span>
+                  <span className='font-bold text-[#2B2118]'>{order.shippingAddress.recipient_name}</span>
                   {' · '}
-                  {order.shippingAddress.phone}
+                  <span className='font-mono font-bold'>{order.shippingAddress.phone}</span>
                 </p>
                 <p className='mt-1'>{order.shippingAddress.address_line}</p>
                 {(order.shippingAddress.district || order.shippingAddress.city) && (
                   <p>{[order.shippingAddress.district, order.shippingAddress.city].filter(Boolean).join(', ')}</p>
                 )}
                 {order.shippingAddress.note ? (
-                  <p className='mt-2 text-[#8a7a74]'>
-                    <span className='font-semibold text-[#3d3330]'>Ghi chú:</span> {order.shippingAddress.note}
+                  <p className='mt-2 text-[#8C7D70]'>
+                    <span className='font-bold text-[#2B2118]'>Ghi chú shipper:</span> {order.shippingAddress.note}
                   </p>
-                ) : null}
-                {order.shippingAddress.distance_km != null ? (
-                  <p className='mt-1 text-xs text-[#8a7a74]'>Khoảng cách: {order.shippingAddress.distance_km} km</p>
-                ) : null}
-                {order.shippingAddress.lat != null && order.shippingAddress.lng != null ? (
-                  <a
-                    href={`https://www.openstreetmap.org/?mlat=${order.shippingAddress.lat}&mlon=${order.shippingAddress.lng}#map=16/${order.shippingAddress.lat}/${order.shippingAddress.lng}`}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='mt-2 inline-flex text-xs font-semibold text-[#b07a72] hover:text-[#8f5f58]'
-                  >
-                    Xem trên bản đồ
-                  </a>
                 ) : null}
               </div>
             ) : (
-              <p className='text-sm text-[#8a7a74]'>Chưa có thông tin địa chỉ giao hàng.</p>
+              <p className='text-xs text-[#8C7D70]'>Chưa có thông tin địa chỉ giao hàng.</p>
             )}
           </section>
 
-          <section className={cn(panelClass, 'p-5 md:p-6')}>
+          <section className={panelClass}>
             <div className='mb-3 flex items-center gap-2'>
-              <CreditCard size={17} className='text-[#b07a72]' />
-              <h2 className='text-sm font-semibold text-[#3d3330]'>Thanh toán</h2>
+              <CreditCard size={18} className='text-[#9A8069]' />
+              <h2 className='font-display text-base font-bold text-[#2B2118]'>Hình Thức Thanh Toán</h2>
             </div>
             <dl className='grid gap-3 sm:grid-cols-2'>
-              <div className='rounded-md border border-[#f0e4de] bg-[#fdf8f6] p-3'>
-                <dt className='text-xs text-[#8a7a74]'>Phương thức</dt>
-                <dd className='mt-1 text-sm font-semibold text-[#3d3330]'>{order.paymentMethod}</dd>
+              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-3.5'>
+                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#8C7D70]'>Phương Thức</dt>
+                <dd className='mt-1 text-xs font-bold text-[#2B2118]'>{order.paymentMethod}</dd>
               </div>
-              <div className='rounded-md border border-[#f0e4de] bg-[#fdf8f6] p-3'>
-                <dt className='text-xs text-[#8a7a74]'>Trạng thái</dt>
-                <dd className='mt-1 text-sm font-semibold text-[#3d3330]'>{order.paymentStatusLabel}</dd>
+              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-3.5'>
+                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#8C7D70]'>Trạng Thái Thanh Toán</dt>
+                <dd className='mt-1 text-xs font-bold text-[#2B2118]'>{order.paymentStatusLabel}</dd>
               </div>
             </dl>
           </section>
 
-          <section className={cn(panelClass, 'flex flex-col gap-2 p-4 sm:flex-row sm:flex-wrap')}>
+          <section className={cn(panelClass, 'flex flex-col gap-3 sm:flex-row sm:flex-wrap')}>
             <a
-              href='mailto:support@vibrantmart.local?subject=Hỗ trợ đơn hàng'
-              className='inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-[#eaded8] px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6] sm:min-w-[140px] sm:flex-none'
+              href='mailto:support@vibrantmart.com?subject=Hỗ trợ đơn hàng'
+              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#EFECE6] bg-white px-5 text-xs font-bold text-[#2B2118] hover:bg-[#FAF7F2] sm:min-w-[150px] sm:flex-none'
             >
               <Headphones size={16} />
-              Liên hệ hỗ trợ
+              Liên Hệ Hỗ Trợ
             </a>
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md border border-[#eaded8] px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6] sm:min-w-[140px] sm:flex-none'
-            >
-              <RotateCcw size={16} />
-              Mua thêm
-            </Link>
-            <Link
-              to={ROUTE_PATHS.USER_HOME}
-              className='inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-[#3d3330] px-4 text-sm font-semibold text-white hover:bg-[#2a2421] sm:min-w-[160px] sm:flex-none'
+              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-6 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#9A8069] transition-colors sm:min-w-[180px] sm:flex-none'
             >
               <ShoppingBag size={16} />
-              Tiếp tục mua sắm
+              Tiếp Tục Mua Sắm
             </Link>
           </section>
         </div>
 
-        <div className='space-y-5'>
-          <aside className={cn(panelClass, 'h-fit p-5 lg:sticky lg:top-28')}>
-            <h2 className='text-sm font-semibold text-[#3d3330]'>Tóm tắt đơn hàng</h2>
+        <div className='space-y-6'>
+          <aside className={cn(panelClass, 'h-fit p-6 lg:sticky lg:top-28')}>
+            <h2 className='font-display text-base font-bold text-[#2B2118] border-b border-[#EFECE6] pb-3'>Tóm Tắt Thanh Toán</h2>
 
-            <div className='mt-4 space-y-2 text-sm'>
-              <div className='flex justify-between text-[#8a7a74]'>
+            <div className='mt-4 space-y-2 text-xs font-medium text-[#594D42]'>
+              <div className='flex justify-between'>
                 <span>Tạm tính</span>
-                <span className='font-semibold text-[#3d3330]'>{money(order.subtotal)}</span>
+                <span className='font-bold text-[#2B2118]'>{money(order.subtotal)}</span>
               </div>
-              <div className='flex justify-between text-[#8a7a74]'>
-                <span>Phí vận chuyển</span>
-                <span className='font-semibold text-[#3d3330]'>{money(order.shippingFee)}</span>
+              <div className='flex justify-between'>
+                <span>Cước vận chuyển</span>
+                <span className='font-bold text-[#9A8069]'>{money(order.shippingFee)}</span>
               </div>
             </div>
 
-            <div className='my-4 h-px bg-[#f0e4de]' />
+            <div className='my-4 h-px bg-[#EFECE6]' />
 
-            <div className='flex justify-between gap-4'>
-              <span className='text-sm text-[#8a7a74]'>Tổng thanh toán</span>
-              <span className='text-xl font-bold text-[#3d3330]'>{money(order.total)}</span>
+            <div className='flex justify-between items-end gap-4'>
+              <span className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Tổng Giá Trị Đơn</span>
+              <span className='text-2xl font-extrabold text-[#C47A5A]'>{money(order.total)}</span>
             </div>
 
             {(canPayMomo || canPayPaypal || canPayPayos) && (
-              <div className='mt-5 rounded-md border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900'>
-                Đơn hàng chưa thanh toán. Vui lòng hoàn tất thanh toán để cửa hàng xử lý đơn.
+              <div className='mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-relaxed text-amber-900 font-semibold'>
+                ⚡ Đơn hàng chưa hoàn tất thanh toán. Vui lòng nhấn nút bên dưới để thanh toán tức thì qua cổng PayOS / QR Code.
               </div>
+            )}
+
+            {canPayPayos && (
+              <Button
+                full
+                className='mt-4 !rounded-full !bg-[#2B2118] !py-3.5 !text-xs !font-bold !uppercase !tracking-widest !text-[#FAF7F2] shadow-md hover:!bg-[#9A8069] transition-all'
+                onClick={handlePayosPayment}
+                loading={paying}
+                disabled={paying}
+              >
+                Thanh Toán Ngay Qua PayOS
+              </Button>
             )}
 
             {canPayMomo && !momoPayment?.qrCodeUrl && (
               <Button
                 full
-                className='mt-5 !rounded-md !bg-[#3d3330] hover:!bg-[#2a2421]'
+                className='mt-3 !rounded-full !bg-[#A50064] hover:!bg-[#8E0056] text-white !py-3.5 !text-xs !font-bold !uppercase'
                 onClick={handlePayment}
                 loading={paying}
                 disabled={paying}
               >
-                Thanh toán qua MoMo
+                Thanh Toán Qua MoMo
               </Button>
             )}
 
             {canPayPaypal && (
               <Button
                 full
-                className='mt-3 !rounded-md !bg-amber-500 hover:!bg-amber-600 text-white'
+                className='mt-3 !rounded-full !bg-amber-500 hover:!bg-amber-600 text-white !py-3.5 !text-xs !font-bold !uppercase'
                 onClick={handlePayPalPayment}
                 loading={paying}
                 disabled={paying}
               >
-                Thanh toán qua PayPal
-              </Button>
-            )}
-
-            {canPayPayos && (
-              <Button
-                full
-                className='mt-3 !rounded-md !bg-blue-600 hover:!bg-blue-700 text-white'
-                onClick={handlePayosPayment}
-                loading={paying}
-                disabled={paying}
-              >
-                Thanh toán qua PayOS
+                Thanh Toán Qua PayPal
               </Button>
             )}
 
             {momoPayment?.qrCodeUrl && (
-              <div className='mt-5 overflow-hidden rounded-lg border border-pink-200 bg-gradient-to-b from-pink-50 to-white'>
-                <div className='border-b border-pink-100 px-4 py-3 text-center'>
-                  <p className='text-xs font-semibold uppercase tracking-[0.12em] text-pink-600'>Thanh toán MoMo</p>
-                  <p className='mt-1 text-lg font-bold text-[#3d3330]'>{money(order.total)}</p>
-                  <p className='mt-0.5 text-xs text-[#8a7a74]'>Đơn {order.code}</p>
+              <div className='mt-5 overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-b from-pink-50 to-white p-4 text-center'>
+                <p className='text-xs font-bold uppercase tracking-wider text-pink-600'>Quét Mã QR MoMo</p>
+                <p className='mt-1 font-mono text-xl font-extrabold text-[#2B2118]'>{money(order.total)}</p>
+                <div className='mt-3 mx-auto inline-flex rounded-2xl border border-[#EFECE6] bg-white p-3 shadow-xs'>
+                  <QRCode value={momoPayment.qrCodeUrl} size={180} bordered={false} />
                 </div>
-
-                <div className='px-4 py-5 text-center'>
-                  <div className='mx-auto inline-flex rounded-lg border border-[#eaded8] bg-white p-3'>
-                    <QRCode value={momoPayment.qrCodeUrl} size={200} bordered={false} />
-                  </div>
-                  <p className='mt-4 text-sm font-semibold text-[#3d3330]'>Quét mã QR bằng ứng dụng MoMo</p>
-                  <p className='mt-1 text-xs leading-5 text-[#8a7a74]'>
-                    Mã có thời hạn ngắn. Sau khi thanh toán, trạng thái đơn sẽ được cập nhật tự động.
-                  </p>
-
-                  <div className='mt-4 grid gap-2'>
-                    {momoPayment.deeplink && (
-                      <a
-                        href={momoPayment.deeplink}
-                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-[#a50064] px-4 text-sm font-semibold text-white transition hover:bg-[#8e0056]'
-                      >
-                        <Smartphone size={16} />
-                        Mở ứng dụng MoMo
-                      </a>
-                    )}
-                    {momoPayment.payUrl && (
-                      <a
-                        href={momoPayment.payUrl}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#eaded8] bg-white px-4 text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
-                      >
-                        <ExternalLink size={16} />
-                        Thanh toán trên trình duyệt
-                      </a>
-                    )}
-                  </div>
-
-                  <Button full variant='outline' className='mt-3 !rounded-md' onClick={handlePayment} loading={paying} disabled={paying}>
-                    Tạo mã QR mới
-                  </Button>
+                <div className='mt-3 grid gap-2'>
+                  {momoPayment.deeplink && (
+                    <a
+                      href={momoPayment.deeplink}
+                      className='inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#A50064] px-4 text-xs font-bold text-white shadow-sm'
+                    >
+                      <Smartphone size={15} /> Mở App MoMo
+                    </a>
+                  )}
                 </div>
               </div>
             )}
           </aside>
 
           {canCancel ? (
-            <div className='rounded-lg border border-rose-200 bg-rose-50 p-5'>
-              <p className='mb-4 text-sm leading-6 text-rose-900'>
-                Bạn chỉ có thể hủy đơn khi đơn hàng đang chờ xác nhận.
+            <div className='rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-xs'>
+              <p className='mb-4 text-xs leading-relaxed font-semibold text-rose-900'>
+                Bạn có thể tự hủy đơn khi trạng thái vẫn đang chờ xác nhận.
               </p>
-              <Button variant='danger' full className='!rounded-md' onClick={handleCancelOrder} loading={cancelling} disabled={cancelling}>
-                Hủy đơn hàng
+              <Button variant='danger' full className='!rounded-full !py-3 !text-xs !font-bold !uppercase' onClick={handleCancelOrder} loading={cancelling} disabled={cancelling}>
+                Hủy Đơn Hàng Này
               </Button>
             </div>
           ) : (
-            <Alert variant='info' title='Không thể hủy đơn hàng' desc='Đơn hàng đã được xử lý hoặc đang giao, không thể hủy.' />
+            <Alert variant='info' title='Đơn hàng đang xử lý' desc='Đơn hàng đã qua bước xác nhận nên không thể hủy trực tuyến.' />
           )}
         </div>
       </div>

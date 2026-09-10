@@ -24,11 +24,11 @@ function StarRating({ value }: { value: number }) {
           key={index}
           size={12}
           className={cn(
-            index < Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'fill-[#e8ddd8] text-[#e8ddd8]'
+            index < Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'fill-[#E8DDD8] text-[#E8DDD8]'
           )}
         />
       ))}
-      <span className='ml-1 text-xs font-medium text-[#8a7a74]'>{rating.toFixed(1)}</span>
+      <span className='ml-1 text-xs font-semibold text-[#8C7D70]'>{rating.toFixed(1)}</span>
     </div>
   )
 }
@@ -70,29 +70,29 @@ export default function ProductCard({ product }: ProductCardProps) {
     <>
       <motion.article
         layout
-        className='group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#EFECE6] bg-white p-2 transition duration-300 hover:shadow-md'
+        className='group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#EFECE6] bg-white p-2.5 interactive-lift'
       >
-        <div className='static'>
-          <Link to={`/user/products/${product._id}`} className='block'>
-            <div className='relative aspect-square overflow-hidden rounded-xl bg-[#F9F9F9]'>
+        <div className='relative'>
+          <Link to={`/user/products/${product._id}`} className='block overflow-hidden rounded-xl bg-[#F5EFE6]'>
+            <div className='relative aspect-square overflow-hidden'>
               {image ? (
                 <img
                   src={image}
                   alt={product.name}
                   referrerPolicy='no-referrer'
-                  className='h-full w-full object-contain p-3 transition duration-500 group-hover:scale-[1.03]'
+                  className='h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105'
                   loading='lazy'
                 />
               ) : (
-                <div className='grid h-full place-items-center text-xs font-medium text-[#a89890]'>Chưa có ảnh</div>
+                <div className='grid h-full place-items-center text-xs font-medium text-[#A3968B]'>Chưa có ảnh</div>
               )}
-              {outOfStock ? <div className='absolute inset-0 bg-white/45' /> : null}
+              {outOfStock ? <div className='absolute inset-0 bg-white/60 backdrop-blur-[1px]' /> : null}
 
               {/* Quick View Button on Image Hover */}
               <button
                 type='button'
                 onClick={handleOpenQuickView}
-                className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-bold text-[#3d3330] shadow-md backdrop-blur-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-white hover:text-[#c65f4a]'
+                className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#EFECE6] bg-white/95 px-3.5 py-1.5 text-xs font-bold text-[#2B2118] shadow-md backdrop-blur-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#2B2118] hover:text-white'
                 aria-label='Xem nhanh sản phẩm'
               >
                 <Eye size={14} />
@@ -107,7 +107,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <span
                   key={badge}
                   className={cn(
-                    'rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+                    'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-xs',
                     BADGE_STYLES[badge]
                   )}
                 >
@@ -123,7 +123,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             aria-label={favorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
             aria-pressed={favorited}
             className={cn(
-              'absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-[#eaded8] bg-white/95 text-[#6b5f59] shadow-sm transition hover:border-[#cbb8af]',
+              'absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-[#EFECE6] bg-white/95 text-[#594D42] shadow-sm transition-all hover:border-[#9A8069]',
               favorited && 'border-rose-200 bg-rose-50 text-rose-600'
             )}
           >
@@ -131,12 +131,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           </button>
 
           {!outOfStock ? (
-            <div className='absolute bottom-4 right-4'>
+            <div className='absolute bottom-3 right-3'>
               <button
                 type='button'
                 onClick={handleQuickAdd}
                 disabled={isAddingThis}
-                className='grid h-9 w-9 place-items-center rounded-full bg-[#2B2118] text-white transition hover:bg-[#433528] disabled:opacity-60 sm:h-11 sm:w-11'
+                className='grid h-9 w-9 place-items-center rounded-full bg-[#2B2118] text-[#FAF7F2] shadow-md transition-all duration-200 hover:bg-[#9A8069] disabled:opacity-60 sm:h-10 sm:w-10'
                 aria-label='Thêm nhanh vào giỏ'
                 title={isAddingThis ? 'Đang thêm...' : 'Thêm nhanh vào giỏ'}
               >
@@ -146,17 +146,21 @@ export default function ProductCard({ product }: ProductCardProps) {
           ) : null}
         </div>
 
-        <div className='flex flex-1 flex-col p-2 sm:p-3'>
+        <div className='flex flex-1 flex-col p-3'>
           <Link to={`/user/products/${product._id}`} className='flex flex-1 flex-col'>
             {product.origin ? (
-              <p className='text-[11px] font-semibold uppercase tracking-[0.12em] text-[#b07a72]'>{product.origin}</p>
+              <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#9A8069]'>{product.origin}</p>
             ) : null}
-            <h3 className='mt-1 line-clamp-2 text-sm font-semibold leading-snug text-[#3d3330]'>{product.name}</h3>
+            <h3 className='mt-1 line-clamp-2 text-sm font-bold leading-snug text-[#2B2118] group-hover:text-[#9A8069] transition-colors'>
+              {product.name}
+            </h3>
             <div className='mt-2'>
               <StarRating value={product.rating_number} />
             </div>
-            <div className='mt-auto pr-10 pt-5 sm:pr-12'>
-              <p className='whitespace-nowrap text-xs font-bold tracking-tight text-[#C85A32] sm:text-base lg:text-lg'>{money(product.price)}</p>
+            <div className='mt-auto pt-4'>
+              <p className='whitespace-nowrap text-base font-extrabold tracking-tight text-[#C47A5A] lg:text-lg'>
+                {money(product.price)}
+              </p>
             </div>
           </Link>
         </div>

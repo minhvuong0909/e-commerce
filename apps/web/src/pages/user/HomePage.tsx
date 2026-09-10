@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
+  Clock,
   Droplets,
   Flower2,
   Heart,
@@ -10,7 +11,8 @@ import {
   MapPin,
   RefreshCw,
   ShieldCheck,
-  Sun
+  Sun,
+  Zap
 } from 'lucide-react'
 import ProductCard from '../../components/ui/ProductCard'
 import ProductCardSkeleton from '../../components/ui/ProductCardSkeleton'
@@ -121,27 +123,77 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className='home-cosmetics [--home-blush:#fdf2f0]'>
+    <div className='home-cosmetics bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
       <HomeHero />
+
+      {/* Maison Partner Marquee Banner */}
+      <section className='border-y border-[#EFECE6] bg-[#FFFFFF] py-4 px-4 overflow-hidden'>
+        <div className='mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-6 text-center opacity-70'>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Apex Beauty</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Luminary Skincare</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Obsidian Botanicals</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Veloce Paris</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Nectar Organics</span>
+        </div>
+      </section>
+
+      {/* Flash Drops Banner */}
+      <FlashDropsBanner />
+
+      {/* Category Filter Chips */}
       <CategoryChips categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
+
+      {/* Search Results Section if Search Query Active */}
       {urlSearch ? (
         <SearchResultsSection key={`${urlSearch}-${categoryId}`} initialSearch={urlSearch} categoryId={categoryId} />
       ) : null}
+
+      {/* Main New Arrivals Showcase Grid */}
       <ProductShowcase
         key={categoryId || 'all'}
         id='new-arrivals'
-        eyebrow='Mới về'
-        title='Sản phẩm mới'
-        desc='Công thức mới, texture mềm mại — cập nhật routine làm đẹp của bạn.'
+        eyebrow='Bảo Chứng Chất Lượng'
+        title='Bộ Sưu Tập Mới Nhất'
+        desc='Công thức dưỡng da cải tiến, texture mỏng nhẹ tự nhiên — cập nhật routine của bạn.'
         sort='newest'
         categoryId={categoryId}
       />
+
       <BrandStory />
       <PromoStrip />
     </div>
   )
 }
 
+function FlashDropsBanner() {
+  return (
+    <section className='px-4 py-8 md:px-6'>
+      <div className='mx-auto max-w-7xl rounded-3xl border border-[#EFECE6] bg-[#FFFFFF] p-6 shadow-soft md:p-8 flex flex-col md:flex-row items-center justify-between gap-6'>
+        <div className='flex items-center gap-4'>
+          <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#2B2118] text-[#FAF7F2] shadow-sm'>
+            <Zap size={24} className='text-[#9A8069]' />
+          </span>
+          <div>
+            <div className='flex items-center gap-2'>
+              <span className='rounded-full bg-[#9A8069] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white'>Flash Sale 24H</span>
+              <span className='text-xs font-semibold text-[#8C7D70] inline-flex items-center gap-1'><Clock size={13} /> Giờ Vàng Giá Sốc</span>
+            </div>
+            <h3 className='mt-1 font-display text-xl font-bold text-[#2B2118] md:text-2xl'>
+              Ưu đãi độc quyền lên tới 40% cho dòng Serum Tế Bào Gốc
+            </h3>
+          </div>
+        </div>
+
+        <a
+          href='#new-arrivals'
+          className='shrink-0 rounded-full bg-[#2B2118] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#9A8069] transition-colors shadow-md'
+        >
+          Xem Sản Phẩm Sốc
+        </a>
+      </div>
+    </section>
+  )
+}
 
 function CategoryChips({
   categories,
@@ -158,56 +210,56 @@ function CategoryChips({
       : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', slug: toSlug(name), name }))
 
   return (
-    <section className='bg-[#fdfbf7] px-4 pt-6 md:px-6' aria-label='Danh mục mỹ phẩm'>
+    <section className='bg-[#FAF7F2] px-4 pt-4 md:px-6' aria-label='Danh mục mỹ phẩm'>
       <div className='mx-auto max-w-7xl'>
-      <div className='flex items-center justify-between gap-3'>
-        <h2 className='text-sm font-semibold text-[#5c504a]'>Mua theo danh mục</h2>
-        {selectedId ? (
+        <div className='flex items-center justify-between gap-3'>
+          <h2 className='font-display text-base font-bold text-[#2B2118]'>Danh Mục Nổi Bật</h2>
+          {selectedId ? (
+            <button
+              type='button'
+              onClick={() => onSelect('')}
+              className='text-xs font-bold text-[#9A8069] hover:underline'
+            >
+              Xóa bộ lọc danh mục
+            </button>
+          ) : null}
+        </div>
+        <div className='mt-3 flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
           <button
             type='button'
             onClick={() => onSelect('')}
-            className='text-xs font-semibold text-[#b07a72] hover:underline'
+            className={cn(
+              'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all',
+              !selectedId
+                ? 'border-[#2B2118] bg-[#2B2118] text-[#FAF7F2] shadow-sm'
+                : 'border-[#EFECE6] bg-white text-[#594D42] hover:border-[#9A8069]'
+            )}
           >
-            Xóa bộ lọc
+            Tất cả
           </button>
-        ) : null}
-      </div>
-      <div className='mt-3 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-        <button
-          type='button'
-          onClick={() => onSelect('')}
-          className={cn(
-            'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition',
-            !selectedId
-              ? 'border-[#3d3330] bg-[#3d3330] text-white'
-              : 'border-[#e5d5ce] bg-white text-[#5c504a] hover:border-[#cbb8af]'
-          )}
-        >
-          Tất cả
-        </button>
-        {chips.map((chip) => {
-          const targetValue = chip.id
-          const isActive = Boolean(selectedId) && (selectedId === chip.slug || selectedId === chip.id)
-          const isStatic = !targetValue
-          return (
-            <button
-              key={chip.slug || chip.id || chip.name}
-              type='button'
-              disabled={isStatic}
-              onClick={() => targetValue && onSelect(isActive ? '' : targetValue)}
-              className={cn(
-                'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition',
-                isActive
-                  ? 'border-[#3d3330] bg-[#3d3330] text-white'
-                  : 'border-[#e5d5ce] bg-white text-[#5c504a]',
-                isStatic ? 'cursor-default opacity-60' : 'hover:border-[#cbb8af]'
-              )}
-            >
-              {chip.name}
-            </button>
-          )
-        })}
-      </div>
+          {chips.map((chip) => {
+            const targetValue = chip.id
+            const isActive = Boolean(selectedId) && (selectedId === chip.slug || selectedId === chip.id)
+            const isStatic = !targetValue
+            return (
+              <button
+                key={chip.slug || chip.id || chip.name}
+                type='button'
+                disabled={isStatic}
+                onClick={() => targetValue && onSelect(isActive ? '' : targetValue)}
+                className={cn(
+                  'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all',
+                  isActive
+                    ? 'border-[#2B2118] bg-[#2B2118] text-[#FAF7F2] shadow-sm'
+                    : 'border-[#EFECE6] bg-white text-[#594D42]',
+                  isStatic ? 'cursor-default opacity-60' : 'hover:border-[#9A8069]'
+                )}
+              >
+                {chip.name}
+              </button>
+            )
+          })}
+        </div>
       </div>
     </section>
   )
@@ -249,47 +301,49 @@ function ProductShowcase({
   const pagination = data?.pagination
 
   return (
-    <section id={id} className='scroll-mt-28 bg-white px-4 py-8 md:px-6'>
+    <section id={id} className='scroll-mt-28 bg-[#FAF7F2] px-4 py-10 md:px-6'>
       <div className='mx-auto max-w-7xl'>
-      <SectionHeader eyebrow={eyebrow} title={title} desc={desc} />
-      <div className='mt-6'>
-        {isLoading ? (
-          <ProductGridSkeleton />
-        ) : isError ? (
-          <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-8 text-center text-sm text-[#786452]'>
-            <p>Chưa tải được sản phẩm. Vui lòng thử lại.</p>
-            <button type='button' onClick={() => void refetch()} className='mt-3 rounded-full border border-[#D6CCC2] px-5 py-2 font-medium text-[#2B2118]'>Tải lại</button>
-          </div>
-        ) : products.length === 0 ? (
-          <div className='rounded-lg border border-dashed border-[#dccbc4] bg-white/70 p-10 text-center text-sm font-medium text-[#8a7a74]'>
-            Chưa có sản phẩm trong danh mục này.
-          </div>
-        ) : (
-          <>
-            <motion.div
-              variants={staggerContainer}
-              initial='hidden'
-              animate='show'
-              className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
-            >
-              {products.map((product) => (
-                <motion.div key={product._id} variants={fadeUpItem}>
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </motion.div>
-            {pagination && pagination.totalPages > 1 ? (
-              <PaginationBar
-                pagination={pagination}
-                page={page}
-                onPageChange={setPage}
-                isLoading={isLoading}
-                itemLabel='sản phẩm'
-              />
-            ) : null}
-          </>
-        )}
-      </div>
+        <SectionHeader eyebrow={eyebrow} title={title} desc={desc} />
+        <div className='mt-8'>
+          {isLoading ? (
+            <ProductGridSkeleton />
+          ) : isError ? (
+            <div className='rounded-2xl border border-[#EFECE6] bg-white p-8 text-center text-sm text-[#8C7D70] shadow-soft'>
+              <p>Chưa thể tải sản phẩm từ máy chủ. Vui lòng thử lại.</p>
+              <button type='button' onClick={() => void refetch()} className='mt-4 rounded-full bg-[#2B2118] px-6 py-2 text-xs font-bold text-white'>Tải lại</button>
+            </div>
+          ) : products.length === 0 ? (
+            <div className='rounded-2xl border border-dashed border-[#EFECE6] bg-white p-12 text-center text-sm font-medium text-[#8C7D70] shadow-xs'>
+              Chưa tìm thấy sản phẩm trong danh mục lựa chọn.
+            </div>
+          ) : (
+            <>
+              <motion.div
+                variants={staggerContainer}
+                initial='hidden'
+                animate='show'
+                className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4'
+              >
+                {products.map((product) => (
+                  <motion.div key={product._id} variants={fadeUpItem}>
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+              </motion.div>
+              {pagination && pagination.totalPages > 1 ? (
+                <div className='mt-10'>
+                  <PaginationBar
+                    pagination={pagination}
+                    page={page}
+                    onPageChange={setPage}
+                    isLoading={isLoading}
+                    itemLabel='sản phẩm'
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     </section>
   )
@@ -319,46 +373,48 @@ function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: st
   const pagination = data?.pagination
 
   return (
-    <section id='featured-products' className='scroll-mt-28 bg-white px-4 py-6 md:px-6'>
+    <section id='featured-products' className='scroll-mt-28 bg-[#FAF7F2] px-4 py-8 md:px-6'>
       <div className='mx-auto max-w-7xl'>
-      <SectionHeader
-        eyebrow='Tìm kiếm'
-        title={`Kết quả cho "${initialSearch}"`}
-        desc='Lọc thêm bằng category chips phía trên nếu cần.'
-      />
-      <div className='mt-6'>
-        {isLoading ? (
-          <ProductGridSkeleton />
-        ) : products.length === 0 ? (
-          <div className='rounded-lg border border-dashed border-[#dccbc4] bg-white/70 p-10 text-center text-sm font-medium text-[#8a7a74]'>
-            Không tìm thấy sản phẩm phù hợp.
-          </div>
-        ) : (
-          <>
-            <motion.div
-              variants={staggerContainer}
-              initial='hidden'
-              animate='show'
-              className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'
-            >
-              {products.map((product) => (
-                <motion.div key={product._id} variants={fadeUpItem}>
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </motion.div>
-            {pagination && pagination.totalPages > 1 ? (
-              <PaginationBar
-                pagination={pagination}
-                page={page}
-                onPageChange={setPage}
-                isLoading={isLoading}
-                itemLabel='sản phẩm'
-              />
-            ) : null}
-          </>
-        )}
-      </div>
+        <SectionHeader
+          eyebrow='Kết Quả Tìm Kiếm'
+          title={`Sản phẩm cho "${initialSearch}"`}
+          desc='Bạn có thể kết hợp thêm danh mục phía trên để thu hẹp tìm kiếm.'
+        />
+        <div className='mt-8'>
+          {isLoading ? (
+            <ProductGridSkeleton />
+          ) : products.length === 0 ? (
+            <div className='rounded-2xl border border-dashed border-[#EFECE6] bg-white p-12 text-center text-sm font-medium text-[#8C7D70] shadow-xs'>
+              Không tìm thấy sản phẩm nào khớp từ khóa "{initialSearch}".
+            </div>
+          ) : (
+            <>
+              <motion.div
+                variants={staggerContainer}
+                initial='hidden'
+                animate='show'
+                className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4'
+              >
+                {products.map((product) => (
+                  <motion.div key={product._id} variants={fadeUpItem}>
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+              </motion.div>
+              {pagination && pagination.totalPages > 1 ? (
+                <div className='mt-10'>
+                  <PaginationBar
+                    pagination={pagination}
+                    page={page}
+                    onPageChange={setPage}
+                    isLoading={isLoading}
+                    itemLabel='sản phẩm'
+                  />
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
       </div>
     </section>
   )
@@ -368,50 +424,49 @@ function BrandStory() {
   const pillars = [
     {
       icon: Leaf,
-      title: 'Thành phần tự nhiên',
-      desc: 'Chiết xuất thực vật, ưu tiên công thức tối giản và dịu cho da nhạy cảm.'
+      title: 'Thành phần hữu cơ tinh khiết',
+      desc: 'Ưu tiên chiết xuất thực vật lành tính, không chứa Paraben hay Cồn công nghiệp.'
     },
     {
       icon: Heart,
-      title: 'Cruelty-free',
-      desc: 'Cam kết không thử nghiệm trên động vật — làm đẹp có trách nhiệm.'
+      title: 'Cruelty-Free 100%',
+      desc: 'Cam kết 100% sản phẩm không thử nghiệm trên động vật — làm đẹp văn minh.'
     },
     {
       icon: Droplets,
-      title: 'Công thức dịu nhẹ',
-      desc: 'Texture mỏng nhẹ, thấm nhanh — phù hợp routine hằng ngày.'
+      title: 'Công thức thẩm thấu sâu',
+      desc: 'Texture mỏng nhẹ dịu mát, nuôi dưỡng da khỏe mạnh từ sâu bên trong.'
     }
   ]
 
   return (
-    <section className='bg-[#f7f3ee] px-4 py-8 md:px-6'>
-      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-[#eaded8] bg-[linear-gradient(135deg,#fffcfb,#eef4ef)]'>
-        <div className='grid gap-8 p-6 md:grid-cols-2 md:p-10'>
+    <section className='px-4 py-12 md:px-6'>
+      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] border border-[#EFECE6] bg-white shadow-soft'>
+        <div className='grid gap-8 p-8 md:grid-cols-2 md:p-12 lg:p-16'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-[#b07a72]'>Our story</p>
-            <h2 className='mt-2 text-2xl font-semibold tracking-tight text-[#3d3330] md:text-3xl'>
-              Vibrant Mart — làn da khỏe từ những điều giản dị
+            <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#9A8069]'>Maison Story</p>
+            <h2 className='mt-3 font-display text-3xl font-extrabold tracking-tight text-[#2B2118] md:text-4xl'>
+              Vibrant Mart — Khởi nguồn từ làn da khỏe thuần khiết
             </h2>
-            <p className='mt-4 text-sm leading-7 text-[#6b5f59] md:text-base'>
-              Chúng tôi chọn lọc mỹ phẩm chăm sóc da và trang điểm nhẹ nhàng, lấy cảm hứng từ thiên nhiên và khoa học
-              làm đẹp hiện đại. Mỗi sản phẩm đều hướng tới sự an toàn, minh bạch và cảm giác thoải mái trên da.
+            <p className='mt-5 text-sm leading-relaxed text-[#594D42] md:text-base'>
+              Chúng tôi tuyển chọn các dòng mỹ phẩm dưỡng da và trang điểm cao cấp, dung hòa giữa bí quyết thiên nhiên và khoa học làn da hiện đại. Mỗi liệu trình đều giúp bạn cảm nhận sự dễ chịu và vẻ đẹp tự nhiên nhất.
             </p>
             <Link
               to='/user/home#new-arrivals'
-              className='mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[#b07a72] hover:text-[#8f5f58]'
+              className='mt-8 inline-flex items-center gap-2 rounded-full bg-[#2B2118] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#9A8069] transition-colors shadow-md'
             >
-              Khám phá bộ sưu tập <ArrowRight size={16} />
+              Khám phá bộ sưu tập <ArrowRight size={15} />
             </Link>
           </div>
-          <div className='space-y-3'>
+          <div className='space-y-4'>
             {pillars.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className='flex gap-4 rounded-lg border border-[#eaded8]/80 bg-white/80 p-4'>
-                <span className='grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#fdf2f0] text-[#b07a72]'>
-                  <Icon size={18} />
+              <div key={title} className='flex gap-4 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs transition-all hover:bg-white hover:shadow-soft'>
+                <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#9A8069] border border-[#EFECE6] shadow-xs'>
+                  <Icon size={20} />
                 </span>
                 <div>
-                  <h3 className='font-semibold text-[#3d3330]'>{title}</h3>
-                  <p className='mt-1 text-sm leading-6 text-[#6b5f59]'>{desc}</p>
+                  <h3 className='font-display text-base font-bold text-[#2B2118]'>{title}</h3>
+                  <p className='mt-1 text-xs leading-relaxed text-[#594D42]'>{desc}</p>
                 </div>
               </div>
             ))}
@@ -425,57 +480,57 @@ function BrandStory() {
 function PromoStrip() {
   const hasToken = Boolean(getToken())
   const items = [
-    { icon: MapPin, title: 'Giao trong 25km', desc: 'Phí ship tính theo khoảng cách, minh bạch.' },
-    { icon: ShieldCheck, title: 'Hàng chính hãng', desc: 'Nguồn gốc rõ ràng, kiểm soát chất lượng.' },
-    { icon: RefreshCw, title: 'Đổi trả minh bạch', desc: 'Chính sách hỗ trợ sau bán hàng rõ ràng.' },
-    { icon: Flower2, title: 'Tư vấn làm đẹp', desc: 'Gợi ý routine phù hợp loại da của bạn.' }
+    { icon: MapPin, title: 'Vận chuyển Toàn quốc', desc: 'Cước phí minh bạch, giao hàng nhanh chóng.' },
+    { icon: ShieldCheck, title: 'Chính hãng 100%', desc: 'Kiểm soát chất lượng nghiêm ngặt.' },
+    { icon: RefreshCw, title: 'Đổi trả miễn phí 7 ngày', desc: 'Chính sách hậu mãi chu đáo & tin cậy.' },
+    { icon: Flower2, title: 'Hỗ trợ chu đáo', desc: 'Đội ngũ tư vấn nhiệt tình, tận tâm.' }
   ]
 
   return (
-    <section className='bg-[#f7f3ee] px-4 pb-8 md:px-6' aria-label='Cam kết dịch vụ'>
+    <section className='px-4 pb-12 md:px-6' aria-label='Cam kết dịch vụ'>
       <div className='mx-auto max-w-7xl'>
-      <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-        {items.map(({ icon: Icon, title, desc }) => (
-          <div
-            key={title}
-            className='flex gap-3 rounded-lg border border-[#eaded8] bg-white/85 p-4 transition hover:border-[#dccbc4]'
-          >
-            <span className='grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#f7f3ee] text-[#7a6a62]'>
-              <Icon size={18} />
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
+          {items.map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className='flex gap-3.5 rounded-2xl border border-[#EFECE6] bg-white p-5 shadow-xs transition-all hover:shadow-soft'
+            >
+              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#9A8069] border border-[#EFECE6]'>
+                <Icon size={19} />
+              </span>
+              <div>
+                <h3 className='font-display text-sm font-bold text-[#2B2118]'>{title}</h3>
+                <p className='mt-1 text-xs leading-relaxed text-[#8C7D70]'>{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className='mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:flex-row md:items-center'>
+          <div className='flex items-start gap-4'>
+            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FAF7F2] text-[#9A8069] border border-[#EFECE6] shadow-xs'>
+              <Sun size={20} />
             </span>
             <div>
-              <h3 className='text-sm font-semibold text-[#3d3330]'>{title}</h3>
-              <p className='mt-1 text-xs leading-5 text-[#8a7a74]'>{desc}</p>
+              <p className='font-display text-base font-bold text-[#2B2118]'>
+                {hasToken
+                  ? 'Chào mừng bạn quay lại Vibrant Mart!'
+                  : 'Đăng nhập để lưu Routine & Theo dõi Đơn hàng'}
+              </p>
+              <p className='mt-1 text-xs text-[#8C7D70]'>
+                {hasToken
+                  ? 'Kiểm tra trạng thái vận chuyển và quản lý thông tin tài khoản.'
+                  : 'Đặc quyền tích điểm và ưu đãi hấp dẫn dành riêng cho hội viên.'}
+              </p>
             </div>
           </div>
-        ))}
-      </div>
-
-      <div className='mt-6 flex flex-col items-start justify-between gap-4 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-5 md:flex-row md:items-center'>
-        <div className='flex items-start gap-3'>
-          <span className='grid h-10 w-10 place-items-center rounded-md bg-white text-[#b07a72] shadow-sm'>
-            <Sun size={18} />
-          </span>
-          <div>
-            <p className='font-semibold text-[#3d3330]'>
-              {hasToken
-                ? 'Chào mừng bạn trở lại Vibrant Mart!'
-                : 'Đăng nhập để lưu routine & theo dõi đơn hàng'}
-            </p>
-            <p className='mt-1 text-sm text-[#8a7a74]'>
-              {hasToken
-                ? 'Theo dõi trạng thái giao hàng và quản lý tài khoản của bạn.'
-                : 'Ưu đãi dành riêng cho thành viên Vibrant Mart.'}
-            </p>
-          </div>
+          <Link
+            to={hasToken ? '/user/my-orders' : '/auth/login'}
+            className='inline-flex h-11 items-center rounded-full bg-[#2B2118] px-7 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#9A8069] shadow-md'
+          >
+            {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập ngay'}
+          </Link>
         </div>
-        <Link
-          to={hasToken ? '/user/my-orders' : '/auth/login'}
-          className='inline-flex h-10 items-center rounded-md bg-[#3d3330] px-5 text-sm font-semibold text-white transition hover:bg-[#2a2421]'
-        >
-          {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập'}
-        </Link>
-      </div>
       </div>
     </section>
   )

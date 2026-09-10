@@ -2,7 +2,11 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
-      fontFamily: { serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'] },
+      fontFamily: {
+        display: ['Playfair Display', 'Georgia', 'serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['Playfair Display', 'Georgia', 'serif']
+      },
       colors: {
         ink: {
           50: '#faf9f8',
@@ -16,9 +20,23 @@ export default {
         brand: {
           50: '#FAF7F2',
           100: '#EFE9E0',
+          200: '#DFD3C3',
           500: '#9A8069',
           600: '#786452',
+          700: '#5C4B3C',
           900: '#2B2118'
+        },
+        terracotta: {
+          50: '#FDF6F0',
+          100: '#FBEBDD',
+          500: '#C47A5A',
+          600: '#AB6042',
+          700: '#874830'
+        },
+        sand: {
+          50: '#FAF7F2',
+          100: '#F5EFE6',
+          200: '#E8DEC8'
         },
         mint: {
           50: '#f0fdf6',
@@ -28,9 +46,10 @@ export default {
         }
       },
       boxShadow: {
-        soft: '0 18px 55px rgba(15, 23, 42, 0.12)',
-        lift: '0 24px 70px rgba(15, 23, 42, 0.18)',
-        card: '0 1px 2px rgba(15, 23, 42, 0.07), 0 16px 42px rgba(15, 23, 42, 0.12)'
+        soft: '0 18px 55px rgba(43, 33, 24, 0.08)',
+        lift: '0 24px 70px rgba(43, 33, 24, 0.14)',
+        card: '0 2px 12px rgba(43, 33, 24, 0.04), 0 16px 42px rgba(43, 33, 24, 0.06)',
+        'warm-glow': '0 0 25px rgba(154, 128, 105, 0.18)'
       },
       keyframes: {
         'fade-up': {

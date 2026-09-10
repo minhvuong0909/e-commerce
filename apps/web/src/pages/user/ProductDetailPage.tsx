@@ -5,12 +5,9 @@ import {
   ArrowLeft,
   Heart,
   Minus,
-  PackageCheck,
   Plus,
-  ShieldCheck,
   ShoppingBag,
-  Star,
-  Truck
+  Star
 } from 'lucide-react'
 import Alert from '../../components/ui/Alert'
 import { useProductDetail } from '../../hooks/useProductDetail'
@@ -48,7 +45,7 @@ export default function ProductDetailPage() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewLoading, setReviewLoading] = useState(false)
 
-  const isFavorited = product ? isWishlisted(product._id) : false
+  const isFavorited = useMemo(() => (product ? isWishlisted(product._id) : false), [product, isWishlisted])
 
   const images = useMemo(() => {
     const rawList: string[] = []
@@ -66,29 +63,19 @@ export default function ProductDetailPage() {
   }, [product])
 
   const activeImage = images[activeImageIndex] ?? images[0]
-  const outOfStock = product ? product.quantity <= 0 : false
-  const overStock = product ? qty > product.quantity : false
-
-  const variantChips = useMemo(() => {
-    if (!product) return []
-    const volume = product.volume ? `${product.volume}ml` : 'Full size'
-    return [volume]
-  }, [product])
-  const [selectedVariant, setSelectedVariant] = useState(() => variantChips[0] || '')
-  if (variantChips.length > 0 && !selectedVariant) {
-    setSelectedVariant(variantChips[0])
-  }
+  const isOutOfStock = !product || product.quantity <= 0
+  const isOverStock = Boolean(product && product.quantity > 0 && qty > product.quantity)
 
   const handleAddToCart = useCallback(() => {
-    if (!product) return
+    if (!product || isOutOfStock || isOverStock) return
     addToCart({
       product_id: product._id,
       quantity: qty
     })
-  }, [product, qty, addToCart])
+  }, [product, isOutOfStock, isOverStock, addToCart, qty])
 
   const handleBuyNow = useCallback(() => {
-    if (!product || outOfStock || overStock) return
+    if (!product || isOutOfStock || isOverStock) return
     navigate(ROUTE_PATHS.USER_CHECKOUT, {
       state: {
         guestItems: [
@@ -101,16 +88,24 @@ export default function ProductDetailPage() {
         ]
       }
     })
-  }, [navigate, outOfStock, overStock, product, qty])
+  }, [navigate, isOutOfStock, isOverStock, product, qty])
 
   useEffect(() => {
     if (!id) return
+    let isSubscribed = true
     getProductReviewsApi(id)
-      .then((res) => setReviews(res.data.result || []))
-      .catch(() => setReviews([]))
+      .then((res) => {
+        if (isSubscribed) setReviews(res.data.result || [])
+      })
+      .catch(() => {
+        if (isSubscribed) setReviews([])
+      })
+    return () => {
+      isSubscribed = false
+    }
   }, [id])
 
-  const handleSubmitReview = async () => {
+  const handleSubmitReview = useCallback(async () => {
     if (!id || !product) return
     if (!getToken()) return
     if (!reviewComment.trim()) return
@@ -125,20 +120,25 @@ export default function ProductDetailPage() {
     } finally {
       setReviewLoading(false)
     }
-  }
+  }, [id, product, reviewComment, reviewRating])
 
-  const inc = useCallback(() => setQty((q) => Math.min(product?.quantity || 1, q + 1)), [product?.quantity])
-  const dec = useCallback(() => setQty((q) => Math.max(1, q - 1)), [])
+  const inc = useCallback(() => {
+    setQty((q) => (product ? Math.min(product.quantity, q + 1) : q))
+  }, [product])
+
+  const dec = useCallback(() => {
+    setQty((q) => Math.max(1, q - 1))
+  }, [])
 
   if (loading) {
     return (
       <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
         <div className='grid gap-8 lg:grid-cols-2'>
-          <div className='aspect-square animate-pulse rounded-3xl bg-[#f7f3ee]' />
+          <div className='aspect-square animate-pulse rounded-3xl bg-[#F5EFE6]' />
           <div className='space-y-4'>
-            <div className='h-8 w-3/4 animate-pulse rounded-xl bg-[#f7f3ee]' />
-            <div className='h-5 w-1/2 animate-pulse rounded-xl bg-[#f7f3ee]' />
-            <div className='h-16 w-48 animate-pulse rounded-2xl bg-[#f7f3ee]' />
+            <div className='h-8 w-3/4 animate-pulse rounded-xl bg-[#F5EFE6]' />
+            <div className='h-5 w-1/2 animate-pulse rounded-xl bg-[#F5EFE6]' />
+            <div className='h-16 w-48 animate-pulse rounded-2xl bg-[#F5EFE6]' />
           </div>
         </div>
       </div>
@@ -156,11 +156,11 @@ export default function ProductDetailPage() {
   const activeStarCount = hoverRating ?? reviewRating
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 [--home-blush:#fdf2f0]'>
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
       {/* Back navigation */}
       <Link
         to='/user/home'
-        className='mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[#8a7a74] transition hover:text-[#3d3330]'
+        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8C7D70] transition hover:text-[#2B2118]'
       >
         <ArrowLeft size={16} />
         Quay lại trang chủ
@@ -172,10 +172,10 @@ export default function ProductDetailPage() {
         transition={{ duration: 0.35 }}
         className='grid gap-8 lg:grid-cols-2'
       >
-        {/* Left Column: Product Image Gallery (Aspect Square 1:1) */}
+        {/* Left Column: Product Image Gallery */}
         <div className='space-y-4'>
-          <div className='relative overflow-hidden rounded-3xl border border-[#eaded8] bg-white shadow-xs'>
-            <div className='aspect-square overflow-hidden bg-[#fdf2f0]/30 p-6 flex items-center justify-center'>
+          <div className='relative overflow-hidden rounded-3xl border border-[#EFECE6] bg-white shadow-soft'>
+            <div className='aspect-square overflow-hidden bg-[#F5EFE6]/40 p-6 flex items-center justify-center'>
               {activeImage ? (
                 <img
                   src={activeImage}
@@ -186,20 +186,16 @@ export default function ProductDetailPage() {
                   decoding='async'
                 />
               ) : (
-                <div className='grid h-full place-items-center text-sm font-medium text-[#8a7a74]'>Chưa có ảnh</div>
+                <div className='grid h-full place-items-center text-sm font-medium text-[#8C7D70]'>Chưa có ảnh</div>
               )}
             </div>
-
-            <span className='absolute left-4 top-4 rounded-full border border-[#eaded8] bg-white/95 px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#8a726c] shadow-xs backdrop-blur-md'>
-              Chính hãng 100%
-            </span>
 
             {/* Favorite toggle badge on main image */}
             <button
               type='button'
               onClick={() => toggleWishlist(product)}
               className={cn(
-                'absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#eaded8] bg-white/95 text-[#6b5f59] shadow-md transition hover:border-rose-300',
+                'absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#EFECE6] bg-white/95 text-[#594D42] shadow-md transition hover:border-rose-300',
                 isFavorited && 'border-rose-200 bg-rose-50 text-rose-600'
               )}
               aria-label={isFavorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
@@ -219,10 +215,10 @@ export default function ProductDetailPage() {
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={activeImageIndex === index}
                   className={cn(
-                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition',
+                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all',
                     activeImageIndex === index
                       ? 'border-[#2B2118] ring-2 ring-[#2B2118]/15'
-                      : 'border-[#eaded8] opacity-70 hover:opacity-100'
+                      : 'border-[#EFECE6] opacity-70 hover:opacity-100'
                   )}
                 >
                   <img
@@ -237,165 +233,133 @@ export default function ProductDetailPage() {
               ))}
             </div>
           ) : null}
-
-          {/* Guarantee Highlights */}
-          <div className='grid gap-3 sm:grid-cols-3'>
-            {[
-              { icon: Truck, title: 'Giao hàng tận nơi', desc: 'Đóng gói cẩn thận' },
-              { icon: ShieldCheck, title: 'Cam kết chất lượng', desc: '100% Chính hãng' },
-              { icon: PackageCheck, title: 'Còn hàng', desc: `${product.quantity} sản phẩm` }
-            ].map(({ icon: Icon, title, desc }, index) => (
-              <div key={index} className='rounded-2xl border border-[#eaded8] bg-white/80 p-3.5 text-center shadow-xs backdrop-blur-xs'>
-                <Icon size={20} className='mx-auto text-[#b07a72]' />
-                <div className='mt-2 text-xs font-bold text-[#3d3330]'>{title}</div>
-                <div className='mt-0.5 text-[11px] font-medium text-[#8a7a74]'>{desc}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Right Column: Product Info & Actions */}
         <div className='lg:sticky lg:top-28 lg:self-start'>
-          <div className='rounded-3xl border border-[#eaded8] bg-white/80 p-6 shadow-xs backdrop-blur-xs md:p-8'>
+          <div className='rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'>
             {/* Tags & Rating */}
             <div className='flex flex-wrap items-center gap-2'>
-              <span className='inline-flex items-center gap-1 rounded-full bg-[#fdf2f0] px-3 py-1 text-xs font-bold text-[#b07a72]'>
-                <Star size={13} className='fill-[#b07a72] text-[#b07a72]' />
-                {product.rating_number || '5.0'}
-              </span>
+              {product.rating_number ? (
+                <span className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#EFECE6] px-3 py-1 text-xs font-bold text-[#2B2118]'>
+                  <Star size={13} className='fill-amber-400 text-amber-400' />
+                  {Number(product.rating_number).toFixed(1)}
+                </span>
+              ) : null}
               {product.origin ? (
-                <span className='rounded-full bg-[#f7f3ee] px-3 py-1 text-xs font-semibold text-[#8a726c]'>
+                <span className='rounded-full bg-[#F5EFE6] px-3 py-1 text-xs font-semibold text-[#8C7D70]'>
                   Xuất xứ: {product.origin}
                 </span>
               ) : null}
             </div>
 
             {/* Title */}
-            <h1 className='mt-3.5 text-2xl font-bold leading-snug text-[#2B2118] md:text-3xl'>{product.name}</h1>
+            <h1 className='mt-4 font-display text-2xl font-extrabold leading-snug text-[#2B2118] md:text-3xl'>{product.name}</h1>
 
             {/* Price Box */}
-            <div className='mt-5 rounded-2xl border border-[#eaded8] bg-[#fdf2f0]/60 p-4'>
-              <p className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>Giá bán</p>
-              <p className='mt-1 text-3xl font-black text-[#C85A32]'>{money(product.price)}</p>
+            <div className='mt-5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs'>
+              <p className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Giá Niêm Yết</p>
+              <p className='mt-1 text-3xl font-extrabold text-[#C47A5A]'>{money(product.price)}</p>
             </div>
 
-            {/* Specifications Quick Info (Removed duplicate Volume/Dung tich) */}
-            <div className='mt-5 grid grid-cols-2 gap-2 text-xs font-semibold text-[#5c504a] sm:grid-cols-3'>
-              {product.weight ? (
-                <div className='rounded-xl border border-[#eaded8]/80 bg-[#faf5f3] px-3 py-2'>
-                  <span className='text-[#8a7a74]'>Trọng lượng:</span> {product.weight} g
-                </div>
-              ) : null}
-              <div className='rounded-xl border border-[#eaded8]/80 bg-[#faf5f3] px-3 py-2'>
-                <span className='text-[#8a7a74]'>Kho:</span>{' '}
-                {outOfStock ? (
+            {/* Specifications Quick Info - ONLY REAL DATA */}
+            <div className='mt-5 grid grid-cols-2 gap-2 text-xs font-semibold text-[#594D42] sm:grid-cols-3'>
+              <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
+                <span className='text-[#8C7D70]'>Tình trạng:</span>{' '}
+                {isOutOfStock ? (
                   <span className='font-bold text-rose-600'>Hết hàng</span>
                 ) : (
                   <span className='font-bold text-emerald-600'>Còn {product.quantity} sp</span>
                 )}
               </div>
-              {product.soldNumber !== undefined ? (
-                <div className='rounded-xl border border-[#eaded8]/80 bg-[#faf5f3] px-3 py-2'>
-                  <span className='text-[#8a7a74]'>Đã bán:</span> {product.soldNumber}
+              {product.volume ? (
+                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#8C7D70]'>Dung tích:</span> {product.volume} ml
+                </div>
+              ) : null}
+              {product.weight ? (
+                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#8C7D70]'>Trọng lượng:</span> {product.weight} g
+                </div>
+              ) : null}
+              {product.soldNumber !== undefined && product.soldNumber > 0 ? (
+                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#8C7D70]'>Đã bán:</span> {product.soldNumber}
                 </div>
               ) : null}
             </div>
 
-            {/* Volume / Variant Selection */}
-            <div className='mt-5'>
-              <div className='flex items-center justify-between gap-3'>
-                <p className='text-sm font-bold text-[#2B2118]'>Dung tích tùy chọn</p>
-              </div>
-              <div className='mt-2.5 flex flex-wrap gap-2'>
-                {variantChips.map((chip) => (
-                  <button
-                    key={chip}
-                    type='button'
-                    onClick={() => setSelectedVariant(chip)}
-                    className={cn(
-                      'rounded-full border px-4 py-2 text-xs font-bold transition',
-                      selectedVariant === chip
-                        ? 'border-[#2B2118] bg-[#2B2118] text-white shadow-sm'
-                        : 'border-[#eaded8] bg-white text-[#5c504a] hover:border-[#b07a72] hover:bg-[#fdf8f6]'
-                    )}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Warnings */}
-            {(outOfStock || overStock) && (
+            {(isOutOfStock || isOverStock) && (
               <div className='mt-4'>
                 <Alert
                   variant='warning'
-                  title={outOfStock ? 'Hết hàng' : 'Vượt tồn kho'}
-                  desc={outOfStock ? 'Sản phẩm hiện đã hết hàng.' : 'Vui lòng giảm số lượng đặt mua.'}
+                  title={isOutOfStock ? 'Hết hàng' : 'Vượt tồn kho'}
+                  desc={isOutOfStock ? 'Sản phẩm hiện đã hết hàng.' : 'Vui lòng giảm số lượng đặt mua.'}
                 />
               </div>
             )}
 
             {/* Quantity Selector */}
-            <div className='mt-6 flex items-center justify-between gap-4 border-t border-[#eaded8] pt-5'>
-              <div>
-                <p className='text-sm font-bold text-[#2B2118]'>Số lượng</p>
-                <p className='mt-0.5 text-xs text-[#8a7a74]'>Chọn số lượng bạn muốn đặt</p>
-              </div>
+            {!isOutOfStock && (
+              <div className='mt-6 flex items-center justify-between gap-4 border-t border-[#EFECE6] pt-5'>
+                <div>
+                  <p className='font-display text-sm font-bold text-[#2B2118]'>Số lượng</p>
+                  <p className='mt-0.5 text-xs text-[#8C7D70]'>Chọn số lượng cần mua</p>
+                </div>
 
-              <div className='flex items-center rounded-2xl border border-[#eaded8] bg-[#faf5f3] p-1 shadow-xs'>
-                <button
-                  type='button'
-                  onClick={dec}
-                  disabled={qty <= 1}
-                  className='grid h-9 w-9 place-items-center rounded-xl text-[#3d3330] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
-                  aria-label='Giảm số lượng'
-                >
-                  <Minus size={15} />
-                </button>
-                <span className='w-10 text-center text-sm font-black text-[#3d3330]'>{qty}</span>
-                <button
-                  type='button'
-                  onClick={inc}
-                  disabled={qty >= product.quantity}
-                  className='grid h-9 w-9 place-items-center rounded-xl text-[#3d3330] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
-                  aria-label='Tăng số lượng'
-                >
-                  <Plus size={15} />
-                </button>
+                <div className='flex items-center rounded-full border border-[#EFECE6] bg-[#FAF7F2] p-1 shadow-xs'>
+                  <button
+                    type='button'
+                    onClick={dec}
+                    disabled={qty <= 1}
+                    className='grid h-9 w-9 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
+                    aria-label='Giảm số lượng'
+                  >
+                    <Minus size={15} />
+                  </button>
+                  <span className='w-10 text-center text-sm font-bold text-[#2B2118]'>{qty}</span>
+                  <button
+                    type='button'
+                    onClick={inc}
+                    disabled={qty >= product.quantity}
+                    className='grid h-9 w-9 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
+                    aria-label='Tăng số lượng'
+                  >
+                    <Plus size={15} />
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
             <div className='mt-6 grid grid-cols-[1fr_auto] gap-3'>
               <button
                 type='button'
                 onClick={handleBuyNow}
-                disabled={outOfStock || overStock}
-                className='col-span-2 inline-flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#2B2118] px-6 text-base font-bold text-white shadow-md transition duration-200 hover:-translate-y-0.5 hover:bg-[#433528] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50'
+                disabled={isOutOfStock || isOverStock}
+                className='col-span-2 inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-6 text-sm font-bold uppercase tracking-wider text-white shadow-md transition duration-200 hover:bg-[#9A8069] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50'
               >
-                Mua ngay
+                Mua Ngay
               </button>
 
-              {/* High-Contrast "Thêm vào giỏ" button */}
               <button
                 type='button'
-                disabled={outOfStock || overStock || adding}
+                disabled={isOutOfStock || isOverStock || adding}
                 onClick={handleAddToCart}
-                className='inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border-2 border-[#2B2118] bg-white px-6 text-sm font-bold text-[#2B2118] shadow-xs transition hover:bg-[#FAF7F2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
+                className='inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#2B2118] bg-white px-6 text-xs font-bold uppercase tracking-wider text-[#2B2118] shadow-xs transition hover:bg-[#FAF7F2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
               >
                 <ShoppingBag size={18} />
                 <span>{adding ? 'Đang thêm...' : 'Thêm vào giỏ'}</span>
               </button>
 
-              {/* Heart Wishlist button next to Add To Cart */}
               <button
                 type='button'
                 onClick={() => toggleWishlist(product)}
                 aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
                 aria-pressed={isFavorited}
                 className={cn(
-                  'inline-flex h-12 w-12 items-center justify-center rounded-2xl border-2 border-[#eaded8] bg-white text-[#6b5f59] shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600',
+                  'inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#EFECE6] bg-white text-[#594D42] shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600',
                   isFavorited && 'border-rose-300 bg-rose-50 text-rose-600'
                 )}
               >
@@ -406,92 +370,74 @@ export default function ProductDetailPage() {
         </div>
       </motion.div>
 
-      {/* Mobile Fixed Bottom Bar */}
-      <div className='fixed inset-x-0 bottom-0 z-40 border-t border-[#eaded8] bg-white/95 px-4 py-3 shadow-[0_-10px_30px_rgba(61,51,48,0.08)] backdrop-blur md:hidden'>
-        <div className='mx-auto flex max-w-7xl items-center gap-3'>
-          <div className='min-w-0 flex-1'>
-            <p className='truncate text-xs font-semibold text-[#8a7a74]'>{product.name}</p>
-            <p className='text-base font-black text-[#C85A32]'>{money(product.price)}</p>
-          </div>
-          <button
-            type='button'
-            onClick={handleBuyNow}
-            disabled={outOfStock || overStock}
-            className='h-11 rounded-xl bg-[#2B2118] px-6 text-sm font-bold text-white shadow-md disabled:opacity-50'
-          >
-            Mua ngay
-          </button>
-        </div>
-      </div>
-
-      {/* Description */}
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.35 }}
-        className='mt-10 rounded-3xl border border-[#eaded8] bg-white/80 p-6 shadow-xs backdrop-blur-xs md:p-8'
-      >
-        <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>Mô tả & Công dụng</span>
-        <h2 className='mt-1 text-2xl font-bold text-[#2B2118]'>Thông tin chi tiết sản phẩm</h2>
-        <div className='mt-4 max-w-4xl space-y-3 text-sm leading-relaxed text-[#5c504a] md:text-base'>
-          {product.description ? (
-            product.description.split('\n').map((paragraph, idx) => (
+      {/* Description - Only show when actual description exists */}
+      {product.description ? (
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.35 }}
+          className='mt-10 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
+        >
+          <span className='text-xs font-bold uppercase tracking-wider text-[#9A8069]'>Mô tả sản phẩm</span>
+          <h2 className='mt-1 font-display text-2xl font-extrabold text-[#2B2118]'>Thông Tin Chi Tiết</h2>
+          <div className='mt-4 max-w-4xl space-y-3 text-sm leading-relaxed text-[#594D42] md:text-base'>
+            {product.description.split('\n').map((paragraph, idx) => (
               <p key={idx}>{paragraph}</p>
-            ))
-          ) : (
-            <p className='italic text-[#8a7a74]'>Chưa có thông tin mô tả chi tiết cho sản phẩm này.</p>
-          )}
-        </div>
-      </motion.section>
+            ))}
+          </div>
+        </motion.section>
+      ) : null}
 
       {/* Interactive Review Section */}
       <motion.section
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.16, duration: 0.35 }}
-        className='mt-6 rounded-3xl border border-[#eaded8] bg-white/80 p-6 shadow-xs backdrop-blur-xs md:p-8'
+        className='mt-8 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
       >
-        <span className='text-xs font-bold uppercase tracking-wider text-[#8a726c]'>Đánh giá khách hàng</span>
+        <span className='text-xs font-bold uppercase tracking-wider text-[#9A8069]'>Đánh giá</span>
         <div className='mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
           <div>
-            <h2 className='text-2xl font-bold text-[#2B2118]'>Review sản phẩm</h2>
-            <p className='mt-1 text-sm text-[#8a7a74]'>{reviews.length} đánh giá hiển thị</p>
+            <h2 className='font-display text-2xl font-extrabold text-[#2B2118]'>Nhận Xét &amp; Đánh Giá</h2>
+            <p className='mt-1 text-xs text-[#8C7D70]'>{reviews.length} nhận xét</p>
           </div>
-          <div className='inline-flex items-center gap-1 rounded-full bg-[#fdf2f0] px-3 py-1 text-sm font-bold text-[#b07a72]'>
-            <Star size={15} className='fill-[#b07a72]' />
-            {product.rating_number || 5}
-          </div>
+          {product.rating_number ? (
+            <div className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#EFECE6] px-4 py-1.5 text-sm font-bold text-[#2B2118]'>
+              <Star size={15} className='fill-amber-400 text-amber-400' />
+              {Number(product.rating_number).toFixed(1)}
+            </div>
+          ) : null}
         </div>
 
-        <div className='mt-5 grid gap-6 lg:grid-cols-[1fr_380px]'>
+        <div className='mt-6 grid gap-6 lg:grid-cols-[1fr_380px]'>
           <div className='space-y-3'>
             {reviews.length === 0 ? (
-              <div className='rounded-2xl border border-dashed border-[#dccbc4] p-6 text-sm font-medium text-[#8a7a74] text-center'>
-                Chưa có đánh giá nào. Hãy là người đầu tiên trải nghiệm và chia sẻ!
+              <div className='rounded-2xl border border-dashed border-[#EFECE6] p-8 text-sm font-medium text-[#8C7D70] text-center bg-[#FAF7F2]'>
+                Chưa có đánh giá nào cho sản phẩm này.
               </div>
             ) : (
               reviews.map((review) => (
-                <article key={review._id} className='rounded-2xl border border-[#eaded8] bg-white p-4 shadow-xs'>
+                <article key={review._id} className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs'>
                   <div className='flex items-center justify-between gap-3'>
-                    <p className='font-bold text-[#3d3330]'>{review.customer_name}</p>
-                    <span className='inline-flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-full'>
-                      <Star size={13} className='fill-amber-400' />
+                    <p className='font-display font-bold text-[#2B2118]'>{review.customer_name}</p>
+                    <span className='inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-white border border-[#EFECE6] px-3 py-1 rounded-full'>
+                      <Star size={13} className='fill-amber-400 text-amber-400' />
                       {review.rating} / 5
                     </span>
                   </div>
-                  <p className='mt-2 text-sm leading-6 text-[#5c504a]'>{review.comment}</p>
+                  <p className='mt-2 text-xs leading-relaxed text-[#594D42]'>{review.comment}</p>
                 </article>
               ))
             )}
           </div>
 
-          {/* Review Form with Interactive Star Rating */}
-          <div className='rounded-2xl border border-[#eaded8] bg-[#fdf8f6] p-5 shadow-xs'>
-            <h3 className='font-bold text-[#2B2118] text-base mb-3'>Viết đánh giá của bạn</h3>
+          {/* Review Form */}
+          <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-6 shadow-xs'>
+            <h3 className='font-display font-bold text-[#2B2118] text-base mb-4'>Gửi nhận xét của bạn</h3>
             {getToken() ? (
               <div className='space-y-4'>
                 <div>
-                  <label className='block text-xs font-bold text-[#786452] mb-1.5'>Đánh giá chất lượng</label>
+                  <label className='block text-xs font-bold text-[#594D42] mb-2 uppercase tracking-wider'>Đánh giá chất lượng</label>
                   <div className='flex items-center gap-2'>
                     <div className='flex items-center gap-1'>
                       {[1, 2, 3, 4, 5].map((starIndex) => (
@@ -508,26 +454,26 @@ export default function ProductDetailPage() {
                             className={cn(
                               starIndex <= activeStarCount
                                 ? 'fill-amber-400 text-amber-400'
-                                : 'fill-[#e8ddd8] text-[#e8ddd8]'
+                                : 'fill-[#E8DDD8] text-[#E8DDD8]'
                             )}
                           />
                         </button>
                       ))}
                     </div>
-                    <span className='text-xs font-bold text-[#c65f4a] ml-1'>
+                    <span className='text-xs font-bold text-[#9A8069] ml-1'>
                       {RATING_LABELS[activeStarCount]} ({activeStarCount} sao)
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className='block text-xs font-bold text-[#786452] mb-1.5'>Nội dung nhận xét</label>
+                  <label className='block text-xs font-bold text-[#594D42] mb-2 uppercase tracking-wider'>Nội dung nhận xét</label>
                   <textarea
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     rows={4}
-                    placeholder='Cảm nhận của bạn về kết cấu, mùi hương, hiệu quả sử dụng...'
-                    className='w-full rounded-xl border border-[#eaded8] bg-white p-3 text-sm text-[#3d3330] outline-none transition focus:border-[#c65f4a] focus:ring-2 focus:ring-[#f5d5cf]/60'
+                    placeholder='Chia sẻ trải nghiệm và cảm nhận của bạn về sản phẩm...'
+                    className='w-full rounded-xl border border-[#EFECE6] bg-white p-3.5 text-xs text-[#2B2118] outline-none transition focus:border-[#9A8069] focus:ring-2 focus:ring-[#9A8069]/20'
                   />
                 </div>
 
@@ -535,18 +481,18 @@ export default function ProductDetailPage() {
                   type='button'
                   onClick={handleSubmitReview}
                   disabled={reviewLoading || !reviewComment.trim()}
-                  className='h-11 w-full rounded-xl bg-[#2B2118] text-sm font-bold text-white shadow-md transition hover:bg-[#433528] disabled:opacity-50'
+                  className='h-11 w-full rounded-full bg-[#2B2118] text-xs font-bold uppercase tracking-widest text-white shadow-md transition hover:bg-[#9A8069] disabled:opacity-50'
                 >
-                  {reviewLoading ? 'Đang gửi...' : 'Gửi đánh giá ngay'}
+                  {reviewLoading ? 'Đang gửi...' : 'Gửi Đánh Giá Ngay'}
                 </button>
               </div>
             ) : (
-              <div className='text-sm leading-relaxed text-[#6b5f59]'>
+              <div className='text-xs leading-relaxed text-[#594D42]'>
                 Bạn cần{' '}
-                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-bold text-[#c65f4a] hover:underline'>
+                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-bold text-[#9A8069] hover:underline'>
                   Đăng nhập
                 </Link>{' '}
-                để viết đánh giá sản phẩm.
+                để viết đánh giá sản phẩm này.
               </div>
             )}
           </div>
