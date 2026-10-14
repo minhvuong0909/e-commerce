@@ -46,7 +46,7 @@ type OrderLineItem = {
   product?: OrderLineProduct
 }
 
-const panelClass = 'rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
+const panelClass = 'rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
 
 const TIMELINE_STEPS = [
   { label: 'Ordered', labelVi: 'Đã Đặt Hàng' },
@@ -108,7 +108,7 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
 
   return (
     <section className={panelClass}>
-      <h2 className='font-display text-base font-bold text-[#2B2118]'>Tiến Trình Xử Lý Đơn Hàng</h2>
+      <h2 className='font-display text-base font-bold text-[#1C1917]'>Tiến Trình Xử Lý Đơn Hàng</h2>
       {isCancelled ? (
         <p className='mt-2 text-xs font-bold text-rose-600'>Đơn hàng đã được hủy và ngừng giao dịch.</p>
       ) : null}
@@ -124,7 +124,7 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                 <span
                   className={cn(
                     'absolute left-[15px] top-8 hidden h-px w-[calc(100%-2rem)] md:left-[calc(50%+1rem)] md:top-4 md:block md:h-0.5 md:w-[calc(100%-2rem)]',
-                    state === 'done' ? 'bg-[#9A8069]' : 'bg-[#EFECE6]'
+                    state === 'done' ? 'bg-[#A16207]' : 'bg-[#E7E0D8]'
                   )}
                   aria-hidden
                 />
@@ -134,9 +134,9 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                 <span
                   className={cn(
                     'relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 text-xs font-bold transition-all',
-                    state === 'done' && 'border-[#9A8069] bg-[#2B2118] text-[#FAF7F2] shadow-sm',
-                    state === 'current' && 'border-[#9A8069] bg-[#FAF7F2] text-[#9A8069]',
-                    state === 'upcoming' && 'border-[#EFECE6] bg-white text-[#8C7D70]',
+                    state === 'done' && 'border-[#A16207] bg-[#1C1917] text-white shadow-sm',
+                    state === 'current' && 'border-[#A16207] bg-[#FAF7F2] text-[#A16207]',
+                    state === 'upcoming' && 'border-[#E7E0D8] bg-white text-[#786C60]',
                     state === 'cancelled' && 'border-rose-200 bg-rose-50 text-rose-400'
                   )}
                 >
@@ -145,13 +145,13 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                 <div className='min-w-0 pt-0.5 md:pt-0'>
                   <p
                     className={cn(
-                      'font-display text-xs font-bold',
-                      state === 'cancelled' ? 'text-rose-400 line-through' : 'text-[#2B2118]'
+                      'font-sans text-xs font-bold',
+                      state === 'cancelled' ? 'text-rose-400 line-through' : 'text-[#1C1917]'
                     )}
                   >
                     {step.labelVi}
                   </p>
-                  <p className='text-[10px] uppercase tracking-wider text-[#8C7D70]'>{step.label}</p>
+                  <p className='text-[10px] uppercase tracking-wider text-[#786C60]'>{step.label}</p>
                 </div>
               </div>
             </li>
@@ -167,24 +167,24 @@ function OrderLineRow({ item }: { item: OrderLineItem }) {
   const subtitle = productSubtitle(item.product)
 
   return (
-    <li className='flex gap-3.5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4'>
-      <div className='aspect-square w-16 shrink-0 overflow-hidden rounded-xl bg-white border border-[#EFECE6] sm:w-20'>
+    <li className='flex gap-3.5 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4'>
+      <div className='aspect-square w-16 shrink-0 overflow-hidden rounded-xl bg-white border border-[#E7E0D8] sm:w-20'>
         {image ? (
           <img src={image} alt='' className='h-full w-full object-cover' />
         ) : (
-          <div className='flex h-full items-center justify-center text-[#8C7D70]'>
+          <div className='flex h-full items-center justify-center text-[#786C60]'>
             <Package size={20} />
           </div>
         )}
       </div>
       <div className='min-w-0 flex-1'>
-        <p className='line-clamp-2 font-display text-xs font-bold text-[#2B2118]'>{item.product?.name || 'Sản phẩm'}</p>
-        {subtitle ? <p className='mt-0.5 text-xs text-[#8C7D70]'>{subtitle}</p> : null}
-        <p className='mt-1 text-xs text-[#8C7D70]'>
+        <p className='line-clamp-2 font-sans text-xs font-bold text-[#1C1917]'>{item.product?.name || 'Sản phẩm'}</p>
+        {subtitle ? <p className='mt-0.5 text-xs text-[#786C60]'>{subtitle}</p> : null}
+        <p className='mt-1 text-xs text-[#786C60]'>
           {money(item.price)} × {item.quantity}
         </p>
       </div>
-      <p className='shrink-0 self-center text-sm font-extrabold text-[#C47A5A]'>{money(item.price * item.quantity)}</p>
+      <p className='shrink-0 self-center text-sm font-extrabold text-[#B45309]'>{money(item.price * item.quantity)}</p>
     </li>
   )
 }
@@ -408,11 +408,11 @@ export default function OrderDetailPage() {
   const lineItems = order.items as OrderLineItem[]
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
+    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#1C1917] min-h-screen'>
       <Link
         to={ROUTE_PATHS.USER_ORDERS}
         preventScrollReset
-        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8C7D70] transition hover:text-[#2B2118]'
+        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#786C60] transition hover:text-[#1C1917]'
       >
         <ArrowLeft size={17} />
         Quay lại đơn hàng của tôi
@@ -420,9 +420,9 @@ export default function OrderDetailPage() {
 
       <header className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
         <div>
-          <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#9A8069]'>Chi Tiết Đơn Hàng Mua Sắm</p>
-          <h1 className='mt-1 font-display text-2xl font-extrabold tracking-tight text-[#2B2118] sm:text-3xl'>Đơn hàng {order.code}</h1>
-          <p className='mt-1 text-xs text-[#8C7D70]'>Khởi tạo ngày {order.createdAt}</p>
+          <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#A16207]'>Chi Tiết Đơn Hàng Mua Sắm</p>
+          <h1 className='mt-1 font-display text-2xl font-extrabold tracking-tight text-[#1C1917] sm:text-3xl'>Đơn hàng {order.code}</h1>
+          <p className='mt-1 text-xs text-[#786C60]'>Khởi tạo ngày {order.createdAt}</p>
         </div>
         <StatusBadge tone={order.status} className={ORDER_BADGE_CLASS[order.status]}>
           {order.statusLabel}
@@ -434,7 +434,7 @@ export default function OrderDetailPage() {
           <OrderTimeline rawStatus={order.rawStatus} />
 
           <section className={panelClass}>
-            <h2 className='font-display text-base font-bold text-[#2B2118] mb-4'>Danh Sách Sản Phẩm ({lineItems.length})</h2>
+            <h2 className='font-display text-base font-bold text-[#1C1917] mb-4'>Danh Sách Sản Phẩm ({lineItems.length})</h2>
             {lineItems.length > 0 ? (
               <ul className='space-y-3'>
                 {lineItems.map((item) => (
@@ -442,19 +442,19 @@ export default function OrderDetailPage() {
                 ))}
               </ul>
             ) : (
-              <p className='text-xs text-[#8C7D70]'>Không có dữ liệu chi tiết sản phẩm.</p>
+              <p className='text-xs text-[#786C60]'>Không có dữ liệu chi tiết sản phẩm.</p>
             )}
           </section>
 
           <section className={panelClass}>
             <div className='mb-3 flex items-center gap-2'>
-              <MapPin size={18} className='text-[#9A8069]' />
-              <h2 className='font-display text-base font-bold text-[#2B2118]'>Địa Chỉ Nhận Hàng</h2>
+              <MapPin size={18} className='text-[#A16207]' />
+              <h2 className='font-display text-base font-bold text-[#1C1917]'>Địa Chỉ Nhận Hàng</h2>
             </div>
             {order.shippingAddress ? (
-              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4 text-xs leading-relaxed text-[#594D42]'>
+              <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4 text-xs leading-relaxed text-[#44403C]'>
                 <p>
-                  <span className='font-bold text-[#2B2118]'>{order.shippingAddress.recipient_name}</span>
+                  <span className='font-bold text-[#1C1917]'>{order.shippingAddress.recipient_name}</span>
                   {' · '}
                   <span className='font-mono font-bold'>{order.shippingAddress.phone}</span>
                 </p>
@@ -463,29 +463,29 @@ export default function OrderDetailPage() {
                   <p>{[order.shippingAddress.district, order.shippingAddress.city].filter(Boolean).join(', ')}</p>
                 )}
                 {order.shippingAddress.note ? (
-                  <p className='mt-2 text-[#8C7D70]'>
-                    <span className='font-bold text-[#2B2118]'>Ghi chú shipper:</span> {order.shippingAddress.note}
+                  <p className='mt-2 text-[#786C60]'>
+                    <span className='font-bold text-[#1C1917]'>Ghi chú shipper:</span> {order.shippingAddress.note}
                   </p>
                 ) : null}
               </div>
             ) : (
-              <p className='text-xs text-[#8C7D70]'>Chưa có thông tin địa chỉ giao hàng.</p>
+              <p className='text-xs text-[#786C60]'>Chưa có thông tin địa chỉ giao hàng.</p>
             )}
           </section>
 
           <section className={panelClass}>
             <div className='mb-3 flex items-center gap-2'>
-              <CreditCard size={18} className='text-[#9A8069]' />
-              <h2 className='font-display text-base font-bold text-[#2B2118]'>Hình Thức Thanh Toán</h2>
+              <CreditCard size={18} className='text-[#A16207]' />
+              <h2 className='font-display text-base font-bold text-[#1C1917]'>Hình Thức Thanh Toán</h2>
             </div>
             <dl className='grid gap-3 sm:grid-cols-2'>
-              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-3.5'>
-                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#8C7D70]'>Phương Thức</dt>
-                <dd className='mt-1 text-xs font-bold text-[#2B2118]'>{order.paymentMethod}</dd>
+              <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-3.5'>
+                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#786C60]'>Phương Thức</dt>
+                <dd className='mt-1 text-xs font-bold text-[#1C1917]'>{order.paymentMethod}</dd>
               </div>
-              <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-3.5'>
-                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#8C7D70]'>Trạng Thái Thanh Toán</dt>
-                <dd className='mt-1 text-xs font-bold text-[#2B2118]'>{order.paymentStatusLabel}</dd>
+              <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-3.5'>
+                <dt className='text-[10px] font-bold uppercase tracking-wider text-[#786C60]'>Trạng Thái Thanh Toán</dt>
+                <dd className='mt-1 text-xs font-bold text-[#1C1917]'>{order.paymentStatusLabel}</dd>
               </div>
             </dl>
           </section>
@@ -493,14 +493,14 @@ export default function OrderDetailPage() {
           <section className={cn(panelClass, 'flex flex-col gap-3 sm:flex-row sm:flex-wrap')}>
             <a
               href='mailto:support@vibrantmart.com?subject=Hỗ trợ đơn hàng'
-              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full border border-[#EFECE6] bg-white px-5 text-xs font-bold text-[#2B2118] hover:bg-[#FAF7F2] sm:min-w-[150px] sm:flex-none'
+              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-[#E7E0D8] bg-white px-5 text-xs font-bold text-[#1C1917] hover:bg-[#FAF7F2] hover:border-[#A16207] transition-all sm:min-w-[150px] sm:flex-none'
             >
               <Headphones size={16} />
               Liên Hệ Hỗ Trợ
             </a>
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-6 text-xs font-bold uppercase tracking-widest text-white hover:bg-[#9A8069] transition-colors sm:min-w-[180px] sm:flex-none'
+              className='inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#1C1917] px-6 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#A16207] transition-all sm:min-w-[180px] sm:flex-none shadow-sm'
             >
               <ShoppingBag size={16} />
               Tiếp Tục Mua Sắm
@@ -510,24 +510,24 @@ export default function OrderDetailPage() {
 
         <div className='space-y-6'>
           <aside className={cn(panelClass, 'h-fit p-6 lg:sticky lg:top-28')}>
-            <h2 className='font-display text-base font-bold text-[#2B2118] border-b border-[#EFECE6] pb-3'>Tóm Tắt Thanh Toán</h2>
+            <h2 className='font-display text-base font-bold text-[#1C1917] border-b border-[#E7E0D8] pb-3'>Tóm Tắt Thanh Toán</h2>
 
-            <div className='mt-4 space-y-2 text-xs font-medium text-[#594D42]'>
+            <div className='mt-4 space-y-2 text-xs font-medium text-[#44403C]'>
               <div className='flex justify-between'>
                 <span>Tạm tính</span>
-                <span className='font-bold text-[#2B2118]'>{money(order.subtotal)}</span>
+                <span className='font-bold text-[#1C1917]'>{money(order.subtotal)}</span>
               </div>
               <div className='flex justify-between'>
                 <span>Cước vận chuyển</span>
-                <span className='font-bold text-[#9A8069]'>{money(order.shippingFee)}</span>
+                <span className='font-bold text-[#A16207]'>{money(order.shippingFee)}</span>
               </div>
             </div>
 
-            <div className='my-4 h-px bg-[#EFECE6]' />
+            <div className='my-4 h-px bg-[#E7E0D8]' />
 
             <div className='flex justify-between items-end gap-4'>
-              <span className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Tổng Giá Trị Đơn</span>
-              <span className='text-2xl font-extrabold text-[#C47A5A]'>{money(order.total)}</span>
+              <span className='text-xs font-bold uppercase tracking-wider text-[#786C60]'>Tổng Giá Trị Đơn</span>
+              <span className='text-2xl font-extrabold text-[#B45309]'>{money(order.total)}</span>
             </div>
 
             {(canPayMomo || canPayPaypal || canPayPayos) && (
@@ -539,7 +539,8 @@ export default function OrderDetailPage() {
             {canPayPayos && (
               <Button
                 full
-                className='mt-4 !rounded-full !bg-[#2B2118] !py-3.5 !text-xs !font-bold !uppercase !tracking-widest !text-[#FAF7F2] shadow-md hover:!bg-[#9A8069] transition-all'
+                variant='accent'
+                className='mt-4 !rounded-xl !py-3.5 !text-xs !font-bold !uppercase !tracking-wider shadow-md'
                 onClick={handlePayosPayment}
                 loading={paying}
                 disabled={paying}
@@ -551,7 +552,7 @@ export default function OrderDetailPage() {
             {canPayMomo && !momoPayment?.qrCodeUrl && (
               <Button
                 full
-                className='mt-3 !rounded-full !bg-[#A50064] hover:!bg-[#8E0056] text-white !py-3.5 !text-xs !font-bold !uppercase'
+                className='mt-3 !rounded-xl !bg-[#A50064] hover:!bg-[#8E0056] text-white !py-3.5 !text-xs !font-bold !uppercase'
                 onClick={handlePayment}
                 loading={paying}
                 disabled={paying}
@@ -563,7 +564,7 @@ export default function OrderDetailPage() {
             {canPayPaypal && (
               <Button
                 full
-                className='mt-3 !rounded-full !bg-amber-500 hover:!bg-amber-600 text-white !py-3.5 !text-xs !font-bold !uppercase'
+                className='mt-3 !rounded-xl !bg-amber-600 hover:!bg-amber-700 text-white !py-3.5 !text-xs !font-bold !uppercase'
                 onClick={handlePayPalPayment}
                 loading={paying}
                 disabled={paying}
@@ -575,15 +576,15 @@ export default function OrderDetailPage() {
             {momoPayment?.qrCodeUrl && (
               <div className='mt-5 overflow-hidden rounded-2xl border border-pink-200 bg-gradient-to-b from-pink-50 to-white p-4 text-center'>
                 <p className='text-xs font-bold uppercase tracking-wider text-pink-600'>Quét Mã QR MoMo</p>
-                <p className='mt-1 font-mono text-xl font-extrabold text-[#2B2118]'>{money(order.total)}</p>
-                <div className='mt-3 mx-auto inline-flex rounded-2xl border border-[#EFECE6] bg-white p-3 shadow-xs'>
+                <p className='mt-1 font-mono text-xl font-extrabold text-[#1C1917]'>{money(order.total)}</p>
+                <div className='mt-3 mx-auto inline-flex rounded-2xl border border-[#E7E0D8] bg-white p-3 shadow-xs'>
                   <QRCode value={momoPayment.qrCodeUrl} size={180} bordered={false} />
                 </div>
                 <div className='mt-3 grid gap-2'>
                   {momoPayment.deeplink && (
                     <a
                       href={momoPayment.deeplink}
-                      className='inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#A50064] px-4 text-xs font-bold text-white shadow-sm'
+                      className='inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[#A50064] px-4 text-xs font-bold text-white shadow-sm'
                     >
                       <Smartphone size={15} /> Mở App MoMo
                     </a>
@@ -598,7 +599,7 @@ export default function OrderDetailPage() {
               <p className='mb-4 text-xs leading-relaxed font-semibold text-rose-900'>
                 Bạn có thể tự hủy đơn khi trạng thái vẫn đang chờ xác nhận.
               </p>
-              <Button variant='danger' full className='!rounded-full !py-3 !text-xs !font-bold !uppercase' onClick={handleCancelOrder} loading={cancelling} disabled={cancelling}>
+              <Button variant='danger' full className='!rounded-xl !py-3 !text-xs !font-bold !uppercase' onClick={handleCancelOrder} loading={cancelling} disabled={cancelling}>
                 Hủy Đơn Hàng Này
               </Button>
             </div>

@@ -123,17 +123,17 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className='home-cosmetics bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
+    <div className='home-cosmetics bg-[#FAF7F2] text-[#1C1917] min-h-screen'>
       <HomeHero />
 
       {/* Maison Partner Marquee Banner */}
-      <section className='border-y border-[#EFECE6] bg-[#FFFFFF] py-4 px-4 overflow-hidden'>
-        <div className='mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-6 text-center opacity-70'>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Apex Beauty</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Luminary Skincare</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Obsidian Botanicals</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Veloce Paris</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#8C7D70]'>Nectar Organics</span>
+      <section className='border-y border-[#E7E0D8] bg-[#FFFFFF] py-4 px-4 overflow-hidden'>
+        <div className='mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-6 text-center opacity-80'>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Apex Beauty</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Luminary Skincare</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Obsidian Botanicals</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Veloce Paris</span>
+          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Nectar Organics</span>
         </div>
       </section>
 
@@ -168,17 +168,17 @@ export default function HomePage() {
 function FlashDropsBanner() {
   return (
     <section className='px-4 py-8 md:px-6'>
-      <div className='mx-auto max-w-7xl rounded-3xl border border-[#EFECE6] bg-[#FFFFFF] p-6 shadow-soft md:p-8 flex flex-col md:flex-row items-center justify-between gap-6'>
+      <div className='mx-auto max-w-7xl rounded-3xl border border-[#E7E0D8] bg-[#FFFFFF] p-6 shadow-soft md:p-8 flex flex-col md:flex-row items-center justify-between gap-6'>
         <div className='flex items-center gap-4'>
-          <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#2B2118] text-[#FAF7F2] shadow-sm'>
-            <Zap size={24} className='text-[#9A8069]' />
+          <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#1C1917] text-[#FAF7F2] shadow-xs'>
+            <Zap size={24} className='text-[#A16207]' />
           </span>
           <div>
             <div className='flex items-center gap-2'>
-              <span className='rounded-full bg-[#9A8069] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white'>Flash Sale 24H</span>
-              <span className='text-xs font-semibold text-[#8C7D70] inline-flex items-center gap-1'><Clock size={13} /> Giờ Vàng Giá Sốc</span>
+              <span className='rounded-full bg-[#A16207] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white'>Flash Sale 24H</span>
+              <span className='text-xs font-semibold text-[#786C60] inline-flex items-center gap-1'><Clock size={13} /> Giờ Vàng Giá Sốc</span>
             </div>
-            <h3 className='mt-1 font-display text-xl font-bold text-[#2B2118] md:text-2xl'>
+            <h3 className='mt-1 font-display text-xl font-bold text-[#1C1917] md:text-2xl'>
               Ưu đãi độc quyền lên tới 40% cho dòng Serum Tế Bào Gốc
             </h3>
           </div>
@@ -186,7 +186,7 @@ function FlashDropsBanner() {
 
         <a
           href='#new-arrivals'
-          className='shrink-0 rounded-full bg-[#2B2118] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#9A8069] transition-colors shadow-md'
+          className='shrink-0 rounded-full bg-[#1C1917] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#A16207] transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
         >
           Xem Sản Phẩm Sốc
         </a>
@@ -213,12 +213,12 @@ function CategoryChips({
     <section className='bg-[#FAF7F2] px-4 pt-4 md:px-6' aria-label='Danh mục mỹ phẩm'>
       <div className='mx-auto max-w-7xl'>
         <div className='flex items-center justify-between gap-3'>
-          <h2 className='font-display text-base font-bold text-[#2B2118]'>Danh Mục Nổi Bật</h2>
+          <h2 className='font-display text-lg font-bold text-[#1C1917]'>Danh Mục Nổi Bật</h2>
           {selectedId ? (
             <button
               type='button'
               onClick={() => onSelect('')}
-              className='text-xs font-bold text-[#9A8069] hover:underline'
+              className='text-xs font-bold text-[#A16207] hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded'
             >
               Xóa bộ lọc danh mục
             </button>
@@ -229,10 +229,10 @@ function CategoryChips({
             type='button'
             onClick={() => onSelect('')}
             className={cn(
-              'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all',
+              'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
               !selectedId
-                ? 'border-[#2B2118] bg-[#2B2118] text-[#FAF7F2] shadow-sm'
-                : 'border-[#EFECE6] bg-white text-[#594D42] hover:border-[#9A8069]'
+                ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF7F2] shadow-xs'
+                : 'border-[#E7E0D8] bg-white text-[#594D42] hover:border-[#A16207]'
             )}
           >
             Tất cả
@@ -248,11 +248,11 @@ function CategoryChips({
                 disabled={isStatic}
                 onClick={() => targetValue && onSelect(isActive ? '' : targetValue)}
                 className={cn(
-                  'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all',
+                  'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
                   isActive
-                    ? 'border-[#2B2118] bg-[#2B2118] text-[#FAF7F2] shadow-sm'
-                    : 'border-[#EFECE6] bg-white text-[#594D42]',
-                  isStatic ? 'cursor-default opacity-60' : 'hover:border-[#9A8069]'
+                    ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF7F2] shadow-xs'
+                    : 'border-[#E7E0D8] bg-white text-[#594D42]',
+                  isStatic ? 'cursor-default opacity-60' : 'hover:border-[#A16207]'
                 )}
               >
                 {chip.name}
@@ -441,11 +441,11 @@ function BrandStory() {
 
   return (
     <section className='px-4 py-12 md:px-6'>
-      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] border border-[#EFECE6] bg-white shadow-soft'>
+      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] border border-[#E7E0D8] bg-white shadow-soft'>
         <div className='grid gap-8 p-8 md:grid-cols-2 md:p-12 lg:p-16'>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#9A8069]'>Maison Story</p>
-            <h2 className='mt-3 font-display text-3xl font-extrabold tracking-tight text-[#2B2118] md:text-4xl'>
+            <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#A16207]'>Maison Story</p>
+            <h2 className='mt-3 font-display text-3xl font-extrabold tracking-tight text-[#1C1917] md:text-4xl'>
               Vibrant Mart — Khởi nguồn từ làn da khỏe thuần khiết
             </h2>
             <p className='mt-5 text-sm leading-relaxed text-[#594D42] md:text-base'>
@@ -453,19 +453,19 @@ function BrandStory() {
             </p>
             <Link
               to='/user/home#new-arrivals'
-              className='mt-8 inline-flex items-center gap-2 rounded-full bg-[#2B2118] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#9A8069] transition-colors shadow-md'
+              className='mt-8 inline-flex items-center gap-2 rounded-full bg-[#1C1917] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#A16207] transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
             >
               Khám phá bộ sưu tập <ArrowRight size={15} />
             </Link>
           </div>
           <div className='space-y-4'>
             {pillars.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className='flex gap-4 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs transition-all hover:bg-white hover:shadow-soft'>
-                <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#9A8069] border border-[#EFECE6] shadow-xs'>
+              <div key={title} className='flex gap-4 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs transition-all hover:bg-white hover:shadow-soft'>
+                <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#A16207] border border-[#E7E0D8] shadow-xs'>
                   <Icon size={20} />
                 </span>
                 <div>
-                  <h3 className='font-display text-base font-bold text-[#2B2118]'>{title}</h3>
+                  <h3 className='font-display text-base font-bold text-[#1C1917]'>{title}</h3>
                   <p className='mt-1 text-xs leading-relaxed text-[#594D42]'>{desc}</p>
                 </div>
               </div>
@@ -493,31 +493,31 @@ function PromoStrip() {
           {items.map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className='flex gap-3.5 rounded-2xl border border-[#EFECE6] bg-white p-5 shadow-xs transition-all hover:shadow-soft'
+              className='flex gap-3.5 rounded-2xl border border-[#E7E0D8] bg-white p-5 shadow-xs transition-all hover:shadow-soft'
             >
-              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#9A8069] border border-[#EFECE6]'>
+              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
                 <Icon size={19} />
               </span>
               <div>
-                <h3 className='font-display text-sm font-bold text-[#2B2118]'>{title}</h3>
-                <p className='mt-1 text-xs leading-relaxed text-[#8C7D70]'>{desc}</p>
+                <h3 className='font-display text-sm font-bold text-[#1C1917]'>{title}</h3>
+                <p className='mt-1 text-xs leading-relaxed text-[#786C60]'>{desc}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className='mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:flex-row md:items-center'>
+        <div className='mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:flex-row md:items-center'>
           <div className='flex items-start gap-4'>
-            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FAF7F2] text-[#9A8069] border border-[#EFECE6] shadow-xs'>
+            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8] shadow-xs'>
               <Sun size={20} />
             </span>
             <div>
-              <p className='font-display text-base font-bold text-[#2B2118]'>
+              <p className='font-display text-base font-bold text-[#1C1917]'>
                 {hasToken
                   ? 'Chào mừng bạn quay lại Vibrant Mart!'
                   : 'Đăng nhập để lưu Routine & Theo dõi Đơn hàng'}
               </p>
-              <p className='mt-1 text-xs text-[#8C7D70]'>
+              <p className='mt-1 text-xs text-[#786C60]'>
                 {hasToken
                   ? 'Kiểm tra trạng thái vận chuyển và quản lý thông tin tài khoản.'
                   : 'Đặc quyền tích điểm và ưu đãi hấp dẫn dành riêng cho hội viên.'}
@@ -525,8 +525,8 @@ function PromoStrip() {
             </div>
           </div>
           <Link
-            to={hasToken ? '/user/my-orders' : '/auth/login'}
-            className='inline-flex h-11 items-center rounded-full bg-[#2B2118] px-7 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#9A8069] shadow-md'
+            to={hasToken ? '/user/orders' : '/auth/login'}
+            className='inline-flex h-11 items-center rounded-full bg-[#1C1917] px-7 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#A16207] shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
           >
             {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập ngay'}
           </Link>

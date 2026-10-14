@@ -141,4 +141,9 @@ dist
 # SvelteKit build / generate output
 .svelte-kit
 
+# Turbo and pnpm cache
+.turbo/
+.pnpm-store/
+RAG-Retrieval-Indexing-API/
+
 # End of https://www.toptal.com/developers/gitignore/api/node

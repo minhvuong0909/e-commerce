@@ -120,14 +120,14 @@ export default function LoginPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
-        <div className='mb-4 inline-flex items-center gap-2 rounded-full bg-brand-50 px-3 py-1 text-xs font-black text-brand-700'>
+        <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-1 text-xs font-bold text-[#A16207]'>
           <ShieldCheck size={14} />
           Bảo mật tài khoản
         </div>
-        <h2 className='text-2xl font-black tracking-tight text-ink-950'>Đăng nhập</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Chào mừng bạn quay lại. Đăng nhập để tiếp tục mua sắm.</p>
+        <h2 className='font-display text-2xl font-extrabold tracking-tight text-[#1C1917]'>Đăng nhập</h2>
+        <p className='mt-2 text-xs leading-relaxed text-[#786C60]'>Chào mừng bạn quay lại. Đăng nhập để tiếp tục mua sắm các sản phẩm cao cấp.</p>
         {redirectFrom ? (
-          <p className='mt-2 rounded-lg border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900'>
+          <p className='mt-3 rounded-xl border border-amber-200/90 bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-900'>
             Bạn cần đăng nhập để mở trang yêu cầu.
           </p>
         ) : null}
@@ -149,7 +149,7 @@ export default function LoginPage() {
           value={forms.email}
           onChange={handleChange}
           error={errors.email}
-          leftIcon={<Mail size={17} />}
+          leftIcon={<Mail size={16} className='text-[#A16207]' />}
         />
         <Input
           label='Mật khẩu'
@@ -160,35 +160,35 @@ export default function LoginPage() {
           value={forms.password}
           onChange={handleChange}
           error={errors.password}
-          leftIcon={<Lock size={17} />}
+          leftIcon={<Lock size={16} className='text-[#A16207]' />}
         />
 
         <div className='flex items-center justify-between gap-4'>
-          <label className='flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-500'>
+          <label className='flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#44403C]'>
             <input
               type='checkbox'
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className='h-4 w-4 rounded border-slate-300 accent-ink-950'
+              className='h-4 w-4 rounded border-[#E7E0D8] accent-[#A16207]'
             />
             Nhớ đăng nhập
           </label>
 
           <Link
             to={ROUTE_PATHS.AUTH_FORGOT_PASSWORD}
-            className='text-sm font-black text-brand-600 hover:text-brand-900'
+            className='text-xs font-bold text-[#A16207] hover:underline'
           >
             Quên mật khẩu?
           </Link>
         </div>
 
-        <Button full type='submit' loading={loading} disabled={loading}>
+        <Button full variant='accent' type='submit' loading={loading} disabled={loading} className='!rounded-xl !py-3'>
           Đăng nhập
         </Button>
 
         <div className='relative py-2'>
-          <div className='h-px w-full bg-slate-200' />
-          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs font-bold text-slate-400'>
+          <div className='h-px w-full bg-[#E7E0D8]' />
+          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs font-medium text-[#786C60]'>
             hoặc
           </div>
         </div>
@@ -200,15 +200,16 @@ export default function LoginPage() {
           onClick={handleLoginGoogle}
           loading={googleLoading}
           disabled={googleLoading}
+          className='!rounded-xl !border-[#E7E0D8] !text-[#1C1917] hover:!bg-[#FAF7F2]'
         >
           <GoogleIcon />
           Đăng nhập với Google
         </Button>
 
-        <p className='pt-1 text-center text-sm text-slate-500'>
+        <p className='pt-1 text-center text-xs text-[#786C60]'>
           Chưa có tài khoản?{' '}
-          <Link to={ROUTE_PATHS.AUTH_REGISTER} className='font-black text-brand-600 hover:text-brand-900'>
-            Đăng ký
+          <Link to={ROUTE_PATHS.AUTH_REGISTER} className='font-bold text-[#A16207] hover:underline'>
+            Đăng ký ngay
           </Link>
         </p>
       </form>

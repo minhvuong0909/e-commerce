@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import cn from '../../utils/cn'
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'gradient'
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'gradient' | 'accent'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
@@ -24,16 +24,18 @@ export default function Button({
 
   const variants: Record<ButtonVariant, string> = {
     primary:
-      'bg-[#3d3330] text-white shadow-md shadow-[#3d3330]/10 hover:-translate-y-0.5 hover:bg-[#2b2118] hover:shadow-lg active:translate-y-0',
+      'bg-[#1C1917] text-[#FAF7F2] shadow-sm hover:-translate-y-0.5 hover:bg-[#2E2723] hover:shadow-md active:translate-y-0',
+    accent:
+      'bg-[#A16207] text-white shadow-sm hover:-translate-y-0.5 hover:bg-[#854D0E] hover:shadow-md active:translate-y-0',
     gradient:
-      'bg-gradient-to-r from-[#3d3330] via-[#4e403c] to-[#c65f4a] text-white shadow-md shadow-[#3d3330]/15 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#c65f4a]/25 active:translate-y-0',
+      'bg-gradient-to-r from-[#1C1917] via-[#44403C] to-[#A16207] text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#A16207]/20 active:translate-y-0',
     secondary:
-      'border border-slate-200 bg-white text-ink-950 shadow-sm hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-card active:translate-y-0',
+      'border border-[#E7E0D8] bg-white text-[#1C1917] shadow-xs hover:-translate-y-0.5 hover:border-[#D6C8B8] hover:bg-[#FAF7F2] active:translate-y-0',
     outline:
-      'border border-slate-300 bg-white/60 text-ink-900 hover:border-brand-500/50 hover:bg-white hover:text-brand-900 active:scale-[0.99]',
-    ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-ink-950 active:scale-[0.99]',
+      'border border-[#D6C8B8] bg-transparent text-[#1C1917] hover:border-[#A16207] hover:bg-[#FAF7F2] active:scale-[0.99]',
+    ghost: 'bg-transparent text-[#594D42] hover:bg-[#F5EFE6] hover:text-[#1C1917] active:scale-[0.99]',
     danger:
-      'bg-rose-600 text-white shadow-lg shadow-rose-600/15 hover:-translate-y-0.5 hover:bg-rose-700 active:translate-y-0'
+      'bg-rose-600 text-white shadow-sm hover:-translate-y-0.5 hover:bg-rose-700 active:translate-y-0'
   }
 
   return (
@@ -41,7 +43,7 @@ export default function Button({
       type={type}
       disabled={isDisabled}
       className={cn(
-        'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold transition focus:outline-none focus:ring-4 focus:ring-brand-500/15',
+        'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] focus-visible:ring-offset-2',
         variants[variant],
         full && 'w-full',
         isDisabled && 'cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-none',

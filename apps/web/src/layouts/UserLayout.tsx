@@ -109,74 +109,75 @@ export default function UserLayout() {
   }
 
   return (
-    <div className='min-h-screen bg-[#FAF7F2] text-[#2B2118] selection:bg-[#9A8069]/20'>
+    <div className='min-h-screen bg-[#FAF7F2] text-[#1C1917] selection:bg-[#A16207]/20'>
       {/* Top Announcement Bar */}
-      <div className='bg-[#2B2118] py-2 px-4 text-center text-xs font-medium text-[#EFE9E0] tracking-wide'>
+      <div className='bg-[#1C1917] py-2 px-4 text-center text-xs font-medium text-[#FAF7F2] tracking-wide'>
         <div className='mx-auto max-w-7xl flex items-center justify-between gap-4'>
-          <span className='hidden sm:inline-flex items-center gap-1.5 text-amber-200/90 text-[11px] font-semibold uppercase tracking-widest'>
-            <Sparkles size={13} className='text-[#9A8069]' /> Vibrant Mart
+          <span className='hidden sm:inline-flex items-center gap-1.5 text-amber-300 text-[11px] font-semibold uppercase tracking-widest'>
+            <Sparkles size={13} className='text-[#A16207]' /> Vibrant Mart
           </span>
           <span className='mx-auto sm:mx-0'>
-            Miễn phí vận chuyển cho đơn hàng từ <strong>500.000đ</strong> 🚚
+            Miễn phí vận chuyển cho đơn hàng từ <strong>500.000đ</strong> · Bảo chứng 100% chính hãng
           </span>
-          <span className='hidden md:inline-flex items-center gap-2 text-[11px] text-[#DFD3C3]'>
-            Hỗ trợ trực tuyến 24/7
+          <span className='hidden md:inline-flex items-center gap-2 text-[11px] text-[#E7E0D8]'>
+            Tư vấn chuyên sâu 24/7
           </span>
         </div>
       </div>
 
       <HeaderSearchControls key={searchKey} initialSearch={urlSearch} onSearch={handleSearch}>
         {({ headerSearch, setHeaderSearch, handleSubmit, shouldSuggest, suggestionData, setFocused }) => (
-          <header className='sticky top-0 z-50 glass-header shadow-sm transition-all'>
+          <header className='sticky top-0 z-50 glass-header shadow-xs transition-all'>
             <div className='mx-auto max-w-7xl px-4 md:px-6'>
               <div className='flex items-center justify-between gap-4 py-3.5'>
                 {/* Mobile Menu Trigger */}
                 <button
                   type='button'
                   onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className='grid h-10 w-10 place-items-center rounded-xl border border-[#EFECE6] bg-white text-[#2B2118] md:hidden shadow-xs hover:bg-[#F5EFE6]'
+                  className='grid h-11 w-11 place-items-center rounded-xl border border-[#E7E0D8] bg-white text-[#1C1917] md:hidden shadow-xs hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                   aria-label='Mở menu danh mục'
                   aria-expanded={mobileMenuOpen}
                 >
-                  {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+                  {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
                 </button>
 
                 {/* Brand Logo */}
                 <Link
                   to={ROUTE_PATHS.USER_HOME}
-                  className='flex shrink-0 items-center gap-3 group'
+                  className='flex shrink-0 items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded-xl'
                   aria-label='Vibrant Mart Home'
                 >
-                  <span className='grid h-11 w-11 place-items-center rounded-xl bg-[#2B2118] text-[#FAF7F2] shadow-md transition-transform duration-300 group-hover:scale-105'>
-                    <Sparkles size={20} className='text-[#9A8069]' />
+                  <span className='grid h-11 w-11 place-items-center rounded-xl bg-[#1C1917] text-[#FAF7F2] shadow-sm transition-transform duration-300 group-hover:scale-105'>
+                    <Sparkles size={20} className='text-[#A16207]' />
                   </span>
                   <span className='leading-none'>
-                    <span className='block font-display text-xl font-extrabold tracking-tight md:text-2xl text-[#2B2118]'>
+                    <span className='block font-display text-2xl font-bold tracking-tight md:text-3xl text-[#1C1917]'>
                       Vibrant Mart
                     </span>
-                    <span className='block mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-[#9A8069]'>
-                      Luxury &amp; Editorial
+                    <span className='block mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-[#A16207]'>
+                      Luxury &amp; Editorial Skincare
                     </span>
                   </span>
                 </Link>
 
                 {/* Desktop Search Bar */}
                 <div className='relative hidden min-w-0 max-w-md flex-1 md:block'>
-                  <form onSubmit={handleSubmit} className='relative w-full'>
-                    <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#8C7D70]' size={17} />
+                  <form onSubmit={handleSubmit} className='relative w-full' role='search'>
+                    <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#786C60]' size={17} />
                     <input
                       value={headerSearch}
                       onChange={(e) => setHeaderSearch(e.target.value)}
                       placeholder='Tìm sản phẩm dưỡng da, nước hoa, serum...'
-                      className='h-11 w-full rounded-full border border-[#EFECE6] bg-white/90 pl-11 pr-14 text-sm font-medium text-[#2B2118] shadow-xs outline-none transition placeholder:text-[#A3968B] focus:border-[#9A8069] focus:bg-white focus:ring-4 focus:ring-[#9A8069]/10'
+                      aria-label='Tìm kiếm sản phẩm'
+                      className='h-11 w-full rounded-full border border-[#E7E0D8] bg-white/95 pl-11 pr-14 text-sm font-medium text-[#1C1917] shadow-xs outline-none transition placeholder:text-[#8C7D70] focus:border-[#A16207] focus:bg-white focus:ring-4 focus:ring-[#A16207]/15'
                     />
-                    <kbd className='pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md border border-[#EFECE6] bg-[#F5EFE6] px-2 py-0.5 text-[10px] font-semibold text-[#8C7D70]'>
+                    <kbd className='pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md border border-[#E7E0D8] bg-[#F5EFE6] px-2 py-0.5 text-[10px] font-semibold text-[#786C60]'>
                       ⌘K
                     </kbd>
                   </form>
                   {shouldSuggest && suggestionData?.products?.length ? (
-                    <div className='absolute left-0 right-0 top-full mt-2 z-[60] overflow-hidden rounded-2xl border border-[#EFECE6] bg-white p-2 shadow-xl shadow-[#2B2118]/10'>
-                      <p className='px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#9A8069]'>Gợi ý tìm kiếm</p>
+                    <div className='absolute left-0 right-0 top-full mt-2 z-[60] overflow-hidden rounded-2xl border border-[#E7E0D8] bg-white p-2 shadow-xl shadow-[#1C1917]/10'>
+                      <p className='px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#A16207]'>Gợi ý tìm kiếm</p>
                       {suggestionData.products.map((product) => {
                         const firstMedia = product.medias?.[0]
                         const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
@@ -185,14 +186,14 @@ export default function UserLayout() {
                             key={product._id}
                             to={ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)}
                             onClick={() => setFocused(false)}
-                            className='flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-[#EFECE6] hover:bg-[#FAF7F2]'
+                            className='flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-[#E7E0D8] hover:bg-[#FAF7F2]'
                           >
-                            <span className='h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#F5EFE6] border border-[#EFECE6]'>
+                            <span className='h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#F5EFE6] border border-[#E7E0D8]'>
                               {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
                             </span>
                             <span className='min-w-0 flex-1'>
-                              <span className='block truncate text-sm font-bold text-[#2B2118]'>{product.name}</span>
-                              <span className='mt-0.5 block text-xs font-semibold text-[#9A8069]'>{money(product.price)}</span>
+                              <span className='block truncate text-sm font-bold text-[#1C1917]'>{product.name}</span>
+                              <span className='mt-0.5 block text-xs font-semibold text-[#A16207]'>{money(product.price)}</span>
                             </span>
                           </Link>
                         )
@@ -207,11 +208,11 @@ export default function UserLayout() {
                     to={ROUTE_PATHS.USER_CART}
                     aria-label='Giỏ hàng'
                     title='Giỏ hàng của bạn'
-                    className='relative grid h-11 w-11 place-items-center rounded-xl border border-[#EFECE6] bg-white text-[#2B2118] shadow-xs transition hover:border-[#9A8069] hover:bg-[#F5EFE6]'
+                    className='relative grid h-11 w-11 place-items-center rounded-xl border border-[#E7E0D8] bg-white text-[#1C1917] shadow-xs transition hover:border-[#A16207] hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                   >
                     <ShoppingBag size={20} />
                     {cartCount > 0 ? (
-                      <span className='absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#2B2118] px-1 text-[10px] font-bold text-[#FAF7F2] shadow-sm ring-2 ring-[#FAF7F2]'>
+                      <span className='absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#1C1917] px-1 text-[10px] font-bold text-[#FAF7F2] shadow-sm ring-2 ring-[#FAF7F2]'>
                         {cartCount > 99 ? '99+' : cartCount}
                       </span>
                     ) : null}
@@ -221,33 +222,33 @@ export default function UserLayout() {
                     <button
                       type='button'
                       onClick={() => setUserMenuOpen((prev) => !prev)}
-                      className='inline-flex h-11 items-center gap-2 rounded-xl border border-[#EFECE6] bg-white px-3.5 text-sm font-medium text-[#2B2118] shadow-xs transition hover:border-[#9A8069] hover:bg-[#F5EFE6]'
+                      className='inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7E0D8] bg-white px-3.5 text-sm font-medium text-[#1C1917] shadow-xs transition hover:border-[#A16207] hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                       aria-label='Menu tài khoản'
                       aria-expanded={userMenuOpen}
                     >
-                      <UserRound size={19} className='text-[#9A8069]' />
-                      <span className='hidden lg:inline text-xs font-bold text-[#2B2118]'>Tài khoản</span>
-                      <ChevronDown size={14} className='text-[#8C7D70]' />
+                      <UserRound size={19} className='text-[#A16207]' />
+                      <span className='hidden lg:inline text-xs font-bold text-[#1C1917]'>Tài khoản</span>
+                      <ChevronDown size={14} className='text-[#786C60]' />
                     </button>
                     {userMenuOpen ? (
-                      <div className='absolute right-0 top-13 z-[70] w-56 overflow-hidden rounded-2xl border border-[#EFECE6] bg-white p-1.5 shadow-xl shadow-[#2B2118]/10'>
-                        <Link to={ROUTE_PATHS.USER_PROFILE} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#2B2118] hover:bg-[#F5EFE6] transition-colors'>
+                      <div className='absolute right-0 top-13 z-[70] w-56 overflow-hidden rounded-2xl border border-[#E7E0D8] bg-white p-1.5 shadow-xl shadow-[#1C1917]/10'>
+                        <Link to={ROUTE_PATHS.USER_PROFILE} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1C1917] hover:bg-[#F5EFE6] transition-colors'>
                           Hồ sơ cá nhân
                         </Link>
-                        <Link to={ROUTE_PATHS.USER_ORDERS} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#2B2118] hover:bg-[#F5EFE6] transition-colors'>
+                        <Link to={ROUTE_PATHS.USER_ORDERS} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1C1917] hover:bg-[#F5EFE6] transition-colors'>
                           Đơn hàng đã đặt
                         </Link>
                         {hasToken ? (
                           <button
                             type='button'
                             onClick={handleLogout}
-                            className='flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors'
+                            className='flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer'
                           >
                             <LogOut size={16} />
                             Đăng xuất
                           </button>
                         ) : (
-                          <Link to={ROUTE_PATHS.AUTH_LOGIN} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-bold text-[#9A8069] hover:bg-[#F5EFE6] transition-colors'>
+                          <Link to={ROUTE_PATHS.AUTH_LOGIN} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-bold text-[#A16207] hover:bg-[#F5EFE6] transition-colors'>
                             Đăng nhập / Đăng ký
                           </Link>
                         )}
@@ -259,19 +260,20 @@ export default function UserLayout() {
 
               {/* Mobile Search Bar Input */}
               <div className='relative pb-3 md:hidden'>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit} role='search'>
                   <div className='relative'>
-                    <Search className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C7D70]' size={16} />
+                    <Search className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#786C60]' size={16} />
                     <input
                       value={headerSearch}
                       onChange={(e) => setHeaderSearch(e.target.value)}
                       placeholder='Tìm sản phẩm...'
-                      className='h-10 w-full rounded-xl border border-[#EFECE6] bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-[#9A8069] focus:ring-2 focus:ring-[#9A8069]/20'
+                      aria-label='Tìm sản phẩm'
+                      className='h-11 w-full rounded-xl border border-[#E7E0D8] bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
                     />
                   </div>
                 </form>
                 {shouldSuggest && suggestionData?.products?.length ? (
-                  <div className='absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-xl border border-[#EFECE6] bg-white shadow-xl'>
+                  <div className='absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-xl border border-[#E7E0D8] bg-white shadow-xl'>
                     {suggestionData.products.map((product) => {
                       const firstMedia = product.medias?.[0]
                       const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
@@ -280,14 +282,14 @@ export default function UserLayout() {
                           key={product._id}
                           to={ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)}
                           onClick={() => setFocused(false)}
-                          className='flex items-center gap-3 border-b border-[#EFECE6] px-3 py-2.5 last:border-0 hover:bg-[#F5EFE6]'
+                          className='flex items-center gap-3 border-b border-[#E7E0D8] px-3 py-2.5 last:border-0 hover:bg-[#F5EFE6]'
                         >
                           <span className='h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#F5EFE6]'>
                             {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
                           </span>
                           <span className='min-w-0 flex-1'>
-                            <span className='block truncate text-xs font-bold text-[#2B2118]'>{product.name}</span>
-                            <span className='block text-[11px] font-bold text-[#9A8069]'>{money(product.price)}</span>
+                            <span className='block truncate text-xs font-bold text-[#1C1917]'>{product.name}</span>
+                            <span className='block text-[11px] font-bold text-[#A16207]'>{money(product.price)}</span>
                           </span>
                         </Link>
                       )
@@ -298,13 +300,13 @@ export default function UserLayout() {
             </div>
 
             {/* Sub-Navigation Categories Bar */}
-            <div className='hidden border-t border-[#EFECE6] bg-white/70 md:block'>
-              <nav className='mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-6 py-2 text-xs font-bold uppercase tracking-[0.14em] text-[#594D42]'>
+            <div className='hidden border-t border-[#E7E0D8] bg-white/80 md:block'>
+              <nav className='mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-6 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#594D42]'>
                 {['Tất cả sản phẩm', 'Skincare High-End', 'Chống Nắng', 'Làm Sạch', 'Trang Điểm Editorial', 'Bộ Giftset & Combo'].map((item) => (
                   <a
                     key={item}
                     href={item === 'Tất cả sản phẩm' ? `${ROUTE_PATHS.USER_HOME}#new-arrivals` : `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(item)}#featured-products`}
-                    className='shrink-0 border-b-2 border-transparent px-3 py-1.5 transition-all hover:border-[#9A8069] hover:text-[#2B2118]'
+                    className='shrink-0 border-b-2 border-transparent px-3 py-1.5 transition-all hover:border-[#A16207] hover:text-[#1C1917]'
                   >
                     {item}
                   </a>
@@ -314,14 +316,14 @@ export default function UserLayout() {
 
             {/* Mobile Expandable Drawer Menu */}
             {mobileMenuOpen ? (
-              <div className='border-t border-[#EFECE6] bg-white px-4 py-4 md:hidden'>
+              <div className='border-t border-[#E7E0D8] bg-white px-4 py-4 md:hidden'>
                 <div className='grid grid-cols-2 gap-2'>
                   {['Tất cả sản phẩm', 'Skincare High-End', 'Chống Nắng', 'Làm Sạch', 'Trang Điểm', 'Bộ Giftset'].map((item) => (
                     <a
                       key={item}
                       href={item === 'Tất cả sản phẩm' ? `${ROUTE_PATHS.USER_HOME}#new-arrivals` : `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(item)}#featured-products`}
                       onClick={() => setMobileMenuOpen(false)}
-                      className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3 py-2.5 text-xs font-bold text-[#2B2118]'
+                      className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3 py-2.5 text-xs font-bold text-[#1C1917]'
                     >
                       {item}
                     </a>
@@ -331,7 +333,7 @@ export default function UserLayout() {
             ) : null}
 
             {/* Mobile Floating Bottom Dock */}
-            <div className='md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#EFECE6] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5'>
+            <div className='md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#E7E0D8] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5'>
               <nav className='mx-auto grid grid-cols-4 gap-1 px-2 py-2'>
                 {mobileNav.map(({ to, label, icon: Icon }) => (
                   <NavLink
@@ -339,15 +341,15 @@ export default function UserLayout() {
                     to={to}
                     className={({ isActive }) =>
                       cn(
-                        'flex flex-col items-center justify-center gap-1 rounded-xl py-1.5 text-[10px] font-bold transition',
-                        isActive ? 'bg-[#2B2118] text-[#FAF7F2] shadow-sm' : 'text-[#594D42] hover:bg-[#F5EFE6]'
+                        'flex flex-col items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[10px] font-bold transition cursor-pointer',
+                        isActive ? 'bg-[#1C1917] text-[#FAF7F2] shadow-xs' : 'text-[#594D42] hover:bg-[#F5EFE6]'
                       )
                     }
                   >
                     <div className='relative'>
                       <Icon size={18} />
                       {to === ROUTE_PATHS.USER_CART && cartCount > 0 ? (
-                        <span className='absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#9A8069] px-1 text-[9px] font-bold text-white'>
+                        <span className='absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#A16207] px-1 text-[9px] font-bold text-white'>
                           {cartCount > 99 ? '99+' : cartCount}
                         </span>
                       ) : null}
@@ -366,26 +368,26 @@ export default function UserLayout() {
       </main>
 
       {/* Editorial Luxury Footer */}
-      <footer className='mt-20 border-t border-[#EFECE6] bg-[#2B2118] text-[#FAF7F2]'>
+      <footer className='mt-20 border-t border-[#E7E0D8] bg-[#1C1917] text-[#FAF7F2]'>
         <div className='mx-auto max-w-7xl px-4 py-16 md:px-6'>
           <div className='grid gap-10 md:grid-cols-2 lg:grid-cols-4'>
             {/* Brand Info */}
             <div className='space-y-4'>
               <div className='flex items-center gap-2.5'>
-                <span className='grid h-9 w-9 place-items-center rounded-xl bg-[#9A8069] text-[#2B2118]'>
+                <span className='grid h-9 w-9 place-items-center rounded-xl bg-[#A16207] text-[#1C1917]'>
                   <Sparkles size={18} />
                 </span>
                 <span className='font-display text-2xl font-bold tracking-tight text-white'>Vibrant Mart</span>
               </div>
-              <p className='text-xs leading-relaxed text-[#DFD3C3]'>
+              <p className='text-xs leading-relaxed text-[#D6C8B8]'>
                 Thương hiệu phân phối mỹ phẩm &amp; giải pháp chăm sóc da cao cấp theo tinh thần Warm Luxury. Cam kết 100% chính hãng.
               </p>
             </div>
 
             {/* Navigation Links */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-200/90 mb-4'>Danh mục nổi bật</h4>
-              <ul className='space-y-2.5 text-xs text-[#DFD3C3]'>
+              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Danh mục nổi bật</h4>
+              <ul className='space-y-2.5 text-xs text-[#D6C8B8]'>
                 <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Skincare Chuyên Sâu</a></li>
                 <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Kem Chống Nắng Quang Phổ Rộng</a></li>
                 <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Trang Điểm Natural Look</a></li>
@@ -395,8 +397,8 @@ export default function UserLayout() {
 
             {/* Customer Care */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-200/90 mb-4'>Hỗ trợ khách hàng</h4>
-              <ul className='space-y-2.5 text-xs text-[#DFD3C3]'>
+              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Hỗ trợ khách hàng</h4>
+              <ul className='space-y-2.5 text-xs text-[#D6C8B8]'>
                 <li><Link to={ROUTE_PATHS.USER_ORDERS} className='hover:text-white transition'>Tra cứu đơn hàng</Link></li>
                 <li><a href='#' className='hover:text-white transition'>Chính sách đổi trả 7 ngày</a></li>
                 <li><a href='#' className='hover:text-white transition'>Chính sách bảo mật thông tin</a></li>
@@ -406,25 +408,26 @@ export default function UserLayout() {
 
             {/* Newsletter Subscription */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-200/90 mb-4'>Đăng ký nhận ưu đãi</h4>
-              <p className='text-xs text-[#DFD3C3] mb-3'>Nhận mã voucher giảm 10% cho đơn hàng đầu tiên.</p>
+              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Đăng ký nhận ưu đãi</h4>
+              <p className='text-xs text-[#D6C8B8] mb-3'>Nhận mã voucher giảm 10% cho đơn hàng đầu tiên.</p>
               <form onSubmit={(e) => { e.preventDefault(); toast.success('Đăng ký nhận ưu đãi thành công!') }} className='space-y-2'>
                 <input
                   type='email'
                   required
                   placeholder='Nhập email của bạn...'
-                  className='h-10 w-full rounded-xl border border-white/20 bg-white/10 px-3.5 text-xs text-white placeholder:text-white/40 outline-none focus:border-[#9A8069]'
+                  aria-label='Email đăng ký nhận ưu đãi'
+                  className='h-11 w-full rounded-xl border border-white/20 bg-white/10 px-3.5 text-xs text-white placeholder:text-white/50 outline-none focus:border-[#A16207]'
                 />
-                <button type='submit' className='h-10 w-full rounded-xl bg-[#9A8069] text-xs font-bold text-[#2B2118] hover:bg-[#DFD3C3] transition-colors'>
+                <button type='submit' className='h-11 w-full rounded-xl bg-[#A16207] text-xs font-bold text-white hover:bg-[#854D0E] transition-colors cursor-pointer'>
                   Gửi đăng ký
                 </button>
               </form>
             </div>
           </div>
 
-          <div className='mt-12 border-t border-white/10 pt-6 flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between text-xs text-[#DFD3C3]'>
+          <div className='mt-12 border-t border-white/10 pt-6 flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between text-xs text-[#D6C8B8]'>
             <div className='flex items-center justify-center gap-2'>
-              <ShieldCheck size={16} className='text-[#9A8069]' />
+              <ShieldCheck size={16} className='text-[#A16207]' />
               Thanh toán an toàn với SSL 256-bit · PayOS · MoMo · Visa / MasterCard
             </div>
             <div>© {new Date().getFullYear()} Vibrant Mart Inc. Bản quyền được bảo lưu.</div>

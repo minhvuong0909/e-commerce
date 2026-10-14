@@ -42,8 +42,8 @@ export default function Alert({ variant = 'info', title, desc, className = '' }:
           <Icon size={18} />
         </span>
         <div className='min-w-0'>
-          {title ? <div className='text-sm font-extrabold'>{title}</div> : null}
-          {desc ? <div className='mt-1 text-sm leading-6 opacity-75'>{desc}</div> : null}
+          {title ? <div className='text-xs md:text-sm font-bold'>{title}</div> : null}
+          {desc ? <div className='mt-1 text-xs leading-relaxed opacity-90 font-medium'>{desc}</div> : null}
         </div>
       </div>
     </div>

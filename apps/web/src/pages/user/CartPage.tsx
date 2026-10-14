@@ -17,7 +17,7 @@ import cn from '../../utils/cn'
 import { formatImageUrl } from '../../utils/formatImageUrl'
 import { validateVoucherApi, type VoucherValidationResult } from '../../services/vouchers.services'
 
-const panelClass = 'rounded-2xl border border-[#EFECE6] bg-white shadow-soft'
+const panelClass = 'rounded-2xl border border-[#E7E0D8] bg-white shadow-soft'
 const FREE_SHIPPING_THRESHOLD = 500000
 
 function CartListSkeleton() {
@@ -43,8 +43,8 @@ function CartAddOns({ cartProductIds }: { cartProductIds: Set<string> }) {
 
   return (
     <section className='mt-8'>
-      <h2 className='font-display text-base font-bold text-[#2B2118]'>Gợi ý thêm cho Routine của bạn</h2>
-      <p className='mt-1 text-xs text-[#8C7D70]'>Son dưỡng, sữa rửa mặt, kem chống nắng — thêm nhanh vào giỏ.</p>
+      <h2 className='font-display text-base font-bold text-[#1C1917]'>Gợi ý thêm cho Routine của bạn</h2>
+      <p className='mt-1 text-xs text-[#786C60]'>Son dưỡng, sữa rửa mặt, kem chống nắng — thêm nhanh vào giỏ.</p>
       <div className='mt-4 grid gap-3 sm:grid-cols-2'>
         {addons.map((product) => (
           <CartAddOnRow
@@ -74,18 +74,18 @@ function CartAddOnRow({
 
   return (
     <div className={cn(panelClass, 'flex items-center gap-3 p-3.5')}>
-      <div className='h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#EFECE6]'>
+      <div className='h-16 w-14 shrink-0 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#E7E0D8]'>
         {image ? <img src={image} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover' /> : null}
       </div>
       <div className='min-w-0 flex-1'>
-        <p className='line-clamp-2 text-xs font-bold text-[#2B2118]'>{product.name}</p>
-        <p className='mt-0.5 text-xs font-extrabold text-[#C47A5A]'>{money(product.price)}</p>
+        <p className='line-clamp-2 text-xs font-bold text-[#1C1917]'>{product.name}</p>
+        <p className='mt-0.5 text-xs font-extrabold text-[#B45309]'>{money(product.price)}</p>
       </div>
       <button
         type='button'
         onClick={onAdd}
         disabled={loading || product.quantity <= 0}
-        className='shrink-0 rounded-full border border-[#2B2118] bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#2B2118] transition hover:bg-[#2B2118] hover:text-white disabled:opacity-50'
+        className='shrink-0 rounded-full border border-[#1C1917] bg-white px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider text-[#1C1917] transition hover:bg-[#1C1917] hover:text-white disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
       >
         {loading ? '...' : 'Thêm'}
       </button>
@@ -297,8 +297,8 @@ export default function CartPage() {
                     key={item._id}
                     className={cn(
                       panelClass,
-                      'grid cursor-pointer gap-4 p-4 transition-all sm:grid-cols-[auto_96px_1fr_auto] sm:items-center',
-                      isSelected ? 'border-[#2B2118] ring-1 ring-[#2B2118]/15' : 'hover:border-[#9A8069]'
+                      'grid cursor-pointer gap-4 p-4 transition-all sm:grid-cols-[auto_96px_1fr_auto] sm:items-center rounded-2xl',
+                      isSelected ? 'border-[#1C1917] ring-1 ring-[#1C1917]/20 shadow-xs' : 'border-[#E7E0D8] hover:border-[#A16207]'
                     )}
                   >
                     <input type='checkbox' checked={isSelected} onChange={() => toggleItem(item._id)} className='sr-only' />
@@ -306,13 +306,13 @@ export default function CartPage() {
                     <span
                       className={cn(
                         'grid h-5 w-5 place-items-center rounded border transition-all',
-                        isSelected ? 'border-[#2B2118] bg-[#2B2118] text-white' : 'border-[#EFECE6] bg-white text-transparent'
+                        isSelected ? 'border-[#1C1917] bg-[#1C1917] text-white' : 'border-[#E7E0D8] bg-white text-transparent'
                       )}
                     >
                       <Check size={12} strokeWidth={3} />
                     </span>
 
-                    <div className='aspect-square w-24 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#EFECE6] sm:w-24'>
+                    <div className='aspect-square w-24 overflow-hidden rounded-xl bg-[#F5EFE6] border border-[#E7E0D8] sm:w-24'>
                       {image ? (
                         <img src={image} alt={product.name} loading='lazy' referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                       ) : null}
@@ -320,28 +320,28 @@ export default function CartPage() {
 
                     <div className='min-w-0'>
                       {product.origin ? (
-                        <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#9A8069]'>{product.origin}</p>
+                        <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#A16207]'>{product.origin}</p>
                       ) : null}
-                      <div className='line-clamp-2 font-display text-sm font-bold text-[#2B2118]'>{product.name}</div>
-                      <p className='mt-1 text-xs text-[#8C7D70]'>{money(product.price)} / sản phẩm</p>
+                      <div className='line-clamp-2 font-display text-sm font-bold text-[#1C1917]'>{product.name}</div>
+                      <p className='mt-1 text-xs text-[#786C60]'>{money(product.price)} / sản phẩm</p>
 
-                      <div className='mt-3 inline-flex items-center rounded-full border border-[#EFECE6] bg-[#FAF7F2] p-0.5' onClick={(e) => e.preventDefault()}>
+                      <div className='mt-3 inline-flex items-center rounded-full border border-[#E7E0D8] bg-[#FAF7F2] p-0.5' onClick={(e) => e.preventDefault()}>
                         <button
                           type='button'
                           aria-label='Giảm số lượng'
                           disabled={mutatingId === item._id || item.quantity <= 1}
                           onClick={() => handleUpdateQuantity(item, item.quantity - 1)}
-                          className='grid h-8 w-8 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:opacity-40'
+                          className='grid h-8 w-8 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                         >
                           <Minus size={14} />
                         </button>
-                        <span className='w-8 text-center text-xs font-bold text-[#2B2118]'>{item.quantity}</span>
+                        <span className='w-8 text-center text-xs font-bold text-[#1C1917]'>{item.quantity}</span>
                         <button
                           type='button'
                           aria-label='Tăng số lượng'
                           disabled={mutatingId === item._id || item.quantity >= product.quantity}
                           onClick={() => handleUpdateQuantity(item, item.quantity + 1)}
-                          className='grid h-8 w-8 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:opacity-40'
+                          className='grid h-8 w-8 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                         >
                           <Plus size={14} />
                         </button>
@@ -349,7 +349,7 @@ export default function CartPage() {
                     </div>
 
                     <div className='flex flex-col items-start sm:items-end'>
-                      <p className='text-base font-extrabold text-[#C47A5A]'>{money(product.price * item.quantity)}</p>
+                      <p className='text-base font-extrabold text-[#B45309]'>{money(product.price * item.quantity)}</p>
                       <button
                         type='button'
                         onClick={(e) => {
@@ -358,7 +358,7 @@ export default function CartPage() {
                           handleRemoveItem(item._id)
                         }}
                         disabled={mutatingId === item._id}
-                        className='mt-2 inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline disabled:opacity-50'
+                        className='mt-2 inline-flex items-center gap-1 text-xs font-bold text-rose-600 hover:underline disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 rounded'
                       >
                         <Trash2 size={13} />
                         Xóa
@@ -374,13 +374,13 @@ export default function CartPage() {
         </div>
 
         <aside className={cn(panelClass, 'h-fit p-6 lg:sticky lg:top-28')}>
-          <div className='flex items-center gap-3 border-b border-[#EFECE6] pb-4'>
-            <span className='grid h-10 w-10 place-items-center rounded-xl bg-[#2B2118] text-[#FAF7F2]'>
-              <Sparkles size={18} className='text-[#9A8069]' />
+          <div className='flex items-center gap-3 border-b border-[#E7E0D8] pb-4'>
+            <span className='grid h-10 w-10 place-items-center rounded-xl bg-[#1C1917] text-[#FAF7F2]'>
+              <Sparkles size={18} className='text-[#A16207]' />
             </span>
             <div>
-              <p className='font-display text-base font-bold text-[#2B2118]'>Tóm Tắt Đơn Hàng</p>
-              <p className='text-xs text-[#8C7D70]'>{selectedItems.length} sản phẩm được chọn</p>
+              <p className='font-display text-base font-bold text-[#1C1917]'>Tóm Tắt Đơn Hàng</p>
+              <p className='text-xs text-[#786C60]'>{selectedItems.length} sản phẩm được chọn</p>
             </div>
           </div>
 
@@ -388,18 +388,19 @@ export default function CartPage() {
             <label className='text-xs font-bold uppercase tracking-wider text-[#594D42]'>Mã Voucher / Ưu Đãi</label>
             <div className='mt-2 flex gap-2'>
               <div className='relative min-w-0 flex-1'>
-                <Tag className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#8C7D70]' size={15} />
+                <Tag className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#786C60]' size={15} />
                 <input
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder='Nhập mã giảm giá'
-                  className='h-10 w-full rounded-xl border border-[#EFECE6] bg-white pl-9 pr-3 text-xs text-[#2B2118] outline-none focus:border-[#9A8069]'
+                  aria-label='Mã voucher giảm giá'
+                  className='h-11 w-full rounded-xl border border-[#E7E0D8] bg-white pl-9 pr-3 text-xs text-[#1C1917] outline-none focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
                 />
               </div>
               <button
                 type='submit'
                 disabled={voucherLoading || subtotal <= 0}
-                className='shrink-0 rounded-xl border border-[#2B2118] bg-[#2B2118] px-4 text-xs font-bold text-white hover:bg-[#9A8069] transition-colors'
+                className='shrink-0 rounded-xl border border-[#1C1917] bg-[#1C1917] px-4 text-xs font-bold text-white hover:bg-[#A16207] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
               >
                 {voucherLoading ? '...' : 'Áp dụng'}
               </button>
@@ -412,24 +413,24 @@ export default function CartPage() {
           </form>
 
           {/* Freeship Progress Bar */}
-          <div className='mt-5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-4'>
-            <div className='flex items-center justify-between gap-3 text-xs font-bold text-[#2B2118]'>
+          <div className='mt-5 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4'>
+            <div className='flex items-center justify-between gap-3 text-xs font-bold text-[#1C1917]'>
               <span>{remainingForFreeShip > 0 ? `Mua thêm ${money(remainingForFreeShip)} để Freeship` : 'Đã đủ điều kiện Miễn Phí Vận Chuyển 🚚'}</span>
               <span>{Math.round(freeShipProgress)}%</span>
             </div>
-            <div className='mt-3 h-2.5 overflow-hidden rounded-full bg-white border border-[#EFECE6]'>
-              <div className='h-full rounded-full bg-[#9A8069] transition-all duration-500' style={{ width: `${freeShipProgress}%` }} />
+            <div className='mt-3 h-2.5 overflow-hidden rounded-full bg-white border border-[#E7E0D8]'>
+              <div className='h-full rounded-full bg-[#A16207] transition-all duration-500' style={{ width: `${freeShipProgress}%` }} />
             </div>
           </div>
 
           <div className='mt-5 space-y-2.5 text-xs font-medium text-[#594D42]'>
             <div className='flex justify-between'>
               <span>Tạm tính sản phẩm</span>
-              <span className='font-bold text-[#2B2118]'>{money(subtotal)}</span>
+              <span className='font-bold text-[#1C1917]'>{money(subtotal)}</span>
             </div>
             <div className='flex justify-between'>
               <span>Cước phí vận chuyển</span>
-              <span className='font-bold text-[#9A8069]'>Tính tại trang checkout</span>
+              <span className='font-bold text-[#A16207]'>Tính tại trang checkout</span>
             </div>
             {discount > 0 ? (
               <div className='flex justify-between text-emerald-600 font-bold'>
@@ -439,23 +440,23 @@ export default function CartPage() {
             ) : null}
           </div>
 
-          <div className='my-4 h-px bg-[#EFECE6]' />
+          <div className='my-4 h-px bg-[#E7E0D8]' />
 
           <div className='flex items-end justify-between'>
-            <span className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Tổng Tạm Tính</span>
-            <span className='text-2xl font-extrabold text-[#C47A5A]'>{money(estimatedTotal)}</span>
+            <span className='text-xs font-bold uppercase tracking-wider text-[#786C60]'>Tổng Tạm Tính</span>
+            <span className='text-2xl font-extrabold text-[#B45309]'>{money(estimatedTotal)}</span>
           </div>
 
           <button
             type='button'
             disabled={isLoading || selectedItems.length === 0 || stockFail}
             onClick={handleCheckout}
-            className='mt-6 flex h-12 w-full items-center justify-center rounded-full bg-[#2B2118] text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#9A8069] shadow-md disabled:opacity-50'
+            className='mt-6 flex h-12 w-full items-center justify-center rounded-full bg-[#1C1917] text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#A16207] shadow-sm disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
           >
             Tiến Hành Thanh Toán ({selectedItems.length})
           </button>
 
-          <p className='mt-4 text-center text-[11px] leading-relaxed text-[#8C7D70]'>
+          <p className='mt-4 text-center text-[11px] leading-relaxed text-[#786C60]'>
             Cam kết sản phẩm chính hãng · Bảo mật thanh toán SSL
           </p>
         </aside>

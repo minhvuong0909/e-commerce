@@ -47,8 +47,8 @@ export default function RegisterPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-5'>
-        <h2 className='font-serif text-3xl font-normal tracking-tight text-ink-950'>Tạo tài khoản</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi dành riêng cho bạn.</p>
+        <h2 className='font-display text-3xl font-extrabold tracking-tight text-[#1C1917]'>Tạo tài khoản</h2>
+        <p className='mt-2 text-xs leading-relaxed text-[#786C60]'>Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi độc quyền dành riêng cho bạn.</p>
       </div>
 
       <Alert variant='info' title='Lưu ý xác minh email' desc='Sau khi đăng ký, bạn cần xác minh email để sử dụng đầy đủ tính năng.' />
@@ -83,13 +83,13 @@ export default function RegisterPage() {
           <PasswordStrength password={passwordValue} />
         </div>
 
-        <Button full type='submit' disabled={isSubmitting} loading={isSubmitting}>
-          Đăng ký
+        <Button full variant='accent' type='submit' disabled={isSubmitting} loading={isSubmitting} className='!rounded-xl !py-3'>
+          Đăng ký tài khoản
         </Button>
 
-        <p className='text-center text-sm text-slate-500'>
+        <p className='text-center text-xs text-[#786C60]'>
           Đã có tài khoản?{' '}
-          <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
+          <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-bold text-[#A16207] hover:underline'>
             Đăng nhập
           </Link>
         </p>

@@ -160,7 +160,7 @@ export default function ProductDetailPage() {
       {/* Back navigation */}
       <Link
         to='/user/home'
-        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#8C7D70] transition hover:text-[#2B2118]'
+        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#786C60] transition hover:text-[#1C1917] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded-md px-1 py-0.5'
       >
         <ArrowLeft size={16} />
         Quay lại trang chủ
@@ -174,7 +174,7 @@ export default function ProductDetailPage() {
       >
         {/* Left Column: Product Image Gallery */}
         <div className='space-y-4'>
-          <div className='relative overflow-hidden rounded-3xl border border-[#EFECE6] bg-white shadow-soft'>
+          <div className='relative overflow-hidden rounded-3xl border border-[#E7E0D8] bg-white shadow-soft'>
             <div className='aspect-square overflow-hidden bg-[#F5EFE6]/40 p-6 flex items-center justify-center'>
               {activeImage ? (
                 <img
@@ -186,7 +186,7 @@ export default function ProductDetailPage() {
                   decoding='async'
                 />
               ) : (
-                <div className='grid h-full place-items-center text-sm font-medium text-[#8C7D70]'>Chưa có ảnh</div>
+                <div className='grid h-full place-items-center text-sm font-medium text-[#786C60]'>Chưa có ảnh</div>
               )}
             </div>
 
@@ -195,7 +195,7 @@ export default function ProductDetailPage() {
               type='button'
               onClick={() => toggleWishlist(product)}
               className={cn(
-                'absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#EFECE6] bg-white/95 text-[#594D42] shadow-md transition hover:border-rose-300',
+                'absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#594D42] shadow-sm transition hover:border-rose-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
                 isFavorited && 'border-rose-200 bg-rose-50 text-rose-600'
               )}
               aria-label={isFavorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
@@ -215,10 +215,10 @@ export default function ProductDetailPage() {
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={activeImageIndex === index}
                   className={cn(
-                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all',
+                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
                     activeImageIndex === index
-                      ? 'border-[#2B2118] ring-2 ring-[#2B2118]/15'
-                      : 'border-[#EFECE6] opacity-70 hover:opacity-100'
+                      ? 'border-[#A16207] ring-2 ring-[#A16207]/20 shadow-xs'
+                      : 'border-[#E7E0D8] opacity-70 hover:opacity-100'
                   )}
                 >
                   <img
@@ -237,35 +237,35 @@ export default function ProductDetailPage() {
 
         {/* Right Column: Product Info & Actions */}
         <div className='lg:sticky lg:top-28 lg:self-start'>
-          <div className='rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'>
+          <div className='rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'>
             {/* Tags & Rating */}
             <div className='flex flex-wrap items-center gap-2'>
               {product.rating_number ? (
-                <span className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#EFECE6] px-3 py-1 text-xs font-bold text-[#2B2118]'>
+                <span className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#E7E0D8] px-3 py-1 text-xs font-bold text-[#1C1917]'>
                   <Star size={13} className='fill-amber-400 text-amber-400' />
                   {Number(product.rating_number).toFixed(1)}
                 </span>
               ) : null}
               {product.origin ? (
-                <span className='rounded-full bg-[#F5EFE6] px-3 py-1 text-xs font-semibold text-[#8C7D70]'>
+                <span className='rounded-full bg-[#F5EFE6] px-3 py-1 text-xs font-semibold text-[#786C60]'>
                   Xuất xứ: {product.origin}
                 </span>
               ) : null}
             </div>
 
             {/* Title */}
-            <h1 className='mt-4 font-display text-2xl font-extrabold leading-snug text-[#2B2118] md:text-3xl'>{product.name}</h1>
+            <h1 className='mt-4 font-display text-2xl font-extrabold leading-snug text-[#1C1917] md:text-3xl'>{product.name}</h1>
 
             {/* Price Box */}
-            <div className='mt-5 rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs'>
-              <p className='text-xs font-bold uppercase tracking-wider text-[#8C7D70]'>Giá Niêm Yết</p>
-              <p className='mt-1 text-3xl font-extrabold text-[#C47A5A]'>{money(product.price)}</p>
+            <div className='mt-5 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs'>
+              <p className='text-xs font-bold uppercase tracking-wider text-[#786C60]'>Giá Niêm Yết</p>
+              <p className='mt-1 text-3xl font-extrabold text-[#B45309]'>{money(product.price)}</p>
             </div>
 
             {/* Specifications Quick Info - ONLY REAL DATA */}
             <div className='mt-5 grid grid-cols-2 gap-2 text-xs font-semibold text-[#594D42] sm:grid-cols-3'>
-              <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
-                <span className='text-[#8C7D70]'>Tình trạng:</span>{' '}
+              <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
+                <span className='text-[#786C60]'>Tình trạng:</span>{' '}
                 {isOutOfStock ? (
                   <span className='font-bold text-rose-600'>Hết hàng</span>
                 ) : (
@@ -273,18 +273,18 @@ export default function ProductDetailPage() {
                 )}
               </div>
               {product.volume ? (
-                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#8C7D70]'>Dung tích:</span> {product.volume} ml
+                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#786C60]'>Dung tích:</span> {product.volume} ml
                 </div>
               ) : null}
               {product.weight ? (
-                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#8C7D70]'>Trọng lượng:</span> {product.weight} g
+                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#786C60]'>Trọng lượng:</span> {product.weight} g
                 </div>
               ) : null}
               {product.soldNumber !== undefined && product.soldNumber > 0 ? (
-                <div className='rounded-xl border border-[#EFECE6] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#8C7D70]'>Đã bán:</span> {product.soldNumber}
+                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
+                  <span className='text-[#786C60]'>Đã bán:</span> {product.soldNumber}
                 </div>
               ) : null}
             </div>
@@ -302,28 +302,28 @@ export default function ProductDetailPage() {
 
             {/* Quantity Selector */}
             {!isOutOfStock && (
-              <div className='mt-6 flex items-center justify-between gap-4 border-t border-[#EFECE6] pt-5'>
+              <div className='mt-6 flex items-center justify-between gap-4 border-t border-[#E7E0D8] pt-5'>
                 <div>
-                  <p className='font-display text-sm font-bold text-[#2B2118]'>Số lượng</p>
-                  <p className='mt-0.5 text-xs text-[#8C7D70]'>Chọn số lượng cần mua</p>
+                  <p className='font-display text-sm font-bold text-[#1C1917]'>Số lượng</p>
+                  <p className='mt-0.5 text-xs text-[#786C60]'>Chọn số lượng cần mua</p>
                 </div>
 
-                <div className='flex items-center rounded-full border border-[#EFECE6] bg-[#FAF7F2] p-1 shadow-xs'>
+                <div className='flex items-center rounded-full border border-[#E7E0D8] bg-[#FAF7F2] p-1 shadow-xs'>
                   <button
                     type='button'
                     onClick={dec}
                     disabled={qty <= 1}
-                    className='grid h-9 w-9 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
+                    className='grid h-9 w-9 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                     aria-label='Giảm số lượng'
                   >
                     <Minus size={15} />
                   </button>
-                  <span className='w-10 text-center text-sm font-bold text-[#2B2118]'>{qty}</span>
+                  <span className='w-10 text-center text-sm font-bold text-[#1C1917]'>{qty}</span>
                   <button
                     type='button'
                     onClick={inc}
                     disabled={qty >= product.quantity}
-                    className='grid h-9 w-9 place-items-center rounded-full text-[#2B2118] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40'
+                    className='grid h-9 w-9 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                     aria-label='Tăng số lượng'
                   >
                     <Plus size={15} />
@@ -338,7 +338,7 @@ export default function ProductDetailPage() {
                 type='button'
                 onClick={handleBuyNow}
                 disabled={isOutOfStock || isOverStock}
-                className='col-span-2 inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-[#2B2118] px-6 text-sm font-bold uppercase tracking-wider text-white shadow-md transition duration-200 hover:bg-[#9A8069] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50'
+                className='col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1C1917] px-6 text-sm font-bold uppercase tracking-wider text-[#FAF7F2] shadow-sm transition duration-200 hover:bg-[#A16207] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
               >
                 Mua Ngay
               </button>
@@ -347,7 +347,7 @@ export default function ProductDetailPage() {
                 type='button'
                 disabled={isOutOfStock || isOverStock || adding}
                 onClick={handleAddToCart}
-                className='inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#2B2118] bg-white px-6 text-xs font-bold uppercase tracking-wider text-[#2B2118] shadow-xs transition hover:bg-[#FAF7F2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50'
+                className='inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#1C1917] bg-white px-6 text-xs font-bold uppercase tracking-wider text-[#1C1917] shadow-xs transition hover:bg-[#FAF7F2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
               >
                 <ShoppingBag size={18} />
                 <span>{adding ? 'Đang thêm...' : 'Thêm vào giỏ'}</span>
@@ -359,7 +359,7 @@ export default function ProductDetailPage() {
                 aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
                 aria-pressed={isFavorited}
                 className={cn(
-                  'inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#EFECE6] bg-white text-[#594D42] shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600',
+                  'inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#E7E0D8] bg-white text-[#594D42] shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
                   isFavorited && 'border-rose-300 bg-rose-50 text-rose-600'
                 )}
               >
@@ -376,10 +376,10 @@ export default function ProductDetailPage() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.35 }}
-          className='mt-10 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
+          className='mt-10 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
         >
-          <span className='text-xs font-bold uppercase tracking-wider text-[#9A8069]'>Mô tả sản phẩm</span>
-          <h2 className='mt-1 font-display text-2xl font-extrabold text-[#2B2118]'>Thông Tin Chi Tiết</h2>
+          <span className='text-xs font-bold uppercase tracking-wider text-[#A16207]'>Mô tả sản phẩm</span>
+          <h2 className='mt-1 font-display text-2xl font-extrabold text-[#1C1917]'>Thông Tin Chi Tiết</h2>
           <div className='mt-4 max-w-4xl space-y-3 text-sm leading-relaxed text-[#594D42] md:text-base'>
             {product.description.split('\n').map((paragraph, idx) => (
               <p key={idx}>{paragraph}</p>
@@ -393,16 +393,16 @@ export default function ProductDetailPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.16, duration: 0.35 }}
-        className='mt-8 rounded-3xl border border-[#EFECE6] bg-white p-6 shadow-soft md:p-8'
+        className='mt-8 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
       >
-        <span className='text-xs font-bold uppercase tracking-wider text-[#9A8069]'>Đánh giá</span>
+        <span className='text-xs font-bold uppercase tracking-wider text-[#A16207]'>Đánh giá</span>
         <div className='mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
           <div>
-            <h2 className='font-display text-2xl font-extrabold text-[#2B2118]'>Nhận Xét &amp; Đánh Giá</h2>
-            <p className='mt-1 text-xs text-[#8C7D70]'>{reviews.length} nhận xét</p>
+            <h2 className='font-display text-2xl font-extrabold text-[#1C1917]'>Nhận Xét &amp; Đánh Giá</h2>
+            <p className='mt-1 text-xs text-[#786C60]'>{reviews.length} nhận xét</p>
           </div>
           {product.rating_number ? (
-            <div className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#EFECE6] px-4 py-1.5 text-sm font-bold text-[#2B2118]'>
+            <div className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#E7E0D8] px-4 py-1.5 text-sm font-bold text-[#1C1917]'>
               <Star size={15} className='fill-amber-400 text-amber-400' />
               {Number(product.rating_number).toFixed(1)}
             </div>
@@ -412,15 +412,15 @@ export default function ProductDetailPage() {
         <div className='mt-6 grid gap-6 lg:grid-cols-[1fr_380px]'>
           <div className='space-y-3'>
             {reviews.length === 0 ? (
-              <div className='rounded-2xl border border-dashed border-[#EFECE6] p-8 text-sm font-medium text-[#8C7D70] text-center bg-[#FAF7F2]'>
+              <div className='rounded-2xl border border-dashed border-[#E7E0D8] p-8 text-sm font-medium text-[#786C60] text-center bg-[#FAF7F2]'>
                 Chưa có đánh giá nào cho sản phẩm này.
               </div>
             ) : (
               reviews.map((review) => (
-                <article key={review._id} className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-5 shadow-xs'>
+                <article key={review._id} className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs'>
                   <div className='flex items-center justify-between gap-3'>
-                    <p className='font-display font-bold text-[#2B2118]'>{review.customer_name}</p>
-                    <span className='inline-flex items-center gap-1 text-xs font-bold text-amber-600 bg-white border border-[#EFECE6] px-3 py-1 rounded-full'>
+                    <p className='font-display font-bold text-[#1C1917]'>{review.customer_name}</p>
+                    <span className='inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-white border border-[#E7E0D8] px-3 py-1 rounded-full'>
                       <Star size={13} className='fill-amber-400 text-amber-400' />
                       {review.rating} / 5
                     </span>
@@ -432,8 +432,8 @@ export default function ProductDetailPage() {
           </div>
 
           {/* Review Form */}
-          <div className='rounded-2xl border border-[#EFECE6] bg-[#FAF7F2] p-6 shadow-xs'>
-            <h3 className='font-display font-bold text-[#2B2118] text-base mb-4'>Gửi nhận xét của bạn</h3>
+          <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-6 shadow-xs'>
+            <h3 className='font-display font-bold text-[#1C1917] text-base mb-4'>Gửi nhận xét của bạn</h3>
             {getToken() ? (
               <div className='space-y-4'>
                 <div>
@@ -447,20 +447,20 @@ export default function ProductDetailPage() {
                           onClick={() => setReviewRating(starIndex)}
                           onMouseEnter={() => setHoverRating(starIndex)}
                           onMouseLeave={() => setHoverRating(null)}
-                          className='p-1 transition duration-150 transform hover:scale-110'
+                          className='p-1 transition duration-150 transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                         >
                           <Star
                             size={24}
                             className={cn(
                               starIndex <= activeStarCount
                                 ? 'fill-amber-400 text-amber-400'
-                                : 'fill-[#E8DDD8] text-[#E8DDD8]'
+                                : 'fill-[#E7E0D8] text-[#E7E0D8]'
                             )}
                           />
                         </button>
                       ))}
                     </div>
-                    <span className='text-xs font-bold text-[#9A8069] ml-1'>
+                    <span className='text-xs font-bold text-[#A16207] ml-1'>
                       {RATING_LABELS[activeStarCount]} ({activeStarCount} sao)
                     </span>
                   </div>
@@ -473,7 +473,7 @@ export default function ProductDetailPage() {
                     onChange={(e) => setReviewComment(e.target.value)}
                     rows={4}
                     placeholder='Chia sẻ trải nghiệm và cảm nhận của bạn về sản phẩm...'
-                    className='w-full rounded-xl border border-[#EFECE6] bg-white p-3.5 text-xs text-[#2B2118] outline-none transition focus:border-[#9A8069] focus:ring-2 focus:ring-[#9A8069]/20'
+                    className='w-full rounded-xl border border-[#E7E0D8] bg-white p-3.5 text-xs text-[#1C1917] outline-none transition focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
                   />
                 </div>
 
@@ -481,7 +481,7 @@ export default function ProductDetailPage() {
                   type='button'
                   onClick={handleSubmitReview}
                   disabled={reviewLoading || !reviewComment.trim()}
-                  className='h-11 w-full rounded-full bg-[#2B2118] text-xs font-bold uppercase tracking-widest text-white shadow-md transition hover:bg-[#9A8069] disabled:opacity-50'
+                  className='h-11 w-full rounded-full bg-[#1C1917] text-xs font-bold uppercase tracking-widest text-white shadow-sm transition hover:bg-[#A16207] disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
                 >
                   {reviewLoading ? 'Đang gửi...' : 'Gửi Đánh Giá Ngay'}
                 </button>
@@ -489,7 +489,7 @@ export default function ProductDetailPage() {
             ) : (
               <div className='text-xs leading-relaxed text-[#594D42]'>
                 Bạn cần{' '}
-                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-bold text-[#9A8069] hover:underline'>
+                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-bold text-[#A16207] hover:underline'>
                   Đăng nhập
                 </Link>{' '}
                 để viết đánh giá sản phẩm này.

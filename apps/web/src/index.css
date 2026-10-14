@@ -6,11 +6,18 @@
   :root {
     color-scheme: light;
     --page-bg: #FAF7F2;
-    --panel-bg: rgba(255, 255, 255, 0.92);
+    --panel-bg: rgba(255, 255, 255, 0.94);
     --panel-strong: #FFFFFF;
     --panel-muted: #F5EFE6;
-    --border-soft: rgba(154, 128, 105, 0.15);
-    --border-strong: rgba(154, 128, 105, 0.28);
+    --border-soft: #E7E0D8;
+    --border-strong: #D6C8B8;
+    --color-primary: #1C1917;
+    --color-secondary: #44403C;
+    --color-accent: #A16207;
+    --color-accent-hover: #854D0E;
+    --color-text-primary: #1C1917;
+    --color-text-secondary: #594D42;
+    --color-text-muted: #786C60;
   }
 
   html {
@@ -21,15 +28,16 @@
     min-width: 320px;
     margin: 0;
     background: var(--page-bg);
-    color: #2B2118;
-    font-family: 'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-    text-rendering: geometricPrecision;
+    color: var(--color-text-primary);
+    font-family: 'Plus Jakarta Sans', Montserrat, Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, .font-display {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.015em;
   }
 
   * {
@@ -41,11 +49,11 @@
   }
 
   ::selection {
-    background: rgba(154, 128, 105, 0.2);
-    color: #2B2118;
+    background: rgba(161, 98, 7, 0.22);
+    color: #1C1917;
   }
 
-  /* Custom Warm Scrollbar */
+  /* Custom Warm Luxury Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -58,7 +66,7 @@
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #9A8069;
+    background: #A16207;
   }
 }
 
@@ -66,13 +74,13 @@
   .premium-panel,
   .surface-card,
   .surface-strong {
-    border: 1px solid #EFECE6;
+    border: 1px solid var(--border-soft);
     background: #FFFFFF;
-    box-shadow: 0 4px 20px rgba(43, 33, 24, 0.04);
+    box-shadow: 0 4px 24px rgba(43, 33, 24, 0.04);
   }
 
   .surface-muted {
-    border: 1px solid #EFECE6;
+    border: 1px solid var(--border-soft);
     background: #F5EFE6;
   }
 
@@ -87,20 +95,20 @@
   .interactive-lift:hover {
     transform: translateY(-4px);
     box-shadow: 0 16px 36px rgba(43, 33, 24, 0.09);
-    border-color: #DFD3C3;
+    border-color: var(--border-strong);
   }
 
   .premium-input {
     height: 3rem;
     width: 100%;
     border-radius: 0.875rem;
-    border: 1px solid #EFECE6;
+    border: 1px solid var(--border-soft);
     background: #FFFFFF;
     padding-left: 1rem;
     padding-right: 1rem;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #2B2118;
+    color: var(--color-text-primary);
     outline: none;
     transition:
       border-color 200ms ease,
@@ -109,24 +117,32 @@
   }
 
   .premium-input::placeholder {
-    color: #A3968B;
+    color: #8C7D70;
   }
 
   .premium-input:focus {
-    border-color: #9A8069;
+    border-color: #A16207;
     background: #FFFFFF;
-    box-shadow: 0 0 0 4px rgba(154, 128, 105, 0.12);
+    box-shadow: 0 0 0 4px rgba(161, 98, 7, 0.14);
+  }
+
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid #A16207;
+    outline-offset: 2px;
   }
 
   .glass-header {
-    background: rgba(250, 247, 242, 0.92);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(239, 236, 230, 0.9);
+    background: rgba(250, 247, 242, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(231, 224, 216, 0.9);
   }
 
   .glass-line {
-    border-color: rgba(154, 128, 105, 0.18);
+    border-color: var(--border-soft);
   }
 
   /* Neutral workspace palette, separate from storefront. */
