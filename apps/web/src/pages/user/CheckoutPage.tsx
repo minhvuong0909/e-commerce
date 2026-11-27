@@ -705,6 +705,17 @@ export default function CheckoutPage() {
               <Lock size={16} /> Đặt hàng · {money(total)}
             </Button>
             {!quote && !quoteLoading ? <p className='mt-3 text-center text-xs text-ink-500'>Hoàn tất địa chỉ để tính phí và đặt hàng.</p> : null}
+            <p className='mt-3 text-center text-xs leading-relaxed text-ink-500'>
+              Bằng việc đặt hàng, bạn đồng ý với{' '}
+              <Link to={ROUTE_PATHS.USER_POLICY('dieu-khoan')} target='_blank' className='font-semibold text-berry-700 hover:underline'>
+                Điều khoản
+              </Link>{' '}
+              và{' '}
+              <Link to={ROUTE_PATHS.USER_POLICY('doi-tra')} target='_blank' className='font-semibold text-berry-700 hover:underline'>
+                Chính sách đổi trả
+              </Link>
+              .
+            </p>
           </div>
         </aside>
       </div>

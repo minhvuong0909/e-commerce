@@ -23,6 +23,7 @@ export const ROUTE_SEGMENTS = {
   USER_CHANGE_PASSWORD: 'change-password',
   USER_WISHLIST: 'wishlist',
   USER_TRACK_ORDER: 'track-order',
+  USER_POLICY: 'policies/:slug',
 
   ADMIN_PRODUCTS: 'products',
   ADMIN_BRANDS: 'brands',
@@ -81,6 +82,7 @@ export const ROUTE_PATHS = {
   USER_CHANGE_PASSWORD: joinPaths(ROUTES.USER, ROUTE_SEGMENTS.USER_CHANGE_PASSWORD),
   USER_WISHLIST: joinPaths(ROUTES.USER, ROUTE_SEGMENTS.USER_WISHLIST),
   USER_TRACK_ORDER: joinPaths(ROUTES.USER, ROUTE_SEGMENTS.USER_TRACK_ORDER),
+  USER_POLICY: (slug: string = ':slug') => joinPaths(ROUTES.USER, 'policies', slug),
 
   ADMIN: ROUTES.ADMIN,
   ADMIN_PRODUCTS: joinPaths(ROUTES.ADMIN, ROUTE_SEGMENTS.ADMIN_PRODUCTS),

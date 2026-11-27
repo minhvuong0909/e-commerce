@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { POLICIES, POLICY_SLUGS } from '../constants/policies'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { logoutApi } from '../services/auths.services'
 import { clearAuth, getRefreshToken, getToken } from '../utils/authSession'
@@ -32,7 +33,8 @@ const SHOP_ANCHOR = '#shop'
 
 const TICKER = [
   'Hàng chính hãng, rõ nguồn gốc',
-  'Giao hàng toàn quốc',
+  'Giao nhanh nội thành TP.HCM',
+  'Đổi trả 7 ngày nếu hàng lỗi',
   'Thanh toán COD · PayOS · MoMo',
   'Theo dõi đơn hàng mọi lúc',
   'Lưu sản phẩm yêu thích chỉ với một chạm'
@@ -456,7 +458,7 @@ export default function UserLayout() {
       {/* footer */}
       <footer className='mt-24 border-t border-ink-200 bg-white text-ink-950'>
         <div className='mx-auto max-w-[1320px] px-4 pb-28 pt-16 md:px-6 lg:pb-12'>
-          <div className='grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]'>
+          <div className='grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]'>
             <div>
               <BrandMark />
               <p className='mt-5 max-w-sm text-sm leading-relaxed text-ink-600'>
@@ -494,6 +496,18 @@ export default function UserLayout() {
                 <li><Link to={ROUTE_PATHS.USER_TRACK_ORDER} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn (không cần tài khoản)</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-600 transition hover:text-berry-700'>Giỏ hàng</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_WISHLIST} className='text-ink-600 transition hover:text-berry-700'>Yêu thích</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className='text-sm font-semibold text-ink-950'>Hỗ trợ</h4>
+              <ul className='mt-4 space-y-2.5 text-sm'>
+                {POLICY_SLUGS.map((slug) => (
+                  <li key={slug}>
+                    <Link to={ROUTE_PATHS.USER_POLICY(slug)} className='text-ink-600 transition hover:text-berry-700'>
+                      {POLICIES[slug].title}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
             <div>

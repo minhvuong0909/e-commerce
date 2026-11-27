@@ -26,6 +26,7 @@ const ProfilePage = lazy(() => import('./pages/user/GetProfile'))
 const ChangePasswordPage = lazy(() => import('./pages/user/ChangePasswordPage'))
 const WishlistPage = lazy(() => import('./pages/user/WishlistPage'))
 const TrackOrderPage = lazy(() => import('./pages/user/TrackOrderPage'))
+const PolicyPage = lazy(() => import('./pages/user/PolicyPage'))
 
 // Lazy loaded Admin Layout & Pages
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
@@ -162,6 +163,7 @@ export default function App() {
             />
             <Route path={ROUTE_SEGMENTS.USER_WISHLIST} element={<WishlistPage />} />
             <Route path={ROUTE_SEGMENTS.USER_TRACK_ORDER} element={<TrackOrderPage />} />
+            <Route path={ROUTE_SEGMENTS.USER_POLICY} element={<PolicyPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_CHANGE_PASSWORD}
               element={
