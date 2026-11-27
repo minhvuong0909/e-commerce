@@ -1,6 +1,6 @@
+import { validateProductMedias } from '~/utils/productMedia'
 import { checkSchema, ParamSchema } from 'express-validator'
 import { ObjectId } from 'mongodb'
-import { MediaType } from '~/constants/enums'
 import { PRODUCT_MESSAGES } from '~/constants/messages'
 import { validate } from '~/utils/validations'
 
@@ -212,16 +212,8 @@ export const createProductValidator = validate(
         },
         custom: {
           options: (value) => {
-            //lấy mảng các key của MediaType(enum)
-            const MediaTypeArray = Object.keys(MediaType).filter((key) => !isNaN(Number(key)))
-            if (
-              value.some((item: any) => {
-                return typeof item.url !== 'string' || !MediaTypeArray.includes(String(item.type))
-              })
-            ) {
-              throw new Error(PRODUCT_MESSAGES.MEDIAS_IS_INVALID)
-            }
-
+            const error = validateProductMedias(value)
+            if (error) throw new Error(error)
             return true
           }
         }

@@ -56,7 +56,7 @@ export const serveVideoController = (req: Request, res: Response) => {
   // Xác định Content-Type
   const ext = path.extname(sanitizedName).toLowerCase()
   const contentType =
-    ext === '.mp4' ? 'video/mp4' : ext === '.webm' ? 'video/webm' : ext === '.ogg' ? 'video/ogg' : 'video/mp4'
+    ext === '.webm' ? 'video/webm' : ext === '.mov' ? 'video/quicktime' : ext === '.ogg' ? 'video/ogg' : 'video/mp4'
 
   // CORS headers
   const corsHeaders = {

@@ -1,6 +1,7 @@
 import { Request } from 'express'
 import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
 import fs from 'fs'
+import path from 'path'
 import { getNameFormFullNameFile, handleUploadImage, handleUploadVideo } from '~/utils/file'
 import sharp from 'sharp'
 import { Media } from '~/models/Other'
@@ -8,21 +9,21 @@ import { MediaType } from '~/constants/enums'
 import { cleanupTempFolder } from '~/utils/cleanupTemp'
 import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 class MediaServices {
-  private async uploadToCloudinary(filePath: string, folder: string) {
+  private async uploadToCloudinary(filePath: string, folder: string, resource: 'image' | 'video' = 'image') {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim()
     const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim()
     if (!cloudName || !uploadPreset) return null
 
     const form = new FormData()
     const bytes = await fs.promises.readFile(filePath)
-    form.append('file', new Blob([bytes]), 'image.jpg')
+    form.append('file', new Blob([bytes]), resource === 'video' ? path.basename(filePath) : 'image.jpg')
     form.append('upload_preset', uploadPreset)
     form.append('folder', folder)
 
     const res = await fetchWithTimeout(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resource}/upload`,
       { method: 'POST', body: form },
-      { timeoutMs: HTTP_TIMEOUTS.mediaUpload, service: 'cloudinary' }
+      { timeoutMs: resource === 'video' ? HTTP_TIMEOUTS.mediaUpload * 4 : HTTP_TIMEOUTS.mediaUpload, service: 'cloudinary' }
     )
     if (!res.ok) {
       throw new Error(`Cloudinary upload failed: ${res.status}`)
@@ -77,23 +78,26 @@ class MediaServices {
   }
 
   async handleUploadVideo(req: Request) {
-    const files = await handleUploadVideo(req) // lấy file trong req
-    const result = await Promise.all(
+    const files = await handleUploadVideo(req)
+    const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+    return Promise.all(
       files.map(async (file) => {
-        // trả ra link
-        const apiBase = (
-          process.env.API_URL ||
-          process.env.HOST ||
-          `http://localhost:${process.env.PORT || 3000}`
-        ).replace(/\/+$/, '')
+        const cloudinaryUrl = await this.uploadToCloudinary(
+          file.filepath,
+          process.env.CLOUDINARY_VIDEO_FOLDER || 'vibrant-mart/videos',
+          'video'
+        ).catch((err) => {
+          console.error('Cloudinary video upload error:', err?.message || err)
+          return null
+        })
+        if (cloudinaryUrl) await fs.promises.unlink(file.filepath).catch(() => undefined)
         const url: Media = {
-          url: `${apiBase}/static/video/${file.newFilename}`,
+          url: cloudinaryUrl || `${apiBase}/static/video/${file.newFilename}`,
           type: MediaType.Video
         }
         return url
       })
     )
-    return result
   }
 }
 

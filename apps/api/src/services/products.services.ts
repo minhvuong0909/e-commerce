@@ -6,7 +6,7 @@ import { ObjectId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
 import { BRANDS_MESSAGES, CATEGORY_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
-import ProductMedia from '~/models/schemas/ProductImages.schema'
+import { normalizeProductMedias, productMediaStages } from '~/utils/productMedia'
 import { Request } from 'express'
 import {
   buildProductMatchStage,
@@ -38,44 +38,34 @@ class ProductServices {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
-    const { medias, ...productInfo } = payload
-    const result = await databaseService.products.insertOne(
+    const { medias: rawMedias, ...productInfo } = payload
+    const { medias, thumbnail } = normalizeProductMedias(rawMedias || [])
+    // products.medias là nguồn duy nhất; không ghi thêm vào collection product_medias cũ
+    // (insertMany([]) còn làm hỏng việc tạo sản phẩm không có ảnh)
+    return databaseService.products.insertOne(
       new Product({
         ...productInfo,
         medias,
+        thumbnail: productInfo.thumbnail || thumbnail || '',
         category_id: new ObjectId(category._id),
         brand_id: new ObjectId(brand._id),
         ship_category_id: new ObjectId(payload.ship_category_id),
         status: payload.status || PRODUCT_STATUS.Active
       })
     )
-    // sau đó lưu medias vào productmedia
-    // biến đổi từng media thành các product
-    const mediasToSave = medias.map((media) => ({
-      product_id: result.insertedId,
-      media
-    })) as ProductMedia[]
-    // lưu vào db product media
-    await databaseService.product_media.insertMany(mediasToSave)
-    return result
   }
   // update
   async updateProduct({ product_id, payload }: { product_id: string; payload: Partial<CreateProductBody> }) {
+    const set: Record<string, unknown> = { ...payload }
+    if (payload.medias) {
+      const { medias, thumbnail } = normalizeProductMedias(payload.medias)
+      set.medias = medias
+      if (!payload.thumbnail) set.thumbnail = thumbnail || ''
+    }
     const product = await databaseService.products.findOneAndUpdate(
-      {
-        _id: new ObjectId(product_id)
-      },
-      [
-        {
-          $set: {
-            ...payload,
-            updated_at: '$$NOW'
-          }
-        }
-      ],
-      {
-        returnDocument: 'after'
-      }
+      { _id: new ObjectId(product_id) },
+      { $set: { ...set, updated_at: new Date() } },
+      { returnDocument: 'after' }
     )
     if (!product) {
       throw new ErrorWithStatus({
@@ -83,6 +73,8 @@ class ProductServices {
         status: HTTP_STATUS.UNPROCESSABLE_ENTITY
       })
     }
+    // danh sách media mới thay hoàn toàn bản cũ: bỏ bản legacy để không bị đọc ngược lại
+    if (payload.medias) await databaseService.product_media.deleteMany({ product_id: product._id })
     return product
   }
   // delete
@@ -108,48 +100,7 @@ class ProductServices {
               _id: new ObjectId(product_id) //đưa vào id  product cần tìm
             }
           },
-          {
-            $lookup: {
-              from: 'product_medias',
-              localField: '_id',
-              foreignField: 'product_id',
-              as: 'medias_infor'
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              name: 1,
-              quantity: 1,
-              price: 1,
-              description: 1,
-              rating_number: 1,
-              brand_id: 1,
-              origin: 1,
-              volume: 1,
-              weight: 1,
-              height: 1,
-              width: 1,
-              sold: 1,
-              status: 1,
-              category_id: 1,
-              ship_category_id: 1,
-              thumbnail: 1,
-              medias: {
-                $cond: {
-                  if: { $gt: [{ $size: '$medias_infor' }, 0] },
-                  then: {
-                    $map: {
-                      input: '$medias_infor',
-                      as: 'media',
-                      in: '$$media.media'
-                    }
-                  },
-                  else: '$medias'
-                }
-              }
-            }
-          }
+          ...productMediaStages()
         ],
         { maxTimeMS: 60000, allowDiskUse: true }
       )
@@ -196,43 +147,7 @@ class ProductServices {
           { $sort: sortStage },
           { $skip: skip },
           { $limit: limit },
-          {
-            $lookup: {
-              from: 'product_medias',
-              localField: '_id',
-              foreignField: 'product_id',
-              as: 'medias_infor'
-            }
-          },
-          {
-            $project: {
-              medias: {
-                $map: {
-                  input: '$medias_infor',
-                  as: 'media',
-                  in: '$$media.media'
-                }
-              },
-              _id: 1,
-              name: 1,
-              quantity: 1,
-              price: 1,
-              description: 1,
-              rating_number: 1,
-              brand_id: 1,
-              origin: 1,
-              volume: 1,
-              weight: 1,
-              height: 1,
-              width: 1,
-              soldNumber: 1,
-              status: 1,
-              category_id: 1,
-              ship_category_id: 1,
-              thumbnail: 1,
-              created_at: 1
-            }
-          }
+          ...productMediaStages()
         ])
         .toArray(),
       databaseService.products.countDocuments(match)

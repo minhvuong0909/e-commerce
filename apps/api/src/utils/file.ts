@@ -3,6 +3,8 @@ import { Request } from 'express'
 // initFolder: hàm check xem có folder uploads ?
 import { UPLOAD_IMAGE_DIR, UPLOAD_IMAGE_TEMP_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
 import formidable, { File } from 'formidable'
+import HTTP_STATUS from '~/constants/httpStatus'
+import { ErrorWithStatus } from '~/models/Errors'
 
 // nếu có thì xử lý và tạo giúp mình
 export const initFolder = () => {
@@ -56,40 +58,74 @@ export const handleUploadImage = async (req: Request) => {
   })
 }
 
-// hàm upload video
+export const VIDEO_MAX_BYTES = 50 * 1024 * 1024
+const VIDEO_MIME_EXT: Record<string, 'mp4' | 'webm' | 'mov'> = {
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/quicktime': 'mov'
+}
+
+/**
+ * Nhận diện video theo chữ ký file (không tin mimetype/đuôi do client gửi):
+ * MP4/MOV có hộp `ftyp` ở byte 4, WebM bắt đầu bằng EBML 1A 45 DF A3.
+ */
+export function detectVideoExt(head: Buffer): 'mp4' | 'webm' | 'mov' | null {
+  if (head.length >= 12 && head.toString('latin1', 4, 8) === 'ftyp') {
+    return head.toString('latin1', 8, 10) === 'qt' ? 'mov' : 'mp4'
+  }
+  if (head.length >= 4 && head.readUInt32BE(0) === 0x1a45dfa3) return 'webm'
+  return null
+}
+
+const uploadError = (message: string, status: number = HTTP_STATUS.BAD_REQUEST) => new ErrorWithStatus({ message, status })
+const removeQuietly = (filepath: string) => fs.promises.unlink(filepath).catch(() => undefined)
+
+// hàm upload video: 1 file, field "video", tối đa 50MB, chỉ mp4/webm/mov
 export const handleUploadVideo = async (req: Request) => {
-  // check form
+  await fs.promises.mkdir(UPLOAD_VIDEO_DIR, { recursive: true })
+  let rejectedType = false
   const form = formidable({
     uploadDir: UPLOAD_VIDEO_DIR,
-    maxFiles: 1, // tối đa 1 file,
-    maxFileSize: 50 * 1024 * 1024, // 50MB
-    // keepExtensions: true, // giữ lại đuôi file
-    filter: ({ name, originalFilename, mimetype }) => {
-      const valid = name === 'video' && Boolean(mimetype?.includes('video'))
-      if (!valid) {
-        form.emit('error' as any, new Error('File Type Invalid') as any)
-      }
+    maxFiles: 1,
+    maxFields: 2,
+    maxFileSize: VIDEO_MAX_BYTES,
+    filter: ({ name, mimetype }) => {
+      const valid = name === 'video' && Boolean(mimetype && VIDEO_MIME_EXT[mimetype])
+      if (!valid) rejectedType = true
       return valid
     }
   })
-  // lọc và parse file bằng sharp
-  return new Promise<File[]>((resolve, reject) => {
-    form.parse(req, (err, fields, files) => {
-      if (err) return reject(err)
-      if (!files.video) {
-        return reject(new Error('Video is empty'))
+
+  const files = await new Promise<File[]>((resolve, reject) => {
+    form.parse(req, (err, _fields, parsed) => {
+      const received = (parsed?.video as File[] | undefined) ?? []
+      if (err) {
+        received.forEach((f) => removeQuietly(f.filepath))
+        const tooBig = (err as { httpCode?: number }).httpCode === 413 || /maxFileSize|maxTotalFileSize/i.test(String(err.message))
+        return reject(tooBig ? uploadError('Video tối đa 50MB.', 413) : uploadError('Không đọc được file video.'))
       }
-      const videos = files.video as File[]
-      // return resolve(files.video as File[])
-      videos.forEach((video) => {
-        const ext = getExtension(video.originalFilename as string) // lấy ra ext của file
-        // nên kh cần dùng keepExtension
-        fs.renameSync(video.filepath, video.filepath + '.' + ext) // đây là newFilename
-        video.newFilename = video.newFilename + '.' + ext
-      })
-      resolve(files.video as File[])
+      if (!received.length) return reject(uploadError(rejectedType ? 'Chỉ hỗ trợ video MP4, WebM hoặc MOV.' : 'Chưa chọn video.'))
+      resolve(received)
     })
   })
+
+  return Promise.all(
+    files.map(async (video) => {
+      const handle = await fs.promises.open(video.filepath, 'r')
+      const head = Buffer.alloc(16)
+      await handle.read(head, 0, 16, 0).finally(() => handle.close())
+      const ext = detectVideoExt(head)
+      if (!ext) {
+        await removeQuietly(video.filepath)
+        throw uploadError('File không phải video MP4, WebM hoặc MOV hợp lệ.')
+      }
+      const finalPath = `${video.filepath}.${ext}`
+      await fs.promises.rename(video.filepath, finalPath)
+      video.filepath = finalPath
+      video.newFilename = `${video.newFilename}.${ext}`
+      return video
+    })
+  )
 }
 // hàm lấy tên file
 export const getNameFormFullNameFile = (filename: string) => {
