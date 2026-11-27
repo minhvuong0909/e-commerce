@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ImagePlus, RefreshCw, Save, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Save, Sparkles, Trash2 } from 'lucide-react'
 import { useForm, useWatch, type UseFormRegisterReturn } from 'react-hook-form'
 import { toast } from 'sonner'
 import AdminTableShell from '../../../components/ui/AdminTable'
@@ -15,7 +15,8 @@ import {
 import { useProductDetail } from '../../../hooks/useProductDetail'
 import { getBrandsApi } from '../../../services/brands.services'
 import { getCategoriesApi } from '../../../services/categories.services'
-import { uploadImageApi } from '../../../services/medias.services'
+import ProductMediaPanel from '../../../components/admin/ProductMediaPanel'
+import { useProductMedia } from '../../../hooks/useProductMedia'
 import { deleteProductApi, updateProductApi } from '../../../services/products.services'
 import { generateProductDescriptionApi } from '../../../services/ai.services'
 import type { Product } from '../../../models/ProductRequests'
@@ -23,18 +24,9 @@ import { getApiErrorMessage } from '../../../utils/apiError'
 import { ROUTE_PATHS } from '../../../routes/route.paths'
 import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
-type MediaPreview = {
-  id: string
-  name: string
-  type: number
-  file: File
-}
-
 type SelectOption = { id: string; name: string }
 
 type ApiOptionItem = { _id?: string; id?: string; name?: string; title?: string }
-
-type ExistingMedia = { url: string; type: number }
 
 function InputError({ message }: { message?: string }) {
   if (!message) return null
@@ -71,38 +63,10 @@ function objectIdToString(value: unknown): string {
   return String(value)
 }
 
-type UploadUrl = string | { url?: string } | undefined
-type UploadData = {
-  url?: UploadUrl
-  image_url?: string
-  secure_url?: string
-  data?: { url?: UploadUrl; image_url?: string; secure_url?: string }
-}
-
-function resolveUrl(value: UploadUrl): string {
-  if (typeof value === 'string') return value
-  return value?.url || ''
-}
-
-function getUploadedImageUrl(uploadResponse: unknown): string {
-  const data = (uploadResponse as { data?: UploadData })?.data
-  if (!data) return ''
-  return (
-    resolveUrl(data.url) ||
-    resolveUrl(data.data?.url) ||
-    data.data?.image_url ||
-    data.data?.secure_url ||
-    data.image_url ||
-    data.secure_url ||
-    ''
-  )
-}
-
 function mapProductToDefaults(product: Product): CreateProductFormInput {
   const p = product as unknown as CreateProductFormInput & {
     brand_id?: unknown
     category_id?: unknown
-    medias?: ExistingMedia[]
   }
   return {
     name: p.name || '',
@@ -119,11 +83,6 @@ function mapProductToDefaults(product: Product): CreateProductFormInput {
     height: p.height,
     medias: []
   }
-}
-
-function initialExistingMedias(product: Product): ExistingMedia[] {
-  const p = product as unknown as { medias?: ExistingMedia[] }
-  return Array.isArray(p.medias) ? p.medias.filter((m) => m?.url) : []
 }
 
 export default function AdminProductEditPage() {
@@ -155,10 +114,7 @@ export default function AdminProductEditPage() {
 function ProductEditForm({ productId, product }: { productId: string; product: Product }) {
   const confirm = useConfirm()
   const nav = useNavigate()
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const [existingMedias, setExistingMedias] = useState<ExistingMedia[]>(() => initialExistingMedias(product))
-  const [mediaPreview, setMediaPreview] = useState<MediaPreview[]>([])
+  const media = useProductMedia(product)
   const [submitError, setSubmitError] = useState('')
   const [brandOptions, setBrandOptions] = useState<SelectOption[]>([])
   const [categoryOptions, setCategoryOptions] = useState<SelectOption[]>([])
@@ -223,55 +179,10 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
     fetchOptions()
   }, [])
 
-  const handleMediaChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (!files.length) return
-    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-    if (!imageFiles.length) {
-      setSubmitError('Vui lòng chọn file ảnh hợp lệ.')
-      e.target.value = ''
-      return
-    }
-    setSubmitError('')
-    setMediaPreview((prev) => [
-      ...prev,
-      ...imageFiles.map((file) => ({
-        id: `${file.name}-${file.lastModified}-${Math.random()}`,
-        name: file.name,
-        type: 0,
-        file
-      }))
-    ])
-    e.target.value = ''
-  }
-
-  const removeExistingMedia = (url: string) => {
-    setExistingMedias((prev) => prev.filter((m) => m.url !== url))
-  }
-
-  const removeNewMedia = (mediaId: string) => {
-    setMediaPreview((prev) => prev.filter((item) => item.id !== mediaId))
-  }
-
-  const uploadNewMedias = async () => {
-    if (!mediaPreview.length) return [] as ExistingMedia[]
-    return Promise.all(
-      mediaPreview.map(async (item) => {
-        const formData = new FormData()
-        formData.append('image', item.file)
-        const uploadResponse = await uploadImageApi(formData)
-        const uploadedUrl = getUploadedImageUrl(uploadResponse)
-        if (!uploadedUrl) throw new Error('Upload thành công nhưng không lấy được URL ảnh.')
-        return { url: uploadedUrl, type: item.type }
-      })
-    )
-  }
-
   const onSubmit = async (values: CreateProductFormValues) => {
     try {
       setSubmitError('')
-      const uploaded = await uploadNewMedias()
-      const medias = [...existingMedias, ...uploaded]
+      const medias = await media.uploadAll()
 
       await updateProductApi(productId, { ...values, medias })
       toast.success('Cập nhật sản phẩm thành công')
@@ -405,56 +316,18 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
 
           <section className='surface-card space-y-5 rounded-3xl p-5 md:p-7'>
             <div>
-              <h2 className='text-xl font-black text-ink-950'>Hình ảnh</h2>
-              <p className='mt-2 text-sm text-ink-500'>Ảnh hiện có và ảnh mới upload.</p>
+              <h2 className='text-xl font-black text-ink-950'>Hình ảnh & video</h2>
+              <p className='mt-2 text-sm text-ink-500'>Xóa hoặc thêm rồi bấm lưu để áp dụng.</p>
             </div>
 
-            {existingMedias.length > 0 ? (
-              <div className='grid grid-cols-2 gap-3'>
-                {existingMedias.map((media) => (
-                  <div key={media.url} className='group relative overflow-hidden rounded-2xl border border-ink-200'>
-                    <img src={media.url} alt='' className='h-24 w-full object-cover' />
-                    <button
-                      type='button'
-                      onClick={() => removeExistingMedia(media.url)}
-                      className='absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white text-rose-600 shadow-sm opacity-0 transition group-hover:opacity-100'
-                      aria-label='Xóa ảnh'
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            <button
-              type='button'
-              onClick={() => fileRef.current?.click()}
-              className='flex h-32 w-full flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-ink-50 text-ink-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
-            >
-              <ImagePlus size={24} />
-              <span className='mt-2 text-sm font-black'>Thêm ảnh mới</span>
-            </button>
-            <input ref={fileRef} type='file' hidden multiple accept='image/*' onChange={handleMediaChange} />
-
-            {mediaPreview.length > 0 ? (
-              <div className='grid grid-cols-2 gap-3'>
-                {mediaPreview.map((item) => (
-                  <div key={item.id} className='group relative rounded-2xl border border-ink-200 bg-ink-50 p-3'>
-                    <div className='line-clamp-2 text-xs font-bold text-ink-500'>{item.name}</div>
-                    <button type='button' onClick={() => removeNewMedia(item.id)} className='absolute right-2 top-2 text-rose-600'>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            <ProductMediaPanel media={media} onError={setSubmitError} disabled={isSubmitting} />
 
             <div className='rounded-3xl border border-ink-200 bg-ink-50 p-5 text-sm'>
               <PreviewRow label='Tên' value={watchedValues?.name || '-'} />
               <PreviewRow label='Giá' value={`${Number(watchedValues?.price || 0).toLocaleString('vi-VN')}đ`} />
               <PreviewRow label='Tồn kho' value={String(watchedValues?.quantity || 0)} />
-              <PreviewRow label='Ảnh' value={String(existingMedias.length + mediaPreview.length)} />
+              <PreviewRow label='Ảnh' value={String(media.imageCount)} />
+              <PreviewRow label='Video' value={media.video ? 'Có' : 'Không'} />
             </div>
 
             <div className='rounded-3xl border border-rose-200 bg-rose-50 p-4'>

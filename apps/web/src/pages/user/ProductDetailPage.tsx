@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ChevronRight, Heart, MessageSquareText, Minus, Package, Plus, ShoppingBag, Star, Zap } from 'lucide-react'
+import { ChevronRight, Heart, MessageSquareText, Minus, Package, Play, Plus, ShoppingBag, Star, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
@@ -68,6 +68,10 @@ export default function ProductDetailPage() {
     return Array.from(new Set(raw.filter(Boolean))).map((url) => formatImageUrl(url))
   }, [product])
 
+  // video (nếu có) là ô cuối của thư viện
+  const videoUrl = product?.video ? formatImageUrl(product.video) : ''
+  const galleryCount = images.length + (videoUrl ? 1 : 0)
+  const showVideo = Boolean(videoUrl) && activeImageIndex === images.length
   const activeImage = images[activeImageIndex] ?? images[0]
   const isOutOfStock = !product || product.quantity <= 0
   const isOverStock = Boolean(product && product.quantity > 0 && qty > product.quantity)
@@ -182,7 +186,7 @@ export default function ProductDetailPage() {
           transition={{ duration: 0.45, ease: easeOut }}
           className='flex flex-col-reverse gap-3 md:flex-row'
         >
-          {images.length > 1 ? (
+          {galleryCount > 1 ? (
             <div className='no-scrollbar flex gap-2 overflow-x-auto md:max-h-[640px] md:w-20 md:flex-col md:overflow-y-auto'>
               {images.map((url, index) => (
                 <button
@@ -199,11 +203,40 @@ export default function ProductDetailPage() {
                   <img src={url} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover mix-blend-multiply' loading='lazy' />
                 </button>
               ))}
+              {videoUrl ? (
+                <button
+                  type='button'
+                  onClick={() => setActiveImageIndex(images.length)}
+                  aria-label='Xem video sản phẩm'
+                  aria-pressed={showVideo}
+                  className={cn(
+                    'relative grid h-20 w-20 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-2xl bg-ink-900 ring-2 transition',
+                    showVideo ? 'ring-berry-500' : 'ring-transparent opacity-70 hover:opacity-100'
+                  )}
+                >
+                  <video src={`${videoUrl}#t=0.5`} preload='metadata' muted playsInline className='absolute inset-0 h-full w-full object-cover opacity-70' />
+                  <span className='relative grid h-8 w-8 place-items-center rounded-full bg-white/95 text-ink-950'>
+                    <Play size={14} className='translate-x-px fill-current' aria-hidden />
+                  </span>
+                </button>
+              ) : null}
             </div>
           ) : null}
           <div className='relative flex-1 overflow-hidden rounded-4xl bg-berry-50'>
             <div className='aspect-square'>
-              {activeImage ? (
+              {showVideo ? (
+                <video
+                  key={videoUrl}
+                  src={videoUrl}
+                  controls
+                  autoPlay
+                  muted
+                  playsInline
+                  preload='metadata'
+                  aria-label={`Video ${product.name}`}
+                  className='h-full w-full bg-ink-950 object-contain'
+                />
+              ) : activeImage ? (
                 <img
                   key={activeImage}
                   src={activeImage}

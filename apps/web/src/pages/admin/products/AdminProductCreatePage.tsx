@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, ImagePlus, RotateCcw, Save, Sparkles, Trash2 } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Save, Sparkles } from 'lucide-react'
 import { useForm, useWatch, type UseFormRegisterReturn } from 'react-hook-form'
 import AdminTableShell from '../../../components/ui/AdminTable'
 import Button from '../../../components/ui/Button'
@@ -13,16 +13,11 @@ import {
 } from '../../../middlewares/products.middlewares'
 import { getBrandsApi } from '../../../services/brands.services'
 import { getCategoriesApi } from '../../../services/categories.services'
-import { uploadImageApi } from '../../../services/medias.services'
+import ProductMediaPanel from '../../../components/admin/ProductMediaPanel'
+import { useProductMedia } from '../../../hooks/useProductMedia'
 import { createProductApi } from '../../../services/products.services'
+import { getApiErrorMessage } from '../../../utils/apiError'
 import { generateProductDescriptionApi } from '../../../services/ai.services'
-
-type MediaPreview = {
-  id: string
-  name: string
-  type: number
-  file: File
-}
 
 type SelectOption = {
   id: string
@@ -70,33 +65,6 @@ function normalizeOptions(response: unknown): SelectOption[] {
     .filter((item) => item.id)
 }
 
-type UploadUrl = string | { url?: string } | undefined
-type UploadData = {
-  url?: UploadUrl
-  image_url?: string
-  secure_url?: string
-  data?: { url?: UploadUrl; image_url?: string; secure_url?: string }
-}
-
-function resolveUrl(value: UploadUrl): string {
-  if (typeof value === 'string') return value
-  return value?.url || ''
-}
-
-function getUploadedImageUrl(uploadResponse: unknown): string {
-  const data = (uploadResponse as { data?: UploadData })?.data
-  if (!data) return ''
-  return (
-    resolveUrl(data.url) ||
-    resolveUrl(data.data?.url) ||
-    data.data?.image_url ||
-    data.data?.secure_url ||
-    data.image_url ||
-    data.secure_url ||
-    ''
-  )
-}
-
 const defaultValues: CreateProductFormInput = {
   name: '',
   price: 0,
@@ -115,9 +83,7 @@ const defaultValues: CreateProductFormInput = {
 
 export default function AdminProductCreatePage() {
   const nav = useNavigate()
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  const [mediaPreview, setMediaPreview] = useState<MediaPreview[]>([])
+  const media = useProductMedia()
   const [submitError, setSubmitError] = useState('')
   const [submitSuccess, setSubmitSuccess] = useState('')
   const [brandOptions, setBrandOptions] = useState<SelectOption[]>([])
@@ -186,64 +152,11 @@ export default function AdminProductCreatePage() {
     fetchOptions()
   }, [])
 
-  const handleMediaChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
-    if (!files.length) return
-
-    const imageFiles = files.filter((file) => file.type.startsWith('image/'))
-
-    if (!imageFiles.length) {
-      setSubmitError('Vui lòng chọn file ảnh hợp lệ.')
-      e.target.value = ''
-      return
-    }
-
-    setSubmitError('')
-    setMediaPreview((prev) => [
-      ...prev,
-      ...imageFiles.map((file) => ({
-        id: `${file.name}-${file.lastModified}-${Math.random()}`,
-        name: file.name,
-        type: 0,
-        file
-      }))
-    ])
-
-    e.target.value = ''
-  }
-
-  const removeMedia = (id: string) => {
-    setMediaPreview((prev) => prev.filter((item) => item.id !== id))
-  }
-
   const handleReset = () => {
-    setMediaPreview([])
+    media.reset()
     setSubmitError('')
     setSubmitSuccess('')
     reset(defaultValues)
-  }
-
-  const uploadAllMedias = async () => {
-    if (!mediaPreview.length) return []
-
-    return Promise.all(
-      mediaPreview.map(async (item) => {
-        const formData = new FormData()
-        formData.append('image', item.file)
-
-        const uploadResponse = await uploadImageApi(formData)
-        const uploadedUrl = getUploadedImageUrl(uploadResponse)
-
-        if (!uploadedUrl) {
-          throw new Error('Upload thành công nhưng không lấy được URL ảnh.')
-        }
-
-        return {
-          url: uploadedUrl,
-          type: item.type
-        }
-      })
-    )
   }
 
   const onSubmit = async (values: CreateProductFormValues) => {
@@ -253,7 +166,7 @@ export default function AdminProductCreatePage() {
 
       const payload = {
         ...values,
-        medias: await uploadAllMedias()
+        medias: await media.uploadAll()
       }
 
       await createProductApi(payload)
@@ -264,7 +177,7 @@ export default function AdminProductCreatePage() {
       }, 700)
     } catch (error) {
       console.error(error)
-      setSubmitError('Không thể tạo sản phẩm hoặc upload ảnh. Vui lòng thử lại.')
+      setSubmitError(getApiErrorMessage(error, 'Không thể tạo sản phẩm hoặc upload ảnh/video. Vui lòng thử lại.'))
     }
   }
 
@@ -395,41 +308,13 @@ export default function AdminProductCreatePage() {
           </section>
 
           <section className='surface-card rounded-3xl p-5 md:p-7'>
-            <div>
-              <h2 className='text-xl font-black text-ink-950'>Hình ảnh</h2>
-              <p className='mt-2 text-sm leading-6 text-ink-500'>Quản lý ảnh hiển thị ngoài trang mua sắm.</p>
+            <div className='mb-5'>
+              <h2 className='text-xl font-black text-ink-950'>Hình ảnh & video</h2>
+              <p className='mt-2 text-sm leading-6 text-ink-500'>Hiển thị trong thư viện ở trang chi tiết sản phẩm.</p>
             </div>
 
-            <button
-              type='button'
-              onClick={() => fileRef.current?.click()}
-              className='mt-5 flex h-[188px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-ink-50 text-ink-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
-            >
-              <ImagePlus size={28} />
-              <span className='mt-3 text-sm font-black'>Bấm để chọn ảnh</span>
-            </button>
-
-            <input ref={fileRef} type='file' hidden multiple accept='image/*' onChange={handleMediaChange} />
-
+            <ProductMediaPanel media={media} onError={setSubmitError} disabled={isSubmitting} />
             <InputError message={errors.medias?.message as string | undefined} />
-
-            <div className='mt-5 grid grid-cols-2 gap-3'>
-              {mediaPreview.length > 0
-                ? mediaPreview.slice(0, 6).map((item) => (
-                    <div key={item.id} className='group relative overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 p-3'>
-                      <div className='line-clamp-2 flex h-16 items-center text-xs font-bold text-ink-500'>{item.name}</div>
-                      <button
-                        type='button'
-                        onClick={() => removeMedia(item.id)}
-                        className='absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white text-rose-600 opacity-0 shadow-sm transition group-hover:opacity-100'
-                        aria-label='Xóa ảnh'
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))
-                : Array.from({ length: 4 }).map((_, index) => <div key={index} className='h-24 rounded-2xl bg-ink-50' />)}
-            </div>
 
             <div className='mt-5 rounded-3xl border border-ink-200 bg-ink-50 p-5'>
               <div className='text-base font-black text-ink-950'>Xem nhanh</div>
@@ -438,7 +323,8 @@ export default function AdminProductCreatePage() {
                 <PreviewRow label='Giá' value={`${Number(watchedValues.price || 0).toLocaleString('vi-VN')}đ`} />
                 <PreviewRow label='Tồn kho' value={String(watchedValues.quantity || 0)} />
                 <PreviewRow label='Xuất xứ' value={watchedValues.origin || '-'} />
-                <PreviewRow label='Ảnh' value={String(mediaPreview.length)} />
+                <PreviewRow label='Ảnh' value={String(media.imageCount)} />
+                <PreviewRow label='Video' value={media.video ? 'Có' : 'Không'} />
               </div>
             </div>
           </section>
