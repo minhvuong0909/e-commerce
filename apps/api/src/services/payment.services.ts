@@ -1,11 +1,12 @@
 import crypto from 'crypto'
 import https from 'https'
 import { ObjectId } from 'mongodb'
-import { PaymentStatus } from '~/constants/enums'
+import { OrderStatus, PaymentStatus, PaymentMethod } from '~/constants/enums'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { PAYMENT_MESSAGES } from '~/constants/messages'
 import databaseService from './database.service'
+import { confirmGatewayPayment } from './payment_confirmation.service'
 import { createMailTransporter } from '~/config/mail'
 import { assertMoMoProductionReady, MOMO_CONFIG, payos, PAYOS_CONFIG } from '~/config/payment'
 
@@ -179,31 +180,30 @@ class PaymentService {
     }
 
     const isSuccess = Number(resultCode) === 0
+    const payment = await databaseService.payments.findOne({
+      order_id: orderObjectId,
+      payment_method: 'MOMO',
+      'raw_gateway_response.orderId': String(orderId)
+    })
+    if (
+      !payment ||
+      existingOrder.status === OrderStatus.Cancelled ||
+      existingOrder.refund_state ||
+      existingOrder.payment_status === PaymentStatus.REFUNDED ||
+      existingOrder.payment_method !== PaymentMethod.MOMO ||
+      !Number.isFinite(Number(amount)) ||
+      Number(amount) !== Number(payment.amount) ||
+      Number(payment.amount) !== Number(existingOrder.total_price)
+    ) {
+      throw new ErrorWithStatus({
+        message: 'Giao dịch MoMo không khớp đơn hàng hoặc số tiền.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
 
     if (isSuccess) {
       if (existingOrder.payment_status !== PaymentStatus.COMPLETED) {
-        await databaseService.orders.updateOne(
-          { _id: orderObjectId },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              updated_at: new Date()
-            }
-          }
-        )
-
-        await databaseService.payments.updateOne(
-          { order_id: orderObjectId, payment_method: 'MOMO' },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              gateway_trans_id: transId,
-              raw_gateway_response: paymentData,
-              updated_at: new Date()
-            }
-          },
-          { upsert: false }
-        )
+        await confirmGatewayPayment(payment._id, 'MOMO', String(transId))
 
         console.log(`Đơn hàng ${order_id} đã thanh toán thành công qua MoMo. MoMo TransId: ${transId}`)
 
@@ -213,7 +213,7 @@ class PaymentService {
       }
     } else if (existingOrder.payment_status === PaymentStatus.PENDING) {
       await databaseService.orders.updateOne(
-        { _id: orderObjectId },
+        { _id: orderObjectId, payment_status: PaymentStatus.PENDING },
         {
           $set: {
             payment_status: PaymentStatus.FAILED,
@@ -223,7 +223,7 @@ class PaymentService {
       )
 
       await databaseService.payments.updateOne(
-        { order_id: orderObjectId, payment_method: 'MOMO' },
+        { _id: payment._id, payment_status: PaymentStatus.PENDING },
         {
           $set: {
             payment_status: PaymentStatus.FAILED,
@@ -360,6 +360,14 @@ class PaymentService {
   // Giả lập thanh toán thành công dành cho Test Free
   // -------------------------------------------------------
   async mockPaymentSuccess(order_id: string) {
+    if (
+      process.env.ENABLE_PAYMENT_MOCK !== 'true' ||
+      process.env.NODE_ENV === 'production' ||
+      process.env.PAYMENT_MODE === 'production' ||
+      process.argv.includes('--production')
+    ) {
+      throw new ErrorWithStatus({ message: 'Payment mock disabled.', status: HTTP_STATUS.FORBIDDEN })
+    }
     const order = await databaseService.orders.findOne({ _id: new ObjectId(order_id) })
     if (!order) {
       throw new ErrorWithStatus({
@@ -456,7 +464,7 @@ class PaymentService {
   }
 
   async handlePayOSReturn(query: Record<string, unknown>) {
-    const { code, status, orderCode, order_id } = query
+    const { orderCode, order_id } = query
     if (!orderCode) {
       throw new ErrorWithStatus({
         message: 'Thiếu thông tin mã đơn hàng từ PayOS.',
@@ -465,16 +473,25 @@ class PaymentService {
     }
 
     const numericOrderCode = Number(orderCode)
+    if (
+      !Number.isSafeInteger(numericOrderCode) ||
+      numericOrderCode <= 0 ||
+      typeof order_id !== 'string' ||
+      !ObjectId.isValid(order_id)
+    ) {
+      throw new ErrorWithStatus({ message: 'Mã giao dịch không hợp lệ.', status: HTTP_STATUS.BAD_REQUEST })
+    }
+    const payment = await databaseService.payments.findOne({
+      order_id: new ObjectId(order_id),
+      payment_method: 'PAYOS',
+      $or: [{ gateway_trans_id: String(numericOrderCode) }, { 'raw_gateway_response.orderCode': numericOrderCode }]
+    })
+    if (!payment) {
+      throw new ErrorWithStatus({ message: 'Giao dịch không thuộc đơn hàng này.', status: HTTP_STATUS.BAD_REQUEST })
+    }
     const payosInfo = await payos.paymentRequests.get(numericOrderCode)
 
-    if (!order_id || !ObjectId.isValid(order_id as string)) {
-      throw new ErrorWithStatus({
-        message: 'Mã đơn hàng không hợp lệ.',
-        status: HTTP_STATUS.BAD_REQUEST
-      })
-    }
-
-    const orderObjectId = new ObjectId(order_id as string)
+    const orderObjectId = new ObjectId(order_id)
     const existingOrder = await databaseService.orders.findOne({ _id: orderObjectId })
     if (!existingOrder) {
       throw new ErrorWithStatus({
@@ -484,33 +501,30 @@ class PaymentService {
     }
 
     const isSuccess = payosInfo.status === 'PAID'
+    if (
+      existingOrder.status === OrderStatus.Cancelled ||
+      existingOrder.refund_state ||
+      existingOrder.payment_status === PaymentStatus.REFUNDED ||
+      payment.payment_status === PaymentStatus.REFUNDED ||
+      existingOrder.payment_method !== PaymentMethod.PAYOS ||
+      Number(payosInfo.orderCode) !== numericOrderCode ||
+      Number(payosInfo.amount) !== Number(payment.amount) ||
+      Number(payment.amount) !== Number(existingOrder.total_price) ||
+      (isSuccess && !(Number(payosInfo.amountPaid) >= Number(payment.amount)))
+    ) {
+      throw new ErrorWithStatus({
+        message: 'Giao dịch không khớp đơn hàng hoặc số tiền.',
+        status: HTTP_STATUS.BAD_REQUEST
+      })
+    }
 
     if (isSuccess) {
       if (existingOrder.payment_status !== PaymentStatus.COMPLETED) {
-        await databaseService.orders.updateOne(
-          { _id: orderObjectId },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              updated_at: new Date()
-            }
-          }
-        )
-
-        await databaseService.payments.updateOne(
-          { order_id: orderObjectId, payment_method: 'PAYOS' },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              gateway_trans_id: payosInfo.id,
-              updated_at: new Date()
-            }
-          }
-        )
+        await confirmGatewayPayment(payment._id, 'PAYOS')
 
         // Gửi email xác nhận thanh toán thành công
         this.sendPaymentConfirmationEmail(
-          order_id as string,
+          order_id,
           existingOrder.total_price.toString(),
           payosInfo.id,
           'Chuyển khoản (PayOS)',
@@ -519,7 +533,7 @@ class PaymentService {
       }
       return {
         resultCode: '0',
-        order_id: order_id as string,
+        order_id,
         amount: existingOrder.total_price,
         transId: payosInfo.id,
         gatewayMessage: 'Thanh toán PayOS thành công.'
@@ -527,7 +541,7 @@ class PaymentService {
     } else {
       return {
         resultCode: '1',
-        order_id: order_id as string,
+        order_id,
         amount: existingOrder.total_price,
         transId: payosInfo.id,
         gatewayMessage: `Thanh toán thất bại (Trạng thái: ${payosInfo.status})`
@@ -549,27 +563,26 @@ class PaymentService {
         ]
       })
       if (payment) {
-        await databaseService.orders.updateOne(
-          { _id: payment.order_id },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              updated_at: new Date()
-            }
-          }
-        )
-
-        await databaseService.payments.updateOne(
-          { _id: payment._id },
-          {
-            $set: {
-              payment_status: PaymentStatus.COMPLETED,
-              updated_at: new Date()
-            }
-          }
-        )
-
         const order = await databaseService.orders.findOne({ _id: payment.order_id })
+        if (
+          !order ||
+          order.refund_state ||
+          order.status === OrderStatus.Cancelled ||
+          order.payment_status === PaymentStatus.REFUNDED ||
+          payment.payment_status === PaymentStatus.REFUNDED ||
+          order.payment_method !== PaymentMethod.PAYOS ||
+          Number(payment.amount) !== Number(order.total_price) ||
+          !(Number(verifiedData.amount) >= Number(payment.amount))
+        ) {
+          throw new ErrorWithStatus({
+            message: 'Webhook không khớp đơn hàng hoặc số tiền.',
+            status: HTTP_STATUS.BAD_REQUEST
+          })
+        }
+        if (order.payment_status === PaymentStatus.COMPLETED) return
+        const changed = await confirmGatewayPayment(payment._id, 'PAYOS')
+        if (!changed) return
+
         if (order) {
           this.sendPaymentConfirmationEmail(
             payment.order_id.toString(),

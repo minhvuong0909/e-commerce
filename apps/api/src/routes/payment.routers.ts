@@ -11,7 +11,9 @@ import {
   payosReturnController,
   payosCancelController
 } from '~/controllers/payment.controllers'
-import { accessTokenValidator } from '~/middlewares/users.middlewares'
+import { accessTokenValidator, requireVerifiedEmail, checkPermissions } from '~/middlewares/users.middlewares'
+import { requirePaymentOwner } from '~/middlewares/payment.middlewares'
+import { PaymentMethod, USER_ROLE } from '~/constants/enums'
 import { wrapAsync } from '~/utils/handlers'
 import { isMoMoSandboxMode } from '~/config/payment'
 
@@ -23,7 +25,6 @@ const paymentRouter = Router()
  * Auth: access token.
  * Features: returns payUrl/qrCodeUrl so the storefront can redirect customers to MoMo checkout.
  */
-paymentRouter.post('/momo/:order_id', accessTokenValidator, wrapAsync(createMoMoPaymentController))
 
 /**
  * POST /payment/momo/webhook
@@ -31,6 +32,14 @@ paymentRouter.post('/momo/:order_id', accessTokenValidator, wrapAsync(createMoMo
  * Features: receives MoMo transaction status and updates order/payment state.
  */
 paymentRouter.post('/momo/webhook', wrapAsync(momoWebhookController))
+// Static webhook must precede the dynamic order route.
+paymentRouter.post(
+  '/momo/:order_id',
+  accessTokenValidator,
+  requireVerifiedEmail,
+  requirePaymentOwner(PaymentMethod.MOMO),
+  wrapAsync(createMoMoPaymentController)
+)
 
 /**
  * GET /payment/momo/return
@@ -45,7 +54,13 @@ paymentRouter.get('/momo/return', wrapAsync(momoReturnController))
  * Auth: access token.
  * Features: initializes PayPal checkout for an existing order.
  */
-paymentRouter.post('/paypal/create/:order_id', accessTokenValidator, wrapAsync(createPayPalPaymentController))
+paymentRouter.post(
+  '/paypal/create/:order_id',
+  accessTokenValidator,
+  requireVerifiedEmail,
+  requirePaymentOwner(PaymentMethod.PAYPAL),
+  wrapAsync(createPayPalPaymentController)
+)
 
 /**
  * GET /payment/paypal/success
@@ -60,7 +75,13 @@ paymentRouter.get('/paypal/success', wrapAsync(paypalSuccessController))
  * Auth: access token.
  * Features: starts bank transfer/QR checkout through PayOS for an existing order.
  */
-paymentRouter.post('/payos/create/:order_id', accessTokenValidator, wrapAsync(createPayOSPaymentController))
+paymentRouter.post(
+  '/payos/create/:order_id',
+  accessTokenValidator,
+  requireVerifiedEmail,
+  requirePaymentOwner(PaymentMethod.PAYOS),
+  wrapAsync(createPayOSPaymentController)
+)
 
 /**
  * GET /payment/payos/return
@@ -83,14 +104,27 @@ paymentRouter.get('/payos/cancel', wrapAsync(payosCancelController))
  */
 paymentRouter.post('/payos/webhook', wrapAsync(payosWebhookController))
 
-if (isMoMoSandboxMode) {
+if (
+  isMoMoSandboxMode &&
+  process.env.NODE_ENV !== 'production' &&
+  process.env.PAYMENT_MODE !== 'production' &&
+  !process.argv.includes('--production') &&
+  process.env.ENABLE_PAYMENT_MOCK === 'true'
+) {
   /**
    * POST /payment/momo/mock-success/:order_id
    * MoMo sandbox-only test helper.
    * Auth: access token.
    * Features: marks a MoMo test payment as successful during local/demo development.
    */
-  paymentRouter.post('/momo/mock-success/:order_id', accessTokenValidator, wrapAsync(mockMoMoPaymentSuccessController))
+  paymentRouter.post(
+    '/momo/mock-success/:order_id',
+    accessTokenValidator,
+    checkPermissions(USER_ROLE.Admin),
+    requireVerifiedEmail,
+    requirePaymentOwner(PaymentMethod.MOMO),
+    wrapAsync(mockMoMoPaymentSuccessController)
+  )
 }
 
 export default paymentRouter
