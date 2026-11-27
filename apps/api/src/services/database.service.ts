@@ -16,6 +16,7 @@ import UserAddress from '~/models/schemas/UserAddresses.schema'
 import ShopSettings from '~/models/schemas/ShopSettings.schema'
 import Voucher from '~/models/schemas/Vouchers.schema'
 import Review from '~/models/schemas/Reviews.schema'
+import type { WishlistItem } from './wishlist.services'
 
 dotenv.config()
 
@@ -65,6 +66,8 @@ class DatabaseService {
       }
     )
     await this.vouchers.createIndex({ code: 1 }, { name: 'uniq_voucher_code', unique: true })
+    await this.wishlist_items.createIndex({ user_id: 1, product_id: 1 }, { name: 'uniq_wishlist_item', unique: true })
+    await this.wishlist_items.createIndex({ user_id: 1, created_at: -1 }, { name: 'wishlist_by_user' })
   }
   /** Fail closed on standalone MongoDB: never fall back to partial order writes. */
   async withTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
@@ -145,6 +148,10 @@ class DatabaseService {
 
   get shop_settings(): Collection<ShopSettings> {
     return this.db.collection(process.env.DB_SHOP_SETTINGS_COLLECTION || 'shop_settings')
+  }
+
+  get wishlist_items(): Collection<WishlistItem> {
+    return this.db.collection(process.env.DB_WISHLIST_COLLECTION || 'wishlist_items')
   }
 
   get vouchers(): Collection<Voucher> {

@@ -20,6 +20,7 @@ import shopSettingsRouter from './routes/shop_settings.routers'
 import vouchersRouter from './routes/vouchers.routers'
 import reviewsRouter from './routes/reviews.routers'
 import aiRouter from './routes/ai.routers'
+import wishlistRouter from './routes/wishlist.routers'
 import { initializeServer } from './utils/serverStartup'
 import { getErrorMessage } from './utils/errorMessage'
 
@@ -97,6 +98,8 @@ app.use('/vouchers', vouchersRouter)
 app.use('/reviews', reviewsRouter)
 
 app.use('/ai', aiRouter)
+
+app.use('/wishlist', wishlistRouter)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // error handler tập trung
