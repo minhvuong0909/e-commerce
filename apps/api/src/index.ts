@@ -21,6 +21,7 @@ import vouchersRouter from './routes/vouchers.routers'
 import reviewsRouter from './routes/reviews.routers'
 import aiRouter from './routes/ai.routers'
 import { initializeServer } from './utils/serverStartup'
+import { getErrorMessage } from './utils/errorMessage'
 
 dotenv.config()
 
@@ -108,8 +109,9 @@ initializeServer({
     app.listen(port, '0.0.0.0', () => {
       console.log(`Server backend đang chạy trên port ${port}`)
     })
-}).catch(async () => {
+}).catch(async (error: unknown) => {
   console.error('Không thể khởi động backend. Kiểm tra DATABASE_URL, DNS và quyền kết nối MongoDB.')
+  console.error('Lý do:', getErrorMessage(error, String(error)))
   await databaseService.close().catch(() => undefined)
   process.exitCode = 1
 })

@@ -19,20 +19,32 @@ import Review from '~/models/schemas/Reviews.schema'
 
 dotenv.config()
 
-const uri =
-  process.env.DATABASE_URL ||
-  `mongodb://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@shoppingcard-shard-00-00.0zguu.mongodb.net:27017,shoppingcard-shard-00-01.0zguu.mongodb.net:27017,shoppingcard-shard-00-02.0zguu.mongodb.net:27017/?ssl=true&replicaSet=atlas-fcaat9-shard-0&authSource=admin&appName=ShoppingCard`
+/**
+ * The connection string must come from DATABASE_URL. There is deliberately no hard-coded
+ * fallback cluster: a stale fallback silently pointed at a cluster that no longer resolves.
+ */
+export function resolveDatabaseUrl(env: NodeJS.ProcessEnv = process.env): string | null {
+  const value = (env.DATABASE_URL ?? '').trim().replace(/^['"]|['"]$/g, '')
+  return /^mongodb(\+srv)?:\/\//.test(value) ? value : null
+}
+
+const databaseUrl = resolveDatabaseUrl()
+// Placeholder only keeps construction side-effect free; connect() refuses to use it.
+const UNCONFIGURED_PLACEHOLDER = 'mongodb://127.0.0.1:1/unconfigured'
 
 class DatabaseService {
   private client: MongoClient
   public db: Db
 
   constructor() {
-    this.client = new MongoClient(uri)
+    this.client = new MongoClient(databaseUrl ?? UNCONFIGURED_PLACEHOLDER)
     this.db = this.client.db(process.env.DB_NAME)
   }
 
   async connect() {
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL chưa được cấu hình hoặc không phải chuỗi mongodb:// / mongodb+srv:// hợp lệ.')
+    }
     await this.client.connect()
     await this.db.command({ ping: 1 })
     console.log('MongoDB connected successfully!')
