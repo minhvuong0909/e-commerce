@@ -12,7 +12,9 @@ import {
 } from '~/controllers/orders.controllers'
 import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
-import { guestOrderLimiter } from '~/middlewares/rateLimit.middlewares'
+import { guestOrderLimiter, orderTrackLimiter } from '~/middlewares/rateLimit.middlewares'
+import guestTrackingService from '~/services/guest_tracking.services'
+import HTTP_STATUS from '~/constants/httpStatus'
 import { getDashboardSummaryController } from '~/controllers/dashboard.controllers'
 
 const ordersRouter = Router()
@@ -37,6 +39,21 @@ ordersRouter.post(
  * Features: lets customers order with name, phone and address without registering an account.
  */
 ordersRouter.post('/guest', guestOrderLimiter, wrapAsync(createGuestOrderController))
+
+/**
+ * POST /orders/track
+ * Public guest order lookup by short order code + the phone used at checkout.
+ * Guest orders only; returns status, items and totals with masked recipient details.
+ * Rate limited; unknown code and wrong phone return the same 404.
+ */
+ordersRouter.post(
+  '/track',
+  orderTrackLimiter,
+  wrapAsync(async (req, res) => {
+    const result = await guestTrackingService.track(req.body?.code, req.body?.phone)
+    res.status(HTTP_STATUS.OK).json({ message: 'Track order success', result })
+  })
+)
 
 /**
  * PUT /orders/status/:id

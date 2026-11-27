@@ -58,3 +58,11 @@ export const voucherValidateLimiter = rateLimit({
   limit: 15,
   message: { message: 'Bạn thử mã giảm giá quá nhiều lần. Vui lòng thử lại sau ít phút.' }
 })
+
+/** Public guest order lookup: a handful of tries per visitor, too slow to enumerate code + phone pairs. */
+export const orderTrackLimiter = rateLimit({
+  ...commonOptions,
+  windowMs: 15 * 60_000,
+  limit: 10,
+  message: { message: 'Bạn tra cứu quá nhiều lần. Vui lòng thử lại sau 15 phút.' }
+})
