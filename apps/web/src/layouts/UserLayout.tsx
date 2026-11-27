@@ -25,6 +25,7 @@ import money from '../utils/money'
 import { formatImageUrl } from '../utils/formatImageUrl'
 import type { Product } from '../models/ProductRequests'
 import BrandMark from '../components/ui/BrandMark'
+import ChatAssistant from '../components/chat/ChatAssistant'
 
 const SHOP_ANCHOR = '#shop'
 
@@ -511,6 +512,8 @@ export default function UserLayout() {
           </div>
         </div>
       </footer>
+
+      <ChatAssistant />
 
       {/* mobile dock */}
       <nav
