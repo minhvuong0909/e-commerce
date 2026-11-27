@@ -16,7 +16,7 @@ import { createMailTransporter } from '~/config/mail'
 import { payos } from '~/config/payment'
 import voucherService from './vouchers.services'
 import telegramService from './telegram.services'
-import { buildIdempotencyKey, isDuplicateKeyError, orderFingerprint } from '~/utils/idempotency'
+import { buildIdempotencyKey, orderFingerprint } from '~/utils/idempotency'
 
 const mailTransporter = createMailTransporter()
 
@@ -138,11 +138,11 @@ class OrdersService {
         note
       })
     } catch (error) {
-      // A concurrent submit with the same key won the unique index; this transaction rolled back.
-      if (isDuplicateKeyError(error)) {
-        const replay = await this.findReplay(idempotency_key)
-        if (replay) return replay
-      }
+      // A concurrent submit with the same key may have won: either at the unique index (E11000) or
+      // earlier, e.g. it already consumed the cart items so this attempt failed "cart changed".
+      // This transaction rolled back, so if the winner exists, answer with it instead of an error.
+      const replay = await this.findReplay(idempotency_key)
+      if (replay) return replay
       throw error
     }
 
@@ -306,6 +306,9 @@ class OrdersService {
       .toArray()
     // nếu ko chọn
     if (cartItems.length !== cart_item_id.length) {
+      // the cart may have just been consumed by a concurrent submit of this same checkout
+      const concurrent = await this.findReplay(idempotency_key)
+      if (concurrent) return concurrent
       throw new ErrorWithStatus({
         message: CART_MESSAGES.NO_SELECTED_CART_ITEMS,
         status: HTTP_STATUS.NOT_FOUND

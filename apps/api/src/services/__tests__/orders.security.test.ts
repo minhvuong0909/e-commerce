@@ -163,3 +163,48 @@ describe('duplicate order protection (idempotency)', () => {
     expect(mocks.transaction).not.toHaveBeenCalled()
   })
 })
+
+describe('concurrent cart checkout', () => {
+  it('answers the loser of a cart race with the winning order instead of "cart changed"', async () => {
+    vi.clearAllMocks()
+    const winner = new ObjectId()
+    vi.spyOn(ordersService as any, 'sendTelegramOrderNotification').mockResolvedValue(undefined)
+    mocks.delivery.mockResolvedValue({ _id: new ObjectId() })
+    mocks.quote.mockResolvedValue({ shipping_fee: 0, lat: 10, lng: 106, distance_km: 1 })
+    // the concurrent winner exists by the time our transaction has failed
+    mocks.findOrder.mockReset().mockResolvedValue({ _id: winner })
+    mocks.transaction.mockRejectedValue(new Error('Giỏ hàng đã thay đổi hoặc đã được thanh toán. Vui lòng tải lại.'))
+    const result = await (ordersService as any).finalizeOrder({
+      user_id: new ObjectId().toHexString(),
+      items: [{ product_id: new ObjectId().toHexString(), quantity: 1 }],
+      payload: {
+        delivery_method_id: new ObjectId().toHexString(),
+        payment_method: PaymentMethod.CASH_ON_DELIVERY,
+        recipient_name: 'T',
+        phone: '0900000000',
+        address_line: 'A',
+        lat: 10,
+        lng: 106
+      },
+      selectedCartItems: [new ObjectId()],
+      idempotency_key: 'u:x:k:same-attempt'
+    })
+    expect(result).toEqual({ acknowledged: true, insertedId: winner, replayed: true })
+  })
+
+  it('still surfaces the real error when no order was created', async () => {
+    vi.clearAllMocks()
+    mocks.delivery.mockResolvedValue({ _id: new ObjectId() })
+    mocks.quote.mockResolvedValue({ shipping_fee: 0, lat: 10, lng: 106, distance_km: 1 })
+    mocks.findOrder.mockReset().mockResolvedValue(null)
+    mocks.transaction.mockRejectedValue(new Error('Số lượng sản phẩm không đủ'))
+    await expect(
+      (ordersService as any).finalizeOrder({
+        user_id: new ObjectId().toHexString(),
+        items: [{ product_id: new ObjectId().toHexString(), quantity: 1 }],
+        payload: { delivery_method_id: new ObjectId().toHexString(), payment_method: PaymentMethod.CASH_ON_DELIVERY, recipient_name: 'T', phone: '1', address_line: 'A', lat: 10, lng: 106 },
+        idempotency_key: 'u:x:k:other'
+      })
+    ).rejects.toThrow('Số lượng sản phẩm không đủ')
+  })
+})
