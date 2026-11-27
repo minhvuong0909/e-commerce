@@ -82,3 +82,20 @@ export type DashboardSummary = {
 /** [Admin/Staff] Server-computed dashboard figures over every order in the range (dates: YYYY-MM-DD, VN time). */
 export const getDashboardSummaryApi = (from: string, to: string) =>
   api.get<{ message: string; result: DashboardSummary }>('/orders/stats/summary', { params: { from, to } })
+
+export type TrackedOrder = {
+  code: string
+  status: number
+  payment_method: string
+  payment_status: number
+  total_price: number
+  shipping_fee: number
+  created_at: string
+  updated_at: string
+  recipient: { name: string; phone: string; area: string }
+  items: Array<{ name: string; thumbnail?: string; quantity: number; price: number }>
+}
+
+/** Public guest lookup by short order code + checkout phone (rate limited, masked details). */
+export const trackGuestOrderApi = (code: string, phone: string) =>
+  api.post<{ result: TrackedOrder }>('/orders/track', { code, phone })

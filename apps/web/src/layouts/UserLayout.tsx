@@ -301,7 +301,7 @@ export default function UserLayout() {
             <IconLink to={ROUTE_PATHS.USER_WISHLIST} label='Yêu thích' badge={wishlistCount}>
               <Heart size={21} />
             </IconLink>
-            <IconLink to={ROUTE_PATHS.USER_ORDERS} label='Đơn hàng'>
+            <IconLink to={hasToken ? ROUTE_PATHS.USER_ORDERS : ROUTE_PATHS.USER_TRACK_ORDER} label={hasToken ? 'Đơn hàng' : 'Tra cứu đơn hàng'}>
               <Package size={21} />
             </IconLink>
 
@@ -490,7 +490,8 @@ export default function UserLayout() {
               <h4 className='text-sm font-semibold text-ink-950'>Tài khoản</h4>
               <ul className='mt-4 space-y-2.5 text-sm'>
                 <li><Link to={ROUTE_PATHS.USER_PROFILE} className='text-ink-600 transition hover:text-berry-700'>Hồ sơ</Link></li>
-                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn hàng</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-600 transition hover:text-berry-700'>Đơn hàng của tôi</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_TRACK_ORDER} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn (không cần tài khoản)</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-600 transition hover:text-berry-700'>Giỏ hàng</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_WISHLIST} className='text-ink-600 transition hover:text-berry-700'>Yêu thích</Link></li>
               </ul>
@@ -529,7 +530,7 @@ export default function UserLayout() {
           {[
             { to: ROUTE_PATHS.USER_HOME, label: 'Trang chủ', icon: Home },
             { to: ROUTE_PATHS.USER_CART, label: 'Giỏ hàng', icon: ShoppingBag, badge: cartCount },
-            { to: ROUTE_PATHS.USER_ORDERS, label: 'Đơn hàng', icon: Package },
+            { to: hasToken ? ROUTE_PATHS.USER_ORDERS : ROUTE_PATHS.USER_TRACK_ORDER, label: 'Đơn hàng', icon: Package },
             { to: ROUTE_PATHS.USER_PROFILE, label: 'Tôi', icon: UserRound }
           ].map(({ to, label, icon: Icon, badge }) => (
             <NavLink

@@ -147,9 +147,15 @@ export default function OrderResultPage() {
           </dl>
 
           {status === 'placed' && !isSignedIn ? (
-            <p className='rounded-3xl bg-lilac-50 px-5 py-4 text-sm text-lilac-700'>
-              Lưu lại mã đơn {orderCode} để tiện tra cứu. Tạo tài khoản để theo dõi đơn hàng trực tuyến cho các lần mua sau.
-            </p>
+            <div className='rounded-3xl bg-lilac-50 px-5 py-4 text-sm text-lilac-700'>
+              Lưu lại mã đơn <span className='font-mono font-semibold'>{orderCode}</span> và số điện thoại bạn đã nhập để tra cứu đơn bất cứ lúc nào.
+              <Link
+                to={`${ROUTE_PATHS.USER_TRACK_ORDER}?code=${encodeURIComponent(orderCode)}`}
+                className='mt-2 block font-semibold text-berry-700 hover:underline'
+              >
+                Tra cứu đơn hàng →
+              </Link>
+            </div>
           ) : null}
 
           <div className='grid gap-2'>
