@@ -9,7 +9,8 @@ import {
   Search,
   ShoppingBag,
   UserRound,
-  X
+  X,
+  Heart
 } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -25,6 +26,7 @@ import { formatImageUrl } from '../utils/formatImageUrl'
 import type { Product } from '../models/ProductRequests'
 import BrandMark from '../components/ui/BrandMark'
 import ChatAssistant from '../components/chat/ChatAssistant'
+import { useWishlist, WishlistLoginMerge } from '../hooks/useWishlist'
 
 const SHOP_ANCHOR = '#shop'
 
@@ -192,6 +194,7 @@ export default function UserLayout() {
 
   const { data: cartItems = [] } = useCart(hasToken)
   const cartCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems])
+  const { count: wishlistCount } = useWishlist()
   const { data: categories = [] } = useStorefrontCategories(7)
 
   const isHome = location.pathname === ROUTE_PATHS.USER_HOME || location.pathname === ROUTE_PATHS.USER
@@ -295,6 +298,9 @@ export default function UserLayout() {
           />
 
           <div className='ml-auto flex items-center gap-1'>
+            <IconLink to={ROUTE_PATHS.USER_WISHLIST} label='Yêu thích' badge={wishlistCount}>
+              <Heart size={21} />
+            </IconLink>
             <IconLink to={ROUTE_PATHS.USER_ORDERS} label='Đơn hàng'>
               <Package size={21} />
             </IconLink>
@@ -486,6 +492,7 @@ export default function UserLayout() {
                 <li><Link to={ROUTE_PATHS.USER_PROFILE} className='text-ink-600 transition hover:text-berry-700'>Hồ sơ</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn hàng</Link></li>
                 <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-600 transition hover:text-berry-700'>Giỏ hàng</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_WISHLIST} className='text-ink-600 transition hover:text-berry-700'>Yêu thích</Link></li>
               </ul>
             </div>
             <div>
@@ -511,6 +518,7 @@ export default function UserLayout() {
       </footer>
 
       <ChatAssistant />
+      <WishlistLoginMerge />
 
       {/* mobile dock */}
       <nav
