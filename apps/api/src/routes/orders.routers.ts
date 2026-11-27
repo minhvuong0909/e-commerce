@@ -13,6 +13,7 @@ import {
 import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 import { guestOrderLimiter } from '~/middlewares/rateLimit.middlewares'
+import { getDashboardSummaryController } from '~/controllers/dashboard.controllers'
 
 const ordersRouter = Router()
 
@@ -118,6 +119,19 @@ ordersRouter.get(
   accessTokenValidator,
   checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
   wrapAsync(getAllOrdersController)
+)
+
+/**
+ * GET /orders/stats/summary?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * Admin/staff dashboard figures computed server-side over ALL orders in the range
+ * (recognised revenue, open orders, status mix, daily series, period-over-period change,
+ * top products, low stock, reconciliation anomalies). Dates are in Asia/Ho_Chi_Minh.
+ */
+ordersRouter.get(
+  '/stats/summary',
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Staff, USER_ROLE.Admin),
+  wrapAsync(getDashboardSummaryController)
 )
 
 /**
