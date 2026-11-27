@@ -45,6 +45,14 @@ describe('buildProductMatchStage', () => {
     expect(match.price).toEqual({ $gte: 100 })
   })
 
+  it('swaps a reversed price range instead of returning nothing', () => {
+    expect(buildProductMatchStage({ minPrice: '500000', maxPrice: '200000' }).price).toEqual({ $gte: 200000, $lte: 500000 })
+  })
+
+  it('ignores negative or non-numeric prices', () => {
+    expect(buildProductMatchStage({ minPrice: '-5', maxPrice: 'abc' })).not.toHaveProperty('price')
+  })
+
   it('keeps a valid status filter and drops an invalid one', () => {
     expect(buildProductMatchStage({ status: PRODUCT_STATUS.Stock }).status).toBe(PRODUCT_STATUS.Stock)
     expect(buildProductMatchStage({ status: 99 }).status).toBeUndefined()
