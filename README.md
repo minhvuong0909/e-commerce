@@ -1,103 +1,64 @@
-# 🛒 E-commerce Backend API  
-Backend REST API cho hệ thống thương mại điện tử mỹ phẩm.  
-Dự án hỗ trợ phân quyền, quản lý sản phẩm, giỏ hàng, đơn hàng, phương thức giao hàng, thanh toán cơ bản và JWT Authentication.
+# Vibrant Mart — E-commerce mỹ phẩm (MERN monorepo)
 
----
+Cửa hàng mỹ phẩm/skincare: storefront React + REST API Express/MongoDB, thanh toán COD · PayOS · MoMo · PayPal, tính phí ship theo bản đồ, trang quản trị Admin/Staff.
 
-## 🚀 Features
+## Cấu trúc
 
-### 🧑‍💼 Authentication & Authorization
-- Đăng ký / đăng nhập / đăng xuất
-- JWT Access Token + Refresh Token
-- Phân quyền (Admin / User)
-- Xác thực email (verify token)
-- Quên mật khẩu (forgot password token)
-- User status (active / inactive / banned)
+```
+apps/
+  api/   Express 5 + TypeScript + MongoDB driver (transactions), Vitest
+  web/   React 19 + Vite 7 + Tailwind 3 + React Query + Framer Motion
+design-system/web/   Hệ thiết kế "Vibrant Glow" (MASTER.md)
+```
 
-### 🛍️ Product & Catalog Management
-- CRUD Category
-- CRUD Brand
-- CRUD Product
-- Thumbnail + Image gallery cho sản phẩm
-- Thuộc tính mỹ phẩm: origin, weight, volume, width, height, length
-- Filter theo category, brand, price range…
+| Lớp | Công nghệ |
+|---|---|
+| API | Node 22, Express 5, `mongodb` driver 7, express-validator, JWT (access/refresh), formidable + sharp, Swagger tại `/api-docs` |
+| Database | MongoDB **replica set** (đơn hàng, kho, voucher, thanh toán dùng transaction — không chạy trên standalone) |
+| Web | React 19, React Router 7, TanStack Query, react-hook-form + zod, Leaflet, sonner |
+| Tích hợp | PayOS, MoMo, PayPal (sandbox), Nominatim + OSRM (geocode/route), Cloudinary, Gmail SMTP, Supabase (Google login), Telegram, OpenAI (tùy chọn) |
 
-### 🛒 Cart System
-- Mỗi user có 1 giỏ hàng
-- Thêm sản phẩm vào cart
-- Cập nhật số lượng
-- Xóa sản phẩm khỏi giỏ
-- Snapshot giá khi thêm cart_items
+## Chạy local
 
-### 📦 Order Management
-- Checkout từ giỏ hàng
-- Delivery method
-- Shipping fee
-- Order status (pending → confirmed → shipping → completed → cancelled)
-- Lưu snapshot sản phẩm khi checkout
+Yêu cầu: Node 22, pnpm 10, một MongoDB replica set (Atlas free tier hoặc `mongod --replSet rs0`).
 
-### 🚚 Delivery Methods
-- Quản lý phương thức vận chuyển
-- Gán cho order tại thời điểm checkout
-- Có thể mở rộng tích hợp GHN/GHTK
+```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env   # điền DATABASE_URL, JWT secrets...
+cp apps/web/.env.example apps/web/.env
+pnpm dev                                  # api :3000, web :5173
+```
 
-### 💳 Payments (Optional)
-- COD (mặc định)
-- Có thể mở rộng MoMo / VNPay / ZaloPay
-- Lưu transaction_id, payment logs
+Tạo tài khoản admin đầu tiên (đọc `SEED_ADMIN_*` trong `.env`):
 
----
+```bash
+pnpm --filter ecommerce-monorepo exec ts-node -r tsconfig-paths/register src/scripts/seedAdmin.ts
+```
 
-## 🏗️ Tech Stack
+API chỉ mở cổng sau khi kết nối DB thành công; nếu thiếu/ sai `DATABASE_URL` sẽ dừng và in lý do.
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | Node.js |
-| Framework | Express.js / NestJS |
-| Database | MySQL |
-| ORM | Prisma / Sequelize / Knex |
-| Auth | JWT (Access + Refresh Token) |
-| Optional | Docker, Postman |
+## Kiểm tra chất lượng
 
----
+```bash
+pnpm test        # Vitest cho API (unit + security regression)
+pnpm typecheck   # API + web
+pnpm lint        # web
+pnpm ci:check    # lint + typecheck + test + build
+```
 
-## 📂 Folder Structure
+CI (`.github/workflows/ci.yml`) chạy các bước trên cho mỗi PR vào `main`.
 
----
+## Tính năng chính
 
-## 🧪 API Endpoints (Basic Overview)
+- **Tài khoản:** đăng ký + xác minh email, đăng nhập email/Google, quên/đổi mật khẩu, sổ địa chỉ, phân quyền Admin/Staff/User, khóa tài khoản.
+- **Catalog:** sản phẩm (ảnh, xuất xứ, dung tích…), danh mục, thương hiệu, tìm kiếm/lọc/sắp xếp/phân trang, đánh giá.
+- **Mua hàng:** giỏ hàng, mua ngay không cần tài khoản (COD), voucher, phí ship theo khoảng cách thực, đặt hàng trong transaction (trừ kho + voucher + xóa giỏ).
+- **Thanh toán:** COD, PayOS (VietQR), MoMo, PayPal; xác thực chữ ký + số tiền trước khi xác nhận; hoàn tiền PayOS có khóa đối soát.
+- **Quản trị:** dashboard, quản lý đơn/sản phẩm/danh mục/thương hiệu/người dùng/cài đặt shop, AI gợi ý mô tả sản phẩm.
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /auth/register | Đăng ký |
-| POST | /auth/login | Đăng nhập |
-| POST | /auth/refresh | Refresh token |
-| POST | /auth/logout | Đăng xuất |
+## Tài liệu liên quan
 
-### Products
-| Method | Endpoint |
-|--------|----------|
-| GET | /products |
-| GET | /products/:id |
-| POST | /products (admin) |
-| PUT | /products/:id (admin) |
-| DELETE | /products/:id (admin) |
-
-### Cart
-| Method | Endpoint |
-|--------|----------|
-| GET | /cart |
-| POST | /cart/items |
-| PATCH | /cart/items/:id |
-| DELETE | /cart/items/:id |
-
-### Orders
-| Method | Endpoint |
-|--------|----------|
-| POST | /checkout |
-| GET | /orders |
-| GET | /orders/:id |
-
-
-
+- [SECURITY_HARDENING.md](SECURITY_HARDENING.md) — các ranh giới bảo mật và checklist trước khi bán thật.
+- [NEXT_STEPS.md](NEXT_STEPS.md) — lộ trình tiếp theo.
+- [deploy_documentation.md](deploy_documentation.md) — triển khai Docker/VPS.
+- [design-system/web/MASTER.md](design-system/web/MASTER.md) — token & quy tắc UI.
