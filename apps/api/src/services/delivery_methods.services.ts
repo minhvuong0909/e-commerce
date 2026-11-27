@@ -39,8 +39,29 @@ class DeliveryMethodsService {
 
   async getAllDeliveryMethods() {
     const deliveryMethods = await databaseService.delivery_methods.find().toArray()
-    return deliveryMethods
+    return dedupeDeliveryMethods(deliveryMethods)
   }
+}
+
+type DeliveryMethodLike = { type: DeliveryMethodType; status: DeliveryStatus; created_at?: Date }
+
+/**
+ * One method per type for checkout. Older seeds left duplicate documents per type; both are still
+ * referenced by past orders, so they stay in the database but are not offered twice.
+ * Prefers the selectable (Pending) document, then the oldest.
+ */
+export function dedupeDeliveryMethods<T extends DeliveryMethodLike>(methods: T[]): T[] {
+  const time = (m: T) => (m.created_at ? new Date(m.created_at).getTime() : 0)
+  const byType = new Map<DeliveryMethodType, T>()
+  for (const m of methods) {
+    const current = byType.get(m.type)
+    const better =
+      !current ||
+      (m.status === DeliveryStatus.Pending && current.status !== DeliveryStatus.Pending) ||
+      (m.status === current.status && time(m) < time(current))
+    if (better) byType.set(m.type, m)
+  }
+  return [...byType.values()].sort((a, b) => a.type - b.type)
 }
 let deliveryMethodsService = new DeliveryMethodsService()
 export default deliveryMethodsService
