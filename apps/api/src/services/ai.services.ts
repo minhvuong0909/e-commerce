@@ -70,8 +70,9 @@ export const CHAT_LIMITS = {
 const INTENTS: Array<{ id: string; match: RegExp; terms: string[]; tip: string }> = [
   {
     id: 'acne',
-    match: /mụn|dầu|bít tắc|lỗ chân lông|acne/i,
-    terms: ['bha', 'salicylic', 'niacinamide', 'tràm', 'mụn'],
+    // not a bare /dầu/: "dầu tẩy trang", "dầu dừa" are not acne questions
+    match: /mụn|da dầu|nhiều dầu|bóng dầu|kiềm dầu|bít tắc|lỗ chân lông|acne/i,
+    terms: ['bha', 'salicylic', 'niacinamide', 'tràm', 'mụn', 'kiềm dầu', 'effaclar'],
     tip: 'Với da dầu, dễ nổi mụn: làm sạch dịu nhẹ 2 lần/ngày, có thể dùng BHA (salicylic acid) vài lần mỗi tuần và niacinamide để kiểm soát dầu. Đừng nặn mụn và luôn dùng kem chống nắng ban ngày.'
   },
   {
@@ -178,6 +179,48 @@ export function extractSearchTerms(text: string): string[] {
   return [...new Set([...intentTerms, ...words])].slice(0, 12)
 }
 
+const CHAT_CANDIDATE_LIMIT = 40
+const MIN_RELEVANCE = 3
+
+type RankableProduct = { name: string; description?: string; soldNumber?: number }
+
+/**
+ * Score candidates by how well they fit the question, best first.
+ * Name hits outweigh description hits and concern-specific (intent) terms outweigh free words.
+ * When the question names a skin concern, a product must hit at least one of that concern's terms,
+ * so "da dầu mụn" no longer surfaces a coconut-oil ("dầu dừa") lip balm.
+ */
+export function rankProducts<T extends RankableProduct>(products: T[], text: string): T[] {
+  const intents = detectIntents(text)
+  const intentTerms = new Set(intents.flatMap((i) => i.terms))
+  // Lip products only when the shopper asks about lips — "da khô" should not surface a lip balm.
+  const wantsLips = intents.some((i) => i.id === 'lips')
+  const isLipProduct = (name: string) => /^son\s|\bmôi\b|\blip\b/i.test(name)
+  const terms = extractSearchTerms(text)
+  const has = (hay: string | undefined, term: string) => Boolean(hay) && hay!.toLowerCase().includes(term.toLowerCase())
+
+  return products
+    .filter((p) => wantsLips || !isLipProduct(p.name))
+    .map((p) => {
+      let score = 0
+      let intentHit = false
+      for (const term of terms) {
+        const isIntent = intentTerms.has(term)
+        if (has(p.name, term)) {
+          score += isIntent ? 4 : 3
+          intentHit ||= isIntent
+        } else if (has(p.description, term)) {
+          score += isIntent ? 2 : 1
+          intentHit ||= isIntent
+        }
+      }
+      return { p, score, intentHit }
+    })
+    .filter(({ score, intentHit }) => score >= MIN_RELEVANCE && (intentTerms.size === 0 || intentHit))
+    .sort((a, b) => b.score - a.score || (b.p.soldNumber ?? 0) - (a.p.soldNumber ?? 0))
+    .map(({ p }) => p)
+}
+
 class AiService {
   async generateProductDescription(input: ProductDescriptionInput) {
     const apiKey = stripEnv(process.env.OPENAI_API_KEY)
@@ -223,24 +266,27 @@ Trả về: mô tả ngắn, bullet công dụng, cách dùng, lưu ý test kíc
   async findRelevantProducts(text: string): Promise<ChatProduct[]> {
     const terms = extractSearchTerms(text)
     if (terms.length === 0) return []
+    // Shop/FAQ questions ("phí ship?") with no skin concern should not come with product picks.
+    if (SHOP_FAQ.some((f) => f.match.test(text)) && detectIntents(text).length === 0) return []
     const regexes = terms.map((t) => new RegExp(escapeRegex(t), 'i'))
     try {
-      const docs = await databaseService.products
+      const candidates = await databaseService.products
         .find({
           status: 0,
           quantity: { $gt: 0 },
           $or: [{ name: { $in: regexes } }, { description: { $in: regexes } }]
         })
-        .sort({ soldNumber: -1 })
-        .limit(CHAT_LIMITS.products)
+        .limit(CHAT_CANDIDATE_LIMIT)
         .toArray()
-      return docs.map((p) => ({
-        _id: String(p._id),
-        name: p.name,
-        price: p.price,
-        thumbnail: p.thumbnail,
-        origin: p.origin
-      }))
+      return rankProducts(candidates, text)
+        .slice(0, CHAT_LIMITS.products)
+        .map((p) => ({
+          _id: String(p._id),
+          name: p.name,
+          price: p.price,
+          thumbnail: p.thumbnail,
+          origin: p.origin
+        }))
     } catch (error) {
       console.error('AI chat product lookup failed:', error instanceof Error ? error.message : error)
       return []
