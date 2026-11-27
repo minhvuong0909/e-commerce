@@ -37,7 +37,7 @@ class UserServices {
     return signToken({
       payload: { user_id, token_type: TokenType.RefreshToken },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
-      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as any } 
+      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as any }
     })
   }
 
@@ -312,7 +312,10 @@ class UserServices {
         _id: user_id,
         username: `user${user_id.toString()}`, // dùng mã để tạo ra username mặc định
         email_verify_token,
-        ...payload,
+        name: payload.name,
+        email: payload.email,
+        role: USER_ROLE.User,
+        verify_status: UserVerifyStatus.Unverified,
         password: passwordHashed,
         date_of_birth: payload.date_of_birth ? new Date(payload.date_of_birth) : undefined
       })

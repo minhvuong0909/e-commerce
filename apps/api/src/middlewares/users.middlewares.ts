@@ -422,6 +422,9 @@ export const checkPermissions =
     const user = await usersService.findUserById(user_id)
 
     const role = user.role
+    if (user.verify_status === UserVerifyStatus.Banned) {
+      throw new ErrorWithStatus({ status: HTTP_STATUS.FORBIDDEN, message: 'Tài khoản đã bị khóa.' })
+    }
     if (role === undefined || role === null || !allowedRoles.includes(role)) {
       throw new ErrorWithStatus({
         status: HTTP_STATUS.FORBIDDEN,
