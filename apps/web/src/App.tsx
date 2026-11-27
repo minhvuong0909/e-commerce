@@ -41,6 +41,7 @@ const AdminOrdersPage = lazy(() => import('./pages/admin/orders/AdminOrdersPage'
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/orders/AdminOrderDetailPage'))
 const AdminUsersPage = lazy(() => import('./pages/admin/users/AdminUsersPage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
+const AdminVouchersPage = lazy(() => import('./pages/admin/vouchers/AdminVouchersPage'))
 
 import RequireAuth from './components/auth/RequireAuth'
 import RequireRole from './components/auth/RequireRole'
@@ -266,6 +267,14 @@ export default function App() {
               element={
                 <AdminOnly>
                   <AdminUsersPage />
+                </AdminOnly>
+              }
+            />
+            <Route
+              path={ROUTE_SEGMENTS.ADMIN_VOUCHERS}
+              element={
+                <AdminOnly>
+                  <AdminVouchersPage />
                 </AdminOnly>
               }
             />

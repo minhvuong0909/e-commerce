@@ -1,4 +1,4 @@
-import { Boxes, ExternalLink, FolderTree, LayoutDashboard, LogOut, Settings, ShoppingBag, Tags, Users } from 'lucide-react'
+import { Boxes, ExternalLink, FolderTree, LayoutDashboard, LogOut, Settings, ShoppingBag, Tags, TicketPercent, Users } from 'lucide-react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -15,6 +15,7 @@ const allNav = [
   { to: ROUTE_PATHS.ADMIN_CATEGORIES, label: 'Danh mục', icon: FolderTree, staffAllowed: false },
   { to: ROUTE_PATHS.ADMIN_BRANDS, label: 'Thương hiệu', icon: Tags, staffAllowed: false },
   { to: ROUTE_PATHS.ADMIN_USERS, label: 'Người dùng', icon: Users, staffAllowed: false },
+  { to: ROUTE_PATHS.ADMIN_VOUCHERS, label: 'Voucher', icon: TicketPercent, staffAllowed: false },
   { to: ROUTE_PATHS.ADMIN_SETTINGS, label: 'Cài đặt', icon: Settings, staffAllowed: false }
 ]
 
