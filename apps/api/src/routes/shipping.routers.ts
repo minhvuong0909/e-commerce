@@ -4,7 +4,7 @@ import {
   getStoreInfoController,
   reverseGeocodeController
 } from '~/controllers/shipping.controllers'
-import { accessTokenValidator } from '~/middlewares/users.middlewares'
+import { shippingLimiter } from '~/middlewares/rateLimit.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 const shippingRouter = Router()
@@ -19,17 +19,17 @@ shippingRouter.get('/store', wrapAsync(getStoreInfoController))
 /**
  * POST /shipping/quote
  * Shipping fee estimate for checkout.
- * Auth: access token.
+ * Public, rate-limited for guest checkout; no order or private account data.
  * Features: geocodes the customer address, estimates route distance and returns delivery fee.
  */
-shippingRouter.post('/quote', accessTokenValidator, wrapAsync(getShippingQuoteController))
+shippingRouter.post('/quote', shippingLimiter, wrapAsync(getShippingQuoteController))
 
 /**
  * GET /shipping/reverse-geocode
  * Address helper for checkout maps/forms.
- * Auth: access token.
+ * Public, rate-limited address lookup for guest checkout.
  * Features: converts latitude/longitude to a readable address.
  */
-shippingRouter.get('/reverse-geocode', accessTokenValidator, wrapAsync(reverseGeocodeController))
+shippingRouter.get('/reverse-geocode', shippingLimiter, wrapAsync(reverseGeocodeController))
 
 export default shippingRouter

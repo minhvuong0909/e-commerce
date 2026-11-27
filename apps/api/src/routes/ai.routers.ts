@@ -3,8 +3,10 @@ import { USER_ROLE } from '~/constants/enums'
 import { generateProductDescriptionController, skincareChatController } from '~/controllers/ai.controllers'
 import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
+import { aiLimiter } from '~/middlewares/rateLimit.middlewares'
 
 const aiRouter = Router()
+aiRouter.use(aiLimiter)
 
 /**
  * POST /ai/chat

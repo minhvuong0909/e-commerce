@@ -1,4 +1,5 @@
 import databaseService from '~/services/database.service'
+import { escapeRegex } from '~/utils/productQuery'
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 
@@ -87,7 +88,7 @@ Trả về: mô tả ngắn, bullet công dụng, cách dùng, lưu ý test kíc
         .split(/\s+/)
         .filter((word) => word.length > 1)
 
-      const regexList = searchTerms.map((t) => new RegExp(t, 'i'))
+      const regexList = searchTerms.slice(0, 12).map((t) => new RegExp(escapeRegex(t), 'i'))
 
       if (regexList.length > 0) {
         dbProducts = await databaseService.products
@@ -96,7 +97,7 @@ Trả về: mô tả ngắn, bullet công dụng, cách dùng, lưu ý test kíc
             $or: [
               { name: { $in: regexList } },
               { description: { $in: regexList } },
-              { name: new RegExp(lower, 'i') }
+              { name: new RegExp(escapeRegex(lower), 'i') }
             ]
           })
           .limit(4)
