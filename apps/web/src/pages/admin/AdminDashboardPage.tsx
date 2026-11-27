@@ -3,817 +3,471 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
+  ArrowDownRight,
   ArrowUpRight,
-  BarChart3,
-  CheckCircle2,
+  Boxes,
+  ChevronRight,
   Clock,
-  CreditCard,
-  DollarSign,
-  ExternalLink,
-  Layers,
-  Package2,
-  PlusCircle,
+  Minus,
+  Package,
   RefreshCw,
   ShoppingBag,
-  TrendingUp,
-  Zap
+  Users,
+  Wallet
 } from 'lucide-react'
-import StatusBadge from '../../components/ui/AdminDashBoardStatusBadge'
+import StatusBadge from '../../components/ui/StatusBadge'
 import { getOrderStatusMeta } from '../../constants/order'
-import { LOW_STOCK_THRESHOLD, ORDER_LIMIT, PAGE, PRODUCT_LIMIT } from '../../configs/config'
+import { getAllOrdersApi, getDashboardSummaryApi, type DashboardSummary } from '../../services/orders.services'
 import type { OrderApiResponse } from '../../models/OrderRequests'
-import type { Product } from '../../models/ProductRequests'
-import { getAllOrdersApi } from '../../services/orders.services'
-import { getAllProductsApi } from '../../services/products.services'
+import { ROUTE_PATHS } from '../../routes/route.paths'
+import { formatImageUrl } from '../../utils/formatImageUrl'
 import formatDate from '../../utils/date'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
 
-const DAY_MS = 24 * 60 * 60 * 1000
-const EMPTY_PRODUCTS: Product[] = []
-const EMPTY_ORDERS: OrderApiResponse[] = []
+const TZ = 'Asia/Ho_Chi_Minh'
+const DAY_MS = 86_400_000
+const vnDay = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: TZ })
+const vnDate = (ymd: string) => new Date(`${ymd}T12:00:00+07:00`).toLocaleDateString('vi-VN', { timeZone: TZ })
 
-async function loadDashboardData() {
-  const [ordersRes, productsRes] = await Promise.all([
-    getAllOrdersApi(ORDER_LIMIT, PAGE),
-    getAllProductsApi(PRODUCT_LIMIT, PAGE)
-  ])
-  return {
-    orders: (ordersRes.data.result ?? EMPTY_ORDERS) as OrderApiResponse[],
-    products: (productsRes.data.result ?? EMPTY_PRODUCTS) as Product[]
-  }
+type Preset = { id: string; label: string; range: () => { from: string; to: string } }
+
+const daysBack = (n: number) => () => {
+  const to = new Date()
+  return { from: vnDay(new Date(to.getTime() - (n - 1) * DAY_MS)), to: vnDay(to) }
 }
 
-function formatShortDate(date: Date) {
-  return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+const PRESETS: Preset[] = [
+  { id: '7d', label: '7 ngày', range: daysBack(7) },
+  { id: '30d', label: '30 ngày', range: daysBack(30) },
+  { id: '90d', label: '90 ngày', range: daysBack(90) },
+  { id: '365d', label: '12 tháng', range: daysBack(365) }
+]
+
+const STATUS_META: Array<{ key: keyof DashboardSummary['by_status']; label: string; color: string }> = [
+  { key: 'pending', label: 'Chờ xác nhận', color: 'bg-peach-300' },
+  { key: 'confirmed', label: 'Đang xử lý', color: 'bg-lilac-300' },
+  { key: 'shipped', label: 'Đang giao', color: 'bg-berry-300' },
+  { key: 'delivered', label: 'Đã giao', color: 'bg-lime-300' },
+  { key: 'cancelled', label: 'Đã hủy', color: 'bg-ink-300' }
+]
+
+const compactMoney = (n: number) =>
+  n >= 1_000_000_000
+    ? `${(n / 1_000_000_000).toFixed(1).replace('.0', '')} tỷ`
+    : n >= 1_000_000
+      ? `${(n / 1_000_000).toFixed(1).replace('.0', '')} tr`
+      : n >= 1_000
+        ? `${Math.round(n / 1_000)}k`
+        : String(n)
+
+/** Bucket long ranges so the chart stays readable: daily ≤ 45 days, weekly ≤ 180, otherwise monthly. */
+function bucketSeries(series: DashboardSummary['series']) {
+  const size = series.length <= 45 ? 1 : series.length <= 180 ? 7 : 30
+  const label = size === 1 ? 'ngày' : size === 7 ? 'tuần' : 'tháng'
+  const buckets: Array<{ label: string; title: string; revenue: number; orders: number }> = []
+  for (let i = 0; i < series.length; i += size) {
+    const chunk = series.slice(i, i + size)
+    const first = chunk[0].date.slice(5).split('-').reverse().join('/')
+    const last = chunk[chunk.length - 1].date.slice(5).split('-').reverse().join('/')
+    buckets.push({
+      label: first,
+      title: size === 1 ? first : `${first} – ${last}`,
+      revenue: chunk.reduce((s, d) => s + d.revenue, 0),
+      orders: chunk.reduce((s, d) => s + d.orders, 0)
+    })
+  }
+  return { buckets, unit: label }
+}
+
+function Change({ value }: { value: number | null }) {
+  if (value === null)
+    return (
+      <span className='inline-flex items-center gap-1 text-xs text-ink-400' title='Kỳ trước không có dữ liệu để so sánh'>
+        <Minus size={13} aria-hidden /> chưa có kỳ trước
+      </span>
+    )
+  const up = value >= 0
+  const Icon = up ? ArrowUpRight : ArrowDownRight
+  return (
+    <span className={cn('inline-flex items-center gap-0.5 text-xs font-semibold', up ? 'text-emerald-700' : 'text-rose-600')}>
+      <Icon size={14} aria-hidden />
+      {up ? '+' : ''}
+      {value}% so với kỳ trước
+    </span>
+  )
+}
+
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  hint,
+  tone,
+  children
+}: {
+  icon: typeof Wallet
+  label: string
+  value: string
+  hint?: string
+  tone: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className='rounded-3xl bg-white p-5 ring-1 ring-ink-100'>
+      <div className='flex items-center gap-2 text-sm text-ink-500'>
+        <span className={cn('grid h-8 w-8 place-items-center rounded-xl', tone)}>
+          <Icon size={16} aria-hidden />
+        </span>
+        {label}
+      </div>
+      <p className='mt-3 font-display text-[1.75rem] font-bold leading-none text-ink-950'>{value}</p>
+      {hint ? <p className='mt-1.5 text-xs text-ink-500'>{hint}</p> : null}
+      {children ? <div className='mt-2'>{children}</div> : null}
+    </div>
+  )
 }
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'inventory'>('analytics')
-  const {
-    data,
-    isFetching: loading,
-    isError,
-    refetch,
-    dataUpdatedAt
-  } = useQuery({
-    queryKey: ['admin-dashboard', ORDER_LIMIT, PRODUCT_LIMIT, PAGE],
-    queryFn: loadDashboardData,
-    retry: false
+  const [presetId, setPresetId] = useState('30d')
+  const range = useMemo(() => PRESETS.find((p) => p.id === presetId)!.range(), [presetId])
+
+  const summary = useQuery({
+    queryKey: ['admin-dashboard-summary', range.from, range.to],
+    queryFn: async () => (await getDashboardSummaryApi(range.from, range.to)).data.result,
+    placeholderData: (prev) => prev
   })
-  const products = data?.products ?? EMPTY_PRODUCTS
-  const orders = data?.orders ?? EMPTY_ORDERS
-  const error = isError ? 'Không thể tải dữ liệu báo cáo dashboard. Vui lòng kiểm tra lại kết nối server.' : null
-  const lastUpdated = dataUpdatedAt
-    ? new Date(dataUpdatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    : ''
-  const fetchDashboardData = () => void refetch()
+  const recent = useQuery({
+    queryKey: ['admin-dashboard-recent'],
+    queryFn: async () => ((await getAllOrdersApi(8, 1)).data.result ?? []) as OrderApiResponse[]
+  })
 
-  // KPI Calculations
-  const stats = useMemo(() => {
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total_price + order.shipping_fee, 0)
-    const lowStockCount = products.filter((product) => product.quantity <= LOW_STOCK_THRESHOLD).length
-    const pendingOrdersCount = orders.filter((o) => o.status === 0 || o.status === 1).length
-    const avgOrderValue = orders.length > 0 ? Math.round(totalRevenue / orders.length) : 0
+  const s = summary.data
+  const chart = useMemo(() => (s ? bucketSeries(s.series) : null), [s])
+  const maxRevenue = chart ? Math.max(...chart.buckets.map((b) => b.revenue), 1) : 1
+  const statusTotal = s ? Object.values(s.by_status).reduce((a, b) => a + b, 0) : 0
+  const anomalyCount = s ? s.anomalies.paid_but_cancelled.count + s.anomalies.delivered_unpaid_online.count : 0
 
-    return [
-      {
-        label: 'TỔNG DOANH THU',
-        value: money(totalRevenue),
-        sub: `Đơn giá trung bình: ${money(avgOrderValue)}`,
-        change: '+15.4% so với kỳ trước',
-        icon: DollarSign,
-        gradient: 'from-amber-600 to-ink-950',
-        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
-      },
-      {
-        label: 'ĐƠN HÀNG ĐANG XỬ LÝ',
-        value: `${pendingOrdersCount} đơn`,
-        sub: `Tổng số đơn: ${orders.length} đơn hàng`,
-        change: pendingOrdersCount > 0 ? `Cần xử lý ${pendingOrdersCount} đơn` : 'Đã hoàn tất toàn bộ',
-        icon: ShoppingBag,
-        gradient: 'from-berry-600 to-ink-950',
-        badgeBg: pendingOrdersCount > 0 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-ink-50 text-ink-700'
-      },
-      {
-        label: 'DANH MỤC SẢN PHẨM',
-        value: `${products.length} SP`,
-        sub: `Tổng đã bán: ${products.reduce((acc, p) => acc + (p.soldNumber || 0), 0)} sp`,
-        change: 'Đang hoạt động trên Cửa Hàng',
-        icon: Package2,
-        gradient: 'from-ink-950 to-ink-950',
-        badgeBg: 'bg-blue-50 text-blue-700 border-blue-200'
-      },
-      {
-        label: 'CẢNH BÁO KHO HÀNG',
-        value: `${lowStockCount} SP`,
-        sub: `Tồn kho tối thiểu <= ${LOW_STOCK_THRESHOLD} sp`,
-        change: lowStockCount > 0 ? 'Cần nhập hàng ngay' : 'Kho hàng an toàn',
-        icon: AlertTriangle,
-        gradient: lowStockCount > 0 ? 'from-rose-600 to-rose-900' : 'from-emerald-600 to-teal-800',
-        badgeBg: lowStockCount > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-emerald-50 text-emerald-700'
-      }
-    ]
-  }, [orders, products])
-
-  // Recent Orders
-  const recentOrders = useMemo(
-    () => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 7),
-    [orders]
-  )
-
-  // Low stock products watchlist
-  const lowStockProducts = useMemo(
-    () => products.filter((p) => p.quantity <= LOW_STOCK_THRESHOLD).slice(0, 6),
-    [products]
-  )
-
-  // 7-day revenue dataset
-  const revenueChart = useMemo(() => {
-    const today = new Date()
-    const days = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(today.getTime() - (6 - index) * DAY_MS)
-      date.setHours(0, 0, 0, 0)
-      return {
-        key: date.toISOString().slice(0, 10),
-        label: formatShortDate(date),
-        revenue: 0,
-        ordersCount: 0
-      }
-    })
-
-    for (const order of orders) {
-      const orderDate = new Date(order.created_at)
-      orderDate.setHours(0, 0, 0, 0)
-      const key = orderDate.toISOString().slice(0, 10)
-      const day = days.find((item) => item.key === key)
-      if (day) {
-        day.revenue += order.total_price + order.shipping_fee
-        day.ordersCount += 1
-      }
-    }
-
-    const maxRevenue = Math.max(...days.map((day) => day.revenue), 1)
-    return days.map((day) => ({
-      ...day,
-      height: Math.round((day.revenue / maxRevenue) * 100)
-    }))
-  }, [orders])
-
-  // Top selling products
-  const topSelling = useMemo(
-    () => [...products].sort((a, b) => (b.soldNumber || 0) - (a.soldNumber || 0)).slice(0, 6),
-    [products]
-  )
-
-  // Total 7-day revenue
-  const total7DayRevenue = useMemo(() => revenueChart.reduce((sum, day) => sum + day.revenue, 0), [revenueChart])
-
-  // Best Revenue Day
-  const bestDay = useMemo(() => {
-    if (revenueChart.length === 0) return null
-    return [...revenueChart].sort((a, b) => b.revenue - a.revenue)[0]
-  }, [revenueChart])
-
-  if (loading && orders.length === 0) {
+  if (summary.isError && !s) {
     return (
-      <div className='space-y-6 animate-pulse'>
-        <div className='h-28 rounded-3xl bg-ink-200/70' />
-        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className='h-36 rounded-3xl bg-ink-200/70' />
-          ))}
-        </div>
-        <div className='h-96 rounded-3xl bg-ink-200/70' />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className='rounded-3xl border border-rose-200 bg-rose-50 p-6 text-sm font-bold text-rose-900 shadow-sm flex items-center justify-between'>
+      <div className='flex flex-col items-start gap-4 rounded-3xl bg-rose-50 p-6 text-rose-800 ring-1 ring-rose-200 sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-3'>
-          <AlertTriangle className='text-rose-600' size={24} />
-          <span>{error}</span>
+          <AlertTriangle size={22} aria-hidden />
+          <span className='font-semibold'>Không tải được số liệu dashboard. Kiểm tra kết nối server.</span>
         </div>
         <button
           type='button'
-          onClick={fetchDashboardData}
-          className='inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-white hover:bg-rose-700 transition shadow-sm'
+          onClick={() => void summary.refetch()}
+          className='inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-rose-600 px-5 text-sm font-semibold text-white hover:bg-rose-700'
         >
-          <RefreshCw size={15} /> Thử lại ngay
+          <RefreshCw size={15} /> Thử lại
         </button>
       </div>
     )
   }
 
   return (
-    <div className='space-y-6 text-ink-800 font-sans pb-12'>
-      {/* 1. Executive Control Header */}
-      <section className='relative overflow-hidden rounded-3xl border border-berry-600/20 bg-gradient-to-br from-ink-950 via-ink-950 to-ink-950 p-6 text-white shadow-xl'>
-        {/* Subtle decorative background blur */}
-        <div className='pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-berry-600/20 blur-3xl' />
-        <div className='pointer-events-none absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-berry-600/20 blur-3xl' />
-
-        <div className='relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between'>
-          <div>
-            <div className='flex flex-wrap items-center gap-2.5'>
-              <span className='inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-400 tracking-wide'>
-                <span className='relative flex h-2 w-2'>
-                  <span className='absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75' />
-                  <span className='relative inline-flex h-2 w-2 rounded-full bg-emerald-500' />
-                </span>
-                PayOS Live Gate Active
-              </span>
-
-              {lastUpdated && (
-                <span className='inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-ink-300'>
-                  <Clock size={12} /> Cập nhật: {lastUpdated}
-                </span>
-              )}
-            </div>
-
-            <h1 className='mt-3 font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl'>
-              Tổng Quan Trung Tâm Điều Hành
-            </h1>
-            <p className='mt-1 text-xs text-ink-300 max-w-2xl leading-relaxed'>
-              Theo dõi biến động doanh thu, đơn hàng PayOS thời gian thực và kiểm soát tồn kho kho hàng toàn hệ thống.
-            </p>
+    <div className='space-y-6 pb-10'>
+      {/* header */}
+      <div className='flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
+        <div>
+          <h1 className='font-display text-[1.75rem] font-bold leading-tight text-ink-950'>Tổng quan</h1>
+          <p className='mt-1 text-sm text-ink-500'>
+            {s ? `${vnDate(s.range.from)} – ${vnDate(s.range.to)} · giờ Việt Nam` : 'Đang tải…'}
+          </p>
+        </div>
+        <div className='flex flex-wrap items-center gap-2'>
+          <div role='tablist' aria-label='Khoảng thời gian' className='inline-flex rounded-full bg-white p-1 ring-1 ring-ink-100'>
+            {PRESETS.map((p) => (
+              <button
+                key={p.id}
+                type='button'
+                role='tab'
+                aria-selected={presetId === p.id}
+                onClick={() => setPresetId(p.id)}
+                className={cn(
+                  'h-9 cursor-pointer rounded-full px-4 text-sm font-semibold transition',
+                  presetId === p.id ? 'bg-ink-950 text-white' : 'text-ink-600 hover:text-ink-950'
+                )}
+              >
+                {p.label}
+              </button>
+            ))}
           </div>
+          <button
+            type='button'
+            onClick={() => {
+              void summary.refetch()
+              void recent.refetch()
+            }}
+            aria-label='Làm mới số liệu'
+            className='grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-white text-ink-700 ring-1 ring-ink-100 hover:text-ink-950'
+          >
+            <RefreshCw size={17} className={cn(summary.isFetching && 'animate-spin')} />
+          </button>
+        </div>
+      </div>
 
-          {/* Quick Command Actions */}
-          <div className='flex flex-wrap items-center gap-3 shrink-0'>
-            <button
-              type='button'
-              onClick={fetchDashboardData}
-              disabled={loading}
-              className='inline-flex h-11 items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-4 text-xs font-bold text-white hover:bg-white/20 transition disabled:opacity-50 backdrop-blur-md shadow-sm'
-            >
-              <RefreshCw size={15} className={cn(loading && 'animate-spin')} />
-              <span>{loading ? 'Đang cập nhật...' : 'Làm Mới Data'}</span>
-            </button>
-
-            <Link
-              to='/admin/products'
-              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-berry-600 px-4 text-xs font-bold text-white hover:bg-ink-500 transition shadow-md'
-            >
-              <PlusCircle size={15} /> Thêm Sản Phẩm
-            </Link>
-
-            <Link
-              to='/admin/orders'
-              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-5 text-xs font-bold text-ink-950 hover:bg-amber-50 transition shadow-md'
-            >
-              <span>Quản Lý Đơn Hàng</span>
-              <ArrowUpRight size={15} />
-            </Link>
+      {/* reconciliation */}
+      {s && anomalyCount > 0 ? (
+        <div className='rounded-3xl bg-peach-50 p-5 ring-1 ring-peach-200'>
+          <div className='flex items-start gap-3'>
+            <AlertTriangle size={20} className='mt-0.5 shrink-0 text-peach-700' aria-hidden />
+            <div className='min-w-0 flex-1'>
+              <p className='font-semibold text-ink-950'>{anomalyCount} đơn cần đối soát thanh toán</p>
+              <p className='mt-0.5 text-sm text-ink-600'>Các đơn này không được tính vào doanh thu cho tới khi được xử lý.</p>
+              <ul className='mt-3 space-y-2 text-sm'>
+                {s.anomalies.paid_but_cancelled.count ? (
+                  <li>
+                    <span className='font-semibold'>{s.anomalies.paid_but_cancelled.count} đơn đã hủy nhưng đã thu tiền</span> (
+                    {money(s.anomalies.paid_but_cancelled.amount)}) — cần hoàn tiền hoặc xác nhận lại.{' '}
+                    {s.anomalies.paid_but_cancelled.order_ids.map((id) => (
+                      <Link key={id} to={ROUTE_PATHS.ADMIN_ORDER_DETAIL(id)} className='mr-2 font-mono text-xs text-berry-700 underline'>
+                        #{id.slice(-6).toUpperCase()}
+                      </Link>
+                    ))}
+                  </li>
+                ) : null}
+                {s.anomalies.delivered_unpaid_online.count ? (
+                  <li>
+                    <span className='font-semibold'>{s.anomalies.delivered_unpaid_online.count} đơn đã giao nhưng thanh toán online chưa ghi nhận</span>{' '}
+                    ({money(s.anomalies.delivered_unpaid_online.amount)}) — kiểm tra với cổng thanh toán.{' '}
+                    {s.anomalies.delivered_unpaid_online.order_ids.map((id) => (
+                      <Link key={id} to={ROUTE_PATHS.ADMIN_ORDER_DETAIL(id)} className='mr-2 font-mono text-xs text-berry-700 underline'>
+                        #{id.slice(-6).toUpperCase()}
+                      </Link>
+                    ))}
+                  </li>
+                ) : null}
+              </ul>
+            </div>
           </div>
         </div>
-      </section>
+      ) : null}
 
-      {/* 2. 4 Executive Metric Cards Grid */}
-      <section className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
-        {stats.map((card) => {
-          const Icon = card.icon
-          return (
-            <div
-              key={card.label}
-              className='group relative overflow-hidden rounded-3xl border border-ink-200/90 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-berry-600/40 hover:shadow-md'
-            >
-              <div className='flex items-start justify-between gap-3'>
-                <div className='space-y-1 min-w-0'>
-                  <span className='text-[10px] font-extrabold uppercase tracking-wider text-ink-400'>
-                    {card.label}
-                  </span>
-                  <h3 className='font-mono text-2xl font-black tracking-tight text-ink-900 truncate'>{card.value}</h3>
-                  <p className='text-xs text-ink-500 font-medium truncate'>{card.sub}</p>
-                </div>
-
-                <div
-                  className={cn(
-                    'grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-gradient-to-br text-white shadow-md transition-transform duration-300 group-hover:scale-105',
-                    card.gradient
-                  )}
-                >
-                  <Icon size={22} />
-                </div>
-              </div>
-
-              {/* Status footer pill */}
-              <div className='mt-4 pt-3 border-t border-ink-100 flex items-center justify-between text-xs'>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-lg border px-2.5 py-0.5 text-[11px] font-bold',
-                    card.badgeBg
-                  )}
-                >
-                  {card.change}
-                </span>
-                <span className='text-[10px] text-ink-400 font-medium'>Live Sync</span>
-              </div>
-            </div>
-          )
-        })}
-      </section>
-
-      {/* 3. Executive Workspace Tabs Header */}
-      <section className='rounded-3xl border border-ink-200 bg-white p-2 shadow-xs flex flex-wrap items-center justify-between gap-2'>
-        <div className='flex items-center gap-1.5 p-1 bg-ink-100/80 rounded-2xl w-full sm:w-auto'>
-          <button
-            type='button'
-            onClick={() => setActiveTab('analytics')}
-            className={cn(
-              'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'analytics' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
-            )}
-          >
-            <BarChart3 size={15} />
-            <span>Biểu Đồ Doanh Thu &amp; Phân Tích</span>
-          </button>
-
-          <button
-            type='button'
-            onClick={() => setActiveTab('orders')}
-            className={cn(
-              'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'orders' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
-            )}
-          >
-            <ShoppingBag size={15} />
-            <span>Đơn Hàng Gần Đây ({orders.length})</span>
-          </button>
-
-          <button
-            type='button'
-            onClick={() => setActiveTab('inventory')}
-            className={cn(
-              'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'inventory' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
-            )}
-          >
-            <Layers size={15} />
-            <span>Sản Phẩm Hot &amp; Cảnh Báo Kho</span>
-          </button>
+      {/* KPIs */}
+      {!s ? (
+        <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4' aria-busy='true'>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className='h-36 animate-pulse rounded-3xl bg-ink-100' />
+          ))}
         </div>
-
-        <div className='hidden lg:flex items-center gap-4 px-4 text-xs text-ink-500 font-medium'>
-          <span className='flex items-center gap-1.5'>
-            <span className='h-2 w-2 rounded-full bg-emerald-500' />
-            PayOS Auto Webhook
-          </span>
-          <span className='flex items-center gap-1.5'>
-            <span className='h-2 w-2 rounded-full bg-amber-500' />
-            MongoDB Connected
-          </span>
+      ) : (
+        <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4 transition-opacity', summary.isFetching && 'opacity-60')}>
+          <Kpi icon={Wallet} label='Doanh thu ghi nhận' value={money(s.revenue)} tone='bg-lime-200 text-lime-700' hint={`Chưa gồm ship: ${money(s.revenue_excl_shipping)}`}>
+            <Change value={s.change.revenue} />
+          </Kpi>
+          <Kpi
+            icon={ShoppingBag}
+            label='Đơn đã thu tiền'
+            value={`${s.recognized_orders}`}
+            tone='bg-berry-100 text-berry-700'
+            hint={`Giá trị TB: ${money(s.avg_order_value)} · ${s.total_orders} đơn tạo mới`}
+          >
+            <Change value={s.change.recognized_orders} />
+          </Kpi>
+          <Kpi
+            icon={Clock}
+            label='Đơn chờ thu tiền'
+            value={`${s.open_orders}`}
+            tone='bg-peach-100 text-peach-700'
+            hint={`Giá trị: ${money(s.open_value)} · chưa tính vào doanh thu`}
+          />
+          <Kpi
+            icon={Users}
+            label='Khách hàng · Sản phẩm'
+            value={`${s.catalog.customers} · ${s.catalog.products}`}
+            tone='bg-lilac-100 text-lilac-700'
+            hint='Tổng tài khoản khách và sản phẩm trong hệ thống'
+          />
         </div>
-      </section>
+      )}
 
-      {/* 4. Tab 1: Biểu Đồ Doanh Thu & Analytics View */}
-      {activeTab === 'analytics' && (
-        <section className='grid gap-6 xl:grid-cols-[1.7fr_1fr]'>
-          {/* Main 7-Day Revenue Graph Card */}
-          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-6'>
-            <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-ink-100 pb-5'>
+      {s ? (
+        <div className='grid gap-4 xl:grid-cols-[1.6fr_1fr]'>
+          {/* revenue chart */}
+          <section className='rounded-3xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+            <div className='flex flex-wrap items-end justify-between gap-2'>
               <div>
-                <h2 className='font-display text-lg font-bold text-ink-900'>Biểu Đồ Doanh Thu 7 Ngày Gần Nhất</h2>
-                <p className='mt-0.5 text-xs text-ink-500'>
-                  Thống kê doanh số theo ngày thực tế bao gồm tiền sản phẩm và phí vận chuyển.
-                </p>
+                <h2 className='font-display text-lg font-bold'>Doanh thu theo {chart?.unit}</h2>
+                <p className='text-sm text-ink-500'>Chỉ tính đơn đã thu tiền, theo ngày tạo đơn</p>
               </div>
-
-              <div className='flex items-center gap-3'>
-                <div className='rounded-2xl border border-ink-200 bg-ink-50 px-4 py-2.5 text-right'>
-                  <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
-                    Tổng 7 Ngày
-                  </span>
-                  <span className='font-mono text-base font-black text-berry-600'>{money(total7DayRevenue)}</span>
-                </div>
-              </div>
+              <p className='font-display text-xl font-bold'>{money(s.revenue)}</p>
             </div>
-
-            {/* SVG Area Chart */}
-            {(() => {
-              const CHART_W = 700
-              const CHART_H = 200
-              const PAD_LEFT = 52
-              const PAD_RIGHT = 16
-              const PAD_TOP = 24
-              const PAD_BOTTOM = 30
-              const innerW = CHART_W - PAD_LEFT - PAD_RIGHT
-              const innerH = CHART_H - PAD_TOP - PAD_BOTTOM
-              const maxRev = Math.max(...revenueChart.map((d) => d.revenue), 1)
-              const pts = revenueChart.map((day, i) => ({
-                ...day,
-                x: PAD_LEFT + (i / (revenueChart.length - 1)) * innerW,
-                y: PAD_TOP + innerH - (day.revenue / maxRev) * innerH
-              }))
-
-              // Build smooth bezier path
-              const buildPath = (points: typeof pts) => {
-                if (points.length < 2) return ''
-                let d = `M ${points[0].x} ${points[0].y}`
-                for (let i = 1; i < points.length; i++) {
-                  const prev = points[i - 1]
-                  const curr = points[i]
-                  const cpx = (prev.x + curr.x) / 2
-                  d += ` C ${cpx} ${prev.y}, ${cpx} ${curr.y}, ${curr.x} ${curr.y}`
-                }
-                return d
-              }
-
-              const linePath = buildPath(pts)
-              const areaPath =
-                linePath + ` L ${pts[pts.length - 1].x} ${PAD_TOP + innerH} L ${pts[0].x} ${PAD_TOP + innerH} Z`
-
-              // Y-axis gridlines
-              const gridLines = [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
-                y: PAD_TOP + innerH - ratio * innerH,
-                value: Math.round(maxRev * ratio)
-              }))
-
-              return (
-                <div className='relative rounded-2xl bg-gradient-to-br from-ink-50 to-white border border-ink-200/80 p-2 overflow-hidden'>
-                  <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className='w-full' style={{ height: '210px' }}>
-                    <defs>
-                      <linearGradient id='areaGrad' x1='0' y1='0' x2='0' y2='1'>
-                        <stop offset='0%' stopColor='#9A8069' stopOpacity='0.35' />
-                        <stop offset='100%' stopColor='#9A8069' stopOpacity='0.02' />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Grid lines + Y-axis labels */}
-                    {gridLines.map((gl) => (
-                      <g key={gl.y}>
-                        <line
-                          x1={PAD_LEFT}
-                          y1={gl.y}
-                          x2={CHART_W - PAD_RIGHT}
-                          y2={gl.y}
-                          stroke='#e2e8f0'
-                          strokeWidth='1'
-                          strokeDasharray='4 3'
-                        />
-                        <text
-                          x={PAD_LEFT - 6}
-                          y={gl.y + 3}
-                          textAnchor='end'
-                          fontSize='9'
-                          fill='#94a3b8'
-                          fontFamily='monospace'
-                        >
-                          {gl.value >= 1000000
-                            ? `${(gl.value / 1000000).toFixed(1)}M`
-                            : gl.value >= 1000
-                              ? `${Math.round(gl.value / 1000)}K`
-                              : gl.value === 0
-                                ? '0'
-                                : gl.value}
-                        </text>
-                      </g>
-                    ))}
-
-                    {/* Area fill */}
-                    <path d={areaPath} fill='url(#areaGrad)' />
-
-                    {/* Line stroke */}
-                    <path
-                      d={linePath}
-                      fill='none'
-                      stroke='#9A8069'
-                      strokeWidth='2.5'
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
+            {s.total_orders === 0 ? (
+              <div className='mt-6 grid h-56 place-items-center rounded-2xl border border-dashed border-ink-200 text-sm text-ink-500'>
+                Không có đơn hàng nào trong khoảng thời gian này.
+              </div>
+            ) : (
+              <div className='mt-6 flex h-56 items-end gap-[3px]' role='img' aria-label={`Biểu đồ doanh thu theo ${chart?.unit}`}>
+                {chart!.buckets.map((b) => (
+                  <div key={b.title} className='group relative flex h-full flex-1 flex-col justify-end'>
+                    <div
+                      className={cn('w-full rounded-t-md transition', b.revenue ? 'bg-berry-500 group-hover:bg-berry-600' : 'bg-ink-100')}
+                      style={{ height: `${b.revenue ? Math.max(4, (b.revenue / maxRevenue) * 100) : 2}%` }}
                     />
-
-                    {/* Data points + x-labels */}
-                    {pts.map((pt) => (
-                      <g key={pt.key}>
-                        {/* X-axis date label */}
-                        <text
-                          x={pt.x}
-                          y={CHART_H - 4}
-                          textAnchor='middle'
-                          fontSize='9'
-                          fill='#64748b'
-                          fontFamily='monospace'
-                          fontWeight='600'
-                        >
-                          {pt.label}
-                        </text>
-
-                        {/* Dot */}
-                        {pt.revenue > 0 ? (
-                          <>
-                            <circle cx={pt.x} cy={pt.y} r='5' fill='#2B2118' stroke='white' strokeWidth='2' />
-                            {/* Value label above dot */}
-                            <text
-                              x={pt.x}
-                              y={pt.y - 10}
-                              textAnchor='middle'
-                              fontSize='8'
-                              fill='#2B2118'
-                              fontFamily='monospace'
-                              fontWeight='700'
-                            >
-                              {pt.revenue >= 1000000
-                                ? `${(pt.revenue / 1000000).toFixed(1)}M`
-                                : pt.revenue >= 1000
-                                  ? `${Math.round(pt.revenue / 1000)}K`
-                                  : pt.revenue}
-                            </text>
-                          </>
-                        ) : (
-                          <circle cx={pt.x} cy={pt.y} r='3' fill='#cbd5e1' stroke='white' strokeWidth='1.5' />
-                        )}
-                      </g>
-                    ))}
-                  </svg>
-                </div>
-              )
-            })()}
-
-            {/* Quick Analytics Summary Footer */}
-            <div className='grid gap-4 sm:grid-cols-3 pt-2'>
-              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
-                  Ngày Cao Nhất
-                </span>
-                <div className='mt-1 flex items-baseline justify-between'>
-                  <span className='font-mono text-sm font-extrabold text-ink-900'>
-                    {bestDay ? bestDay.label : 'N/A'}
-                  </span>
-                  <span className='font-mono text-xs font-bold text-berry-600'>
-                    {bestDay ? money(bestDay.revenue) : '0đ'}
-                  </span>
-                </div>
-              </div>
-
-              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
-                  TB Doanh Thu / Ngày
-                </span>
-                <div className='mt-1 font-mono text-sm font-extrabold text-ink-900'>
-                  {money(Math.round(total7DayRevenue / 7))}
-                </div>
-              </div>
-
-              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
-                  Tỷ Lệ Đơn Hoàn Thành
-                </span>
-                <div className='mt-1 font-mono text-sm font-extrabold text-emerald-600 flex items-center gap-1'>
-                  <CheckCircle2 size={16} />
-                  <span>
-                    {orders.length > 0
-                      ? `${Math.round((orders.filter((o) => o.status === 2).length / orders.length) * 100)}%`
-                      : '100%'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column: Gateway Health & Top Selling Side Card */}
-          <div className='space-y-6'>
-            {/* System Status Card */}
-            <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-4'>
-              <div className='flex items-center justify-between border-b border-ink-100 pb-3'>
-                <h3 className='font-display text-base font-bold text-ink-900 flex items-center gap-2'>
-                  <Zap size={18} className='text-berry-600' />
-                  <span>Trạng Thái Cổng PayOS</span>
-                </h3>
-                <span className='rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800'>
-                  Hoạt Động
-                </span>
-              </div>
-
-              <div className='space-y-3 text-xs'>
-                <div className='flex items-center justify-between rounded-xl bg-ink-50 p-3'>
-                  <span className='text-ink-600 font-medium flex items-center gap-2'>
-                    <CreditCard size={15} className='text-ink-400' />
-                    Thanh Toán QR PayOS
-                  </span>
-                  <span className='font-mono font-bold text-emerald-600'>99.9% Up</span>
-                </div>
-
-                <div className='flex items-center justify-between rounded-xl bg-ink-50 p-3'>
-                  <span className='text-ink-600 font-medium flex items-center gap-2'>
-                    <CheckCircle2 size={15} className='text-ink-400' />
-                    Tốc độ xử lý Webhook
-                  </span>
-                  <span className='font-mono font-bold text-ink-800'>&lt; 120ms</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Compact Top Sellers Side Watchlist */}
-            <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
-              <div className='flex items-center justify-between border-b border-ink-100 pb-3'>
-                <div>
-                  <h3 className='font-display text-base font-bold text-ink-900'>Top 4 Sản Phẩm Bán Chạy</h3>
-                  <p className='text-xs text-ink-500'>Được khách đặt mua nhiều nhất</p>
-                </div>
-                <TrendingUp size={18} className='text-berry-600' />
-              </div>
-
-              <div className='space-y-3'>
-                {topSelling.slice(0, 4).map((product, idx) => (
-                  <div
-                    key={product._id}
-                    className='flex items-center justify-between gap-3 rounded-2xl bg-ink-50/70 p-3 border border-ink-100'
-                  >
-                    <div className='flex items-center gap-3 min-w-0'>
-                      <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-ink-950 text-xs font-mono font-bold text-amber-200'>
-                        #{idx + 1}
-                      </span>
-                      <div className='min-w-0'>
-                        <div className='truncate text-xs font-bold text-ink-900'>{product.name}</div>
-                        <div className='font-mono text-[11px] text-ink-500'>Tồn kho: {product.quantity} sp</div>
-                      </div>
+                    {b.orders ? <span className='absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-ink-950' aria-hidden /> : null}
+                    <div className='pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-xl bg-ink-950 px-3 py-2 text-xs text-white group-hover:block'>
+                      <p className='font-semibold'>{b.title}</p>
+                      <p>{money(b.revenue)}</p>
+                      <p className='text-ink-300'>{b.orders} đơn tạo</p>
                     </div>
-                    <span className='font-mono text-xs font-extrabold text-berry-600 shrink-0'>
-                      {product.soldNumber || 0} đã bán
-                    </span>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
-      )}
+            )}
+            {chart && chart.buckets.length > 1 ? (
+              <div className='mt-2 flex justify-between text-[11px] text-ink-400'>
+                <span>{chart.buckets[0].label}</span>
+                <span>{compactMoney(maxRevenue)} cao nhất</span>
+                <span>{chart.buckets[chart.buckets.length - 1].label}</span>
+              </div>
+            ) : null}
+          </section>
 
-      {/* 5. Tab 2: Recent Orders Mini Table */}
-      {activeTab === 'orders' && (
-        <section className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-6'>
-          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-ink-100 pb-4'>
-            <div>
-              <h2 className='font-display text-lg font-bold text-ink-900'>Danh Sách Đơn Hàng Gần Đây</h2>
-              <p className='mt-0.5 text-xs text-ink-500'>
-                Hiển thị {recentOrders.length} đơn hàng phát sinh gần đây nhất.
-              </p>
-            </div>
-
+          {/* status mix */}
+          <section className='rounded-3xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+            <h2 className='font-display text-lg font-bold'>Trạng thái đơn</h2>
+            <p className='text-sm text-ink-500'>{statusTotal} đơn tạo trong kỳ</p>
+            {statusTotal ? (
+              <div className='mt-5 flex h-3 overflow-hidden rounded-full bg-ink-100'>
+                {STATUS_META.map((m) =>
+                  s.by_status[m.key] ? (
+                    <div key={m.key} className={m.color} style={{ width: `${(s.by_status[m.key] / statusTotal) * 100}%` }} />
+                  ) : null
+                )}
+              </div>
+            ) : null}
+            <ul className='mt-5 space-y-2.5'>
+              {STATUS_META.map((m) => (
+                <li key={m.key} className='flex items-center justify-between text-sm'>
+                  <span className='flex items-center gap-2 text-ink-700'>
+                    <span className={cn('h-2.5 w-2.5 rounded-full', m.color)} aria-hidden />
+                    {m.label}
+                  </span>
+                  <span className='font-semibold'>{s.by_status[m.key]}</span>
+                </li>
+              ))}
+            </ul>
             <Link
-              to='/admin/orders'
-              className='inline-flex items-center gap-1 text-xs font-bold text-berry-600 hover:underline'
+              to={ROUTE_PATHS.ADMIN_ORDERS}
+              className='mt-5 inline-flex items-center gap-1 text-sm font-semibold text-berry-600 hover:underline'
             >
-              Xem toàn bộ danh sách đơn ({orders.length}) <ArrowUpRight size={14} />
+              Quản lý đơn hàng <ChevronRight size={15} />
             </Link>
-          </div>
+          </section>
+        </div>
+      ) : null}
 
-          <div className='overflow-x-auto rounded-2xl border border-ink-200'>
-            <table className='w-full text-left text-xs'>
-              <thead className='bg-ink-50 text-ink-500 font-bold uppercase tracking-wider border-b border-ink-200'>
-                <tr>
-                  <th className='p-4'>Mã Đơn Hàng</th>
-                  <th className='p-4'>Thời Gian</th>
-                  <th className='p-4'>Tổng Tiền</th>
-                  <th className='p-4'>Trạng Thái</th>
-                  <th className='p-4 text-right'>Thao Tác</th>
+      {s ? (
+        <div className='grid gap-4 lg:grid-cols-2'>
+          {/* top products */}
+          <section className='rounded-3xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+            <h2 className='font-display text-lg font-bold'>Bán chạy trong kỳ</h2>
+            <p className='text-sm text-ink-500'>Theo số lượng trong các đơn đã thu tiền</p>
+            {s.top_products.length === 0 ? (
+              <p className='mt-6 text-sm text-ink-500'>Chưa có đơn đã thu tiền trong kỳ.</p>
+            ) : (
+              <ol className='mt-4 divide-y divide-ink-100'>
+                {s.top_products.map((p, i) => {
+                  const img = formatImageUrl(p.thumbnail)
+                  return (
+                    <li key={p._id} className='flex items-center gap-3 py-3'>
+                      <span className='w-5 text-sm font-semibold text-ink-400'>{i + 1}</span>
+                      <span className='h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-berry-50'>
+                        {img ? <img src={img} alt='' className='h-full w-full object-cover' /> : null}
+                      </span>
+                      <span className='min-w-0 flex-1'>
+                        <span className={cn('block truncate text-sm font-semibold', !p.name && 'italic text-ink-400')}>
+                          {p.name || 'Sản phẩm đã bị xóa'}
+                        </span>
+                        <span className='text-xs text-ink-500'>{p.units} đã bán</span>
+                      </span>
+                      <span className='text-sm font-semibold'>{money(p.revenue)}</span>
+                    </li>
+                  )
+                })}
+              </ol>
+            )}
+          </section>
+
+          {/* low stock */}
+          <section className='rounded-3xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+            <h2 className='flex items-center gap-2 font-display text-lg font-bold'>
+              <Boxes size={18} className='text-berry-600' aria-hidden /> Sắp hết hàng
+            </h2>
+            <p className='text-sm text-ink-500'>Tồn kho ≤ {s.low_stock.threshold}</p>
+            {s.low_stock.items.length === 0 ? (
+              <div className='mt-6 flex items-center gap-3 rounded-2xl bg-lime-100 p-4 text-sm text-lime-700'>
+                <Package size={18} aria-hidden /> Tồn kho an toàn — không có sản phẩm nào sắp hết.
+              </div>
+            ) : (
+              <ul className='mt-4 divide-y divide-ink-100'>
+                {s.low_stock.items.map((p) => (
+                  <li key={p._id} className='flex items-center justify-between gap-3 py-3'>
+                    <span className='truncate text-sm font-semibold'>{p.name}</span>
+                    <span className='flex items-center gap-3'>
+                      <span className={cn('chip px-2.5 py-0.5 text-xs', p.quantity <= 0 ? 'bg-rose-100 text-rose-700' : 'bg-peach-100 text-peach-700')}>
+                        {p.quantity <= 0 ? 'Hết hàng' : `Còn ${p.quantity}`}
+                      </span>
+                      <Link to={ROUTE_PATHS.ADMIN_PRODUCT_EDIT(p._id)} className='text-sm font-semibold text-berry-600 hover:underline'>
+                        Nhập thêm
+                      </Link>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      ) : null}
+
+      {/* recent orders */}
+      <section className='rounded-3xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+        <div className='flex items-center justify-between'>
+          <h2 className='font-display text-lg font-bold'>Đơn mới nhất</h2>
+          <Link to={ROUTE_PATHS.ADMIN_ORDERS} className='text-sm font-semibold text-berry-600 hover:underline'>
+            Xem tất cả
+          </Link>
+        </div>
+        {recent.isLoading ? (
+          <div className='mt-4 h-40 animate-pulse rounded-2xl bg-ink-100' />
+        ) : (recent.data ?? []).length === 0 ? (
+          <p className='mt-4 text-sm text-ink-500'>Chưa có đơn hàng.</p>
+        ) : (
+          <div className='mt-4 overflow-x-auto'>
+            <table className='w-full min-w-[560px] text-left text-sm'>
+              <thead>
+                <tr className='text-xs uppercase tracking-wider text-ink-400'>
+                  <th className='pb-2 font-semibold'>Mã đơn</th>
+                  <th className='pb-2 font-semibold'>Ngày tạo</th>
+                  <th className='pb-2 font-semibold'>Trạng thái</th>
+                  <th className='pb-2 text-right font-semibold'>Tổng tiền</th>
                 </tr>
               </thead>
-              <tbody className='divide-y divide-ink-100 bg-white font-medium'>
-                {recentOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className='p-8 text-center text-ink-400'>
-                      Chưa có đơn hàng nào.
-                    </td>
-                  </tr>
-                ) : (
-                  recentOrders.map((order) => {
-                    const statusInfo = getOrderStatusMeta(order.status)
-                    return (
-                      <tr key={order._id} className='hover:bg-ink-50/80 transition'>
-                        <td className='p-4 font-mono font-bold text-ink-900'>#{order._id.slice(-8).toUpperCase()}</td>
-                        <td className='p-4 text-ink-600 font-mono'>{formatDate(order.created_at)}</td>
-                        <td className='p-4 font-mono font-bold text-berry-600'>
-                          {money(order.total_price + order.shipping_fee)}
-                        </td>
-                        <td className='p-4'>
-                          <StatusBadge status={statusInfo.tone} label={statusInfo.label} />
-                        </td>
-                        <td className='p-4 text-right'>
-                          <Link
-                            to={`/admin/orders/${order._id}`}
-                            className='inline-flex items-center gap-1 rounded-xl border border-ink-200 bg-white px-3 py-1.5 text-xs font-bold text-ink-700 hover:bg-ink-100 hover:text-ink-900 transition'
-                          >
-                            <span>Chi tiết</span>
-                            <ExternalLink size={13} />
-                          </Link>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
+              <tbody className='divide-y divide-ink-100'>
+                {(recent.data ?? []).map((o) => {
+                  const meta = getOrderStatusMeta(o.status)
+                  return (
+                    <tr key={o._id} className='hover:bg-ink-50'>
+                      <td className='py-3'>
+                        <Link to={ROUTE_PATHS.ADMIN_ORDER_DETAIL(o._id)} className='font-mono font-semibold text-ink-950 hover:text-berry-600'>
+                          #{o._id.slice(-6).toUpperCase()}
+                        </Link>
+                      </td>
+                      <td className='py-3 text-ink-600'>{formatDate(o.created_at)}</td>
+                      <td className='py-3'>
+                        <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                      </td>
+                      <td className='py-3 text-right font-semibold'>{money(o.total_price)}</td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
-        </section>
-      )}
-
-      {/* 6. Tab 3: Inventory Alerts & Best Sellers */}
-      {activeTab === 'inventory' && (
-        <section className='grid gap-6 xl:grid-cols-2'>
-          {/* Low Stock Watchlist */}
-          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
-            <div className='flex items-center justify-between border-b border-ink-100 pb-4'>
-              <div>
-                <h2 className='font-display text-lg font-bold text-rose-900 flex items-center gap-2'>
-                  <AlertTriangle size={20} className='text-rose-600' />
-                  <span>Sản Phẩm Cần Nhập Thêm ({lowStockProducts.length})</span>
-                </h2>
-                <p className='mt-0.5 text-xs text-ink-500'>
-                  Sản phẩm có lượng tồn kho dưới ngưỡng an toàn (&lt;= {LOW_STOCK_THRESHOLD} sp).
-                </p>
-              </div>
-
-              <Link to='/admin/products' className='text-xs font-bold text-berry-600 hover:underline'>
-                Quản lý sản phẩm
-              </Link>
-            </div>
-
-            <div className='space-y-3'>
-              {lowStockProducts.length === 0 ? (
-                <div className='rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/40 p-8 text-center text-xs font-bold text-emerald-800'>
-                  <CheckCircle2 size={24} className='mx-auto mb-2 text-emerald-600' />
-                  Tất cả sản phẩm đều đủ lượng tồn kho an toàn!
-                </div>
-              ) : (
-                lowStockProducts.map((prod) => (
-                  <div
-                    key={prod._id}
-                    className='flex items-center justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50/40 p-4'
-                  >
-                    <div className='min-w-0'>
-                      <div className='truncate text-xs font-bold text-ink-900'>{prod.name}</div>
-                      <div className='mt-1 flex items-center gap-2 font-mono text-[11px] text-ink-500'>
-                        <span>Đã bán: {prod.soldNumber || 0}</span>
-                        <span>•</span>
-                        <span className='font-bold text-rose-700'>Còn tồn: {prod.quantity} sp</span>
-                      </div>
-                    </div>
-
-                    <Link
-                      to={`/admin/products/${prod._id}`}
-                      className='shrink-0 rounded-xl bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700 transition shadow-xs'
-                    >
-                      Nhập Hàng
-                    </Link>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* Full Top Selling List */}
-          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
-            <div className='flex items-center justify-between border-b border-ink-100 pb-4'>
-              <div>
-                <h2 className='font-display text-lg font-bold text-ink-900 flex items-center gap-2'>
-                  <TrendingUp size={20} className='text-berry-600' />
-                  <span>Xếp Hạng Bán Chạy Toàn Cửa Hàng</span>
-                </h2>
-                <p className='mt-0.5 text-xs text-ink-500'>Dựa trên tổng lượng sản phẩm bán ra thực tế.</p>
-              </div>
-            </div>
-
-            <div className='space-y-4'>
-              {topSelling.map((product, index) => {
-                const maxSold = Math.max(...topSelling.map((item) => item.soldNumber || 0), 1)
-                const pct = Math.max(12, Math.round(((product.soldNumber || 0) / maxSold) * 100))
-                return (
-                  <div key={product._id} className='rounded-2xl border border-ink-100 bg-ink-50/60 p-4 space-y-2.5'>
-                    <div className='flex items-center justify-between gap-3'>
-                      <div className='flex min-w-0 items-center gap-3'>
-                        <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-ink-950 text-xs font-mono font-bold text-amber-200'>
-                          #{index + 1}
-                        </span>
-                        <div className='min-w-0'>
-                          <div className='truncate font-display text-xs font-bold text-ink-900'>{product.name}</div>
-                          <div className='mt-0.5 font-mono text-[11px] text-ink-500'>
-                            Giá bán: {money(product.price)} • Tồn: {product.quantity} sp
-                          </div>
-                        </div>
-                      </div>
-
-                      <span className='font-mono text-xs font-black text-berry-600 shrink-0'>
-                        {product.soldNumber || 0} đã bán
-                      </span>
-                    </div>
-
-                    <div className='h-2 w-full overflow-hidden rounded-full bg-white border border-ink-200'>
-                      <div
-                        className='h-full rounded-full bg-gradient-to-r from-ink-950 via-ink-500 to-berry-600 transition-all duration-500'
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+        )}
+      </section>
     </div>
   )
 }
