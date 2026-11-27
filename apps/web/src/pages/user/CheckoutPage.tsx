@@ -8,7 +8,7 @@ import ShippingMapPicker from '../../components/checkout/ShippingMapPicker'
 import SavedAddressesPanel from '../../components/profile/SavedAddressesPanel'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
-import { createGuestOrderApi, createOrderApi } from '../../services/orders.services'
+import { createGuestOrderApi, createOrderApi, newCheckoutKey } from '../../services/orders.services'
 import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
 import { createSavedAddressApi, getSavedAddressesApi, type SavedAddress } from '../../services/user_addresses.services'
 import { getPayosPaymentUrlApi } from '../../services/payment.services'
@@ -117,6 +117,8 @@ export default function CheckoutPage() {
   const [selectedDelivery, setSelectedDelivery] = useState<string>()
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(isGuestCheckout ? PaymentMethod.CASH_ON_DELIVERY : PaymentMethod.PAYOS)
   const [loading, setLoading] = useState(false)
+  // One key per checkout attempt: retries of the same attempt can never create a second order.
+  const checkoutKey = useRef(newCheckoutKey())
   const [addressMode, setAddressMode] = useState<AddressMode>('manual')
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -351,14 +353,20 @@ export default function CheckoutPage() {
       }
 
       const res = isGuestCheckout
-        ? await createGuestOrderApi({
-            ...commonPayload,
-            items: cartItems.map((item) => ({ product_id: item.product_infor._id, quantity: item.quantity }))
-          })
-        : await createOrderApi({
-            ...commonPayload,
-            items: selectedIds
-          })
+        ? await createGuestOrderApi(
+            {
+              ...commonPayload,
+              items: cartItems.map((item) => ({ product_id: item.product_infor._id, quantity: item.quantity }))
+            },
+            checkoutKey.current
+          )
+        : await createOrderApi(
+            {
+              ...commonPayload,
+              items: selectedIds
+            },
+            checkoutKey.current
+          )
 
       const orderId = res.data?.result?.insertedId as string | undefined
       toast.success('Đặt hàng thành công!')

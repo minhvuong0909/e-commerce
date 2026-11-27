@@ -3,12 +3,27 @@ import api from '../configs/api'
 import type { CreateGuestOrderPayload, CreateOrderPayload } from '../models/OrderRequests'
 import type { PaginationMeta } from '../models/Pagination'
 
-export const createOrderApi = (data: CreateOrderPayload) => {
-  return api.post('/orders/create', data)
+/**
+ * `idempotencyKey` must stay the same for every retry of one checkout attempt, so a double click,
+ * a slow network retry or a lost response returns the same order instead of creating a second one.
+ */
+const idempotencyHeaders = (idempotencyKey?: string) =>
+  idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined
+
+export const createOrderApi = (data: CreateOrderPayload, idempotencyKey?: string) => {
+  return api.post('/orders/create', data, idempotencyHeaders(idempotencyKey))
 }
 
-export const createGuestOrderApi = (data: CreateGuestOrderPayload) => {
-  return api.post('/orders/guest', data)
+export const createGuestOrderApi = (data: CreateGuestOrderPayload, idempotencyKey?: string) => {
+  return api.post('/orders/guest', data, idempotencyHeaders(idempotencyKey))
+}
+
+/** Random key for one checkout attempt (falls back when crypto.randomUUID is unavailable, e.g. non-HTTPS). */
+export function newCheckoutKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID()
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
 export const getMyOrdersApi = () => {
