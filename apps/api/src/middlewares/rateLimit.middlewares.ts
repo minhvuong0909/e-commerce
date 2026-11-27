@@ -50,3 +50,11 @@ export const forgotPasswordLimiter = rateLimit({
     message: 'Bạn đã yêu cầu khôi phục mật khẩu quá nhiều lần. Vui lòng thử lại sau.'
   }
 })
+
+/** Public voucher check: enough for real checkouts, too slow to enumerate codes. */
+export const voucherValidateLimiter = rateLimit({
+  ...commonOptions,
+  windowMs: 60_000,
+  limit: 15,
+  message: { message: 'Bạn thử mã giảm giá quá nhiều lần. Vui lòng thử lại sau ít phút.' }
+})

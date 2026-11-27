@@ -64,6 +64,7 @@ class DatabaseService {
         partialFilterExpression: { idempotency_key: { $type: 'string' } }
       }
     )
+    await this.vouchers.createIndex({ code: 1 }, { name: 'uniq_voucher_code', unique: true })
   }
   /** Fail closed on standalone MongoDB: never fall back to partial order writes. */
   async withTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
