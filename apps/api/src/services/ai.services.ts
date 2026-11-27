@@ -1,5 +1,6 @@
 import databaseService from '~/services/database.service'
 import { escapeRegex } from '~/utils/productQuery'
+import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 
@@ -32,6 +33,11 @@ const buildFallback = (input: ProductDescriptionInput) => {
     .join('\n')
 }
 
+type OpenAIResponsesPayload = {
+  output_text?: string
+  output?: Array<{ content?: Array<{ text?: string }> }>
+}
+
 class AiService {
   async generateProductDescription(input: ProductDescriptionInput) {
     const apiKey = stripEnv(process.env.OPENAI_API_KEY)
@@ -46,24 +52,37 @@ Công dụng: ${input.benefits || ''}
 
 Trả về: mô tả ngắn, bullet công dụng, cách dùng, lưu ý test kích ứng.`
 
-    const res = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-        input: prompt
-      })
-    })
-    if (!res.ok) return { description: buildFallback(input), source: 'template' }
+    try {
+      const res = await fetchWithTimeout(
+        'https://api.openai.com/v1/responses',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
+            input: prompt
+          })
+        },
+        { timeoutMs: HTTP_TIMEOUTS.openai, service: 'openai' }
+      )
+      if (!res.ok) return { description: buildFallback(input), source: 'template' }
 
-    const data = await res.json()
-    const text =
-      data.output_text ||
-      data.output?.flatMap((item: any) => item.content || []).map((item: any) => item.text).filter(Boolean).join('\n')
-    return { description: text || buildFallback(input), source: text ? 'openai' : 'template' }
+      const data = (await res.json()) as OpenAIResponsesPayload
+      const text =
+        data.output_text ||
+        data.output
+          ?.flatMap((item) => item.content || [])
+          .map((item) => item.text)
+          .filter(Boolean)
+          .join('\n')
+      return { description: text || buildFallback(input), source: text ? 'openai' : 'template' }
+    } catch (error) {
+      console.error('OpenAI product description error:', error instanceof Error ? error.message : error)
+      return { description: buildFallback(input), source: 'template' }
+    }
   }
 
   /**
@@ -139,18 +158,22 @@ Trả về: mô tả ngắn, bullet công dụng, cách dùng, lưu ý test kíc
           }
         ]
 
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
+        const res = await fetchWithTimeout(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+              messages: promptMessages,
+              temperature: 0.7
+            })
           },
-          body: JSON.stringify({
-            model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-            messages: promptMessages,
-            temperature: 0.7
-          })
-        })
+          { timeoutMs: HTTP_TIMEOUTS.openai, service: 'openai' }
+        )
 
         if (res.ok) {
           const data = await res.json()

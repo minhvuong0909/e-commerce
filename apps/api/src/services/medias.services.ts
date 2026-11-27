@@ -6,6 +6,7 @@ import sharp from 'sharp'
 import { Media } from '~/models/Other'
 import { MediaType } from '~/constants/enums'
 import { cleanupTempFolder } from '~/utils/cleanupTemp'
+import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 class MediaServices {
   private async uploadToCloudinary(filePath: string, folder: string) {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim()
@@ -18,10 +19,11 @@ class MediaServices {
     form.append('upload_preset', uploadPreset)
     form.append('folder', folder)
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      body: form
-    })
+    const res = await fetchWithTimeout(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      { method: 'POST', body: form },
+      { timeoutMs: HTTP_TIMEOUTS.mediaUpload, service: 'cloudinary' }
+    )
     if (!res.ok) {
       throw new Error(`Cloudinary upload failed: ${res.status}`)
     }

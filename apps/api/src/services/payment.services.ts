@@ -9,6 +9,7 @@ import databaseService from './database.service'
 import { confirmGatewayPayment } from './payment_confirmation.service'
 import { createMailTransporter } from '~/config/mail'
 import { assertMoMoProductionReady, MOMO_CONFIG, payos, PAYOS_CONFIG } from '~/config/payment'
+import { applyRequestTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 const transporter = createMailTransporter()
 
@@ -350,6 +351,7 @@ class PaymentService {
         })
       })
 
+      applyRequestTimeout(req, HTTP_TIMEOUTS.paymentGateway, 'momo')
       req.on('error', reject)
       req.write(requestBody)
       req.end()

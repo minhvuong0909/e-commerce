@@ -7,6 +7,7 @@ import databaseService from './database.service'
 import paymentService from './payment.services'
 import { confirmGatewayPayment } from './payment_confirmation.service'
 import { PAYPAL_CONFIG } from '~/config/payment'
+import { applyRequestTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 type PayPalLink = {
   rel: string
@@ -61,6 +62,7 @@ class PaypalService {
         }
       )
 
+      applyRequestTimeout(req, HTTP_TIMEOUTS.paymentGateway, 'paypal')
       req.on('error', reject)
       if (body) req.write(body)
       req.end()
