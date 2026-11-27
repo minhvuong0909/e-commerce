@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb'
+import { ClientSession, ObjectId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
 import Voucher, { VoucherType } from '~/models/schemas/Vouchers.schema'
 import HTTP_STATUS from '~/constants/httpStatus'
@@ -23,8 +23,13 @@ class VoucherService {
     return voucher
   }
 
-  async validate(code: string, subtotal: number) {
-    const voucher = await databaseService.vouchers.findOne({ code: code.trim().toUpperCase(), active: true })
+  async validate(code: string, subtotal: number, session?: ClientSession) {
+    if (typeof code !== 'string' || code.length > 64 || !Number.isFinite(subtotal) || subtotal < 0)
+      throw new ErrorWithStatus({ message: 'Dữ liệu voucher không hợp lệ.', status: HTTP_STATUS.BAD_REQUEST })
+    const voucher = await databaseService.vouchers.findOne(
+      { code: code.trim().toUpperCase(), active: true },
+      { session }
+    )
     if (!voucher) {
       throw new ErrorWithStatus({ message: 'Mã giảm giá không hợp lệ', status: HTTP_STATUS.NOT_FOUND })
     }
@@ -43,14 +48,26 @@ class VoucherService {
     }
 
     const rawDiscount =
-      voucher.discount_type === 'percent' ? Math.floor((subtotal * voucher.discount_value) / 100) : voucher.discount_value
+      voucher.discount_type === 'percent'
+        ? Math.floor((subtotal * voucher.discount_value) / 100)
+        : voucher.discount_value
     const discount = Math.min(subtotal, Math.max(0, rawDiscount))
     return { voucher, discount, final_subtotal: subtotal - discount }
   }
 
-  async markUsed(voucherId?: ObjectId) {
+  async markUsed(voucherId?: ObjectId, session?: ClientSession) {
     if (!voucherId) return
-    await databaseService.vouchers.updateOne({ _id: voucherId }, { $inc: { used_count: 1 }, $set: { updated_at: new Date() } })
+    const result = await databaseService.vouchers.updateOne(
+      {
+        _id: voucherId,
+        active: true,
+        $or: [{ usage_limit: { $lte: 0 } }, { $expr: { $lt: ['$used_count', '$usage_limit'] } }]
+      },
+      { $inc: { used_count: 1 }, $set: { updated_at: new Date() } },
+      { session }
+    )
+    if (result.modifiedCount !== 1)
+      throw new ErrorWithStatus({ message: 'Mã giảm giá đã hết lượt sử dụng.', status: HTTP_STATUS.BAD_REQUEST })
   }
 }
 

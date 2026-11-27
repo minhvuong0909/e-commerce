@@ -36,6 +36,7 @@ interface OrderType {
 }
 
 export default class Order {
+  refund_state?: 'processing' | 'completed'
   _id?: ObjectId
   user_id?: ObjectId
   guest_customer?: GuestCustomer

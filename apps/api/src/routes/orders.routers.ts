@@ -12,6 +12,7 @@ import {
 } from '~/controllers/orders.controllers'
 import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
+import { guestOrderLimiter } from '~/middlewares/rateLimit.middlewares'
 
 const ordersRouter = Router()
 
@@ -34,7 +35,7 @@ ordersRouter.post(
  * Create a guest checkout order.
  * Features: lets customers order with name, phone and address without registering an account.
  */
-ordersRouter.post('/guest', wrapAsync(createGuestOrderController))
+ordersRouter.post('/guest', guestOrderLimiter, wrapAsync(createGuestOrderController))
 
 /**
  * PUT /orders/status/:id
