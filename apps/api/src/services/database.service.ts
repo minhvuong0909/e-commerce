@@ -53,6 +53,18 @@ class DatabaseService {
   async close() {
     await this.client.close()
   }
+
+  /** Idempotent; safe to run on every start. Only touches documents that carry the field. */
+  async ensureIndexes() {
+    await this.orders.createIndex(
+      { idempotency_key: 1 },
+      {
+        name: 'uniq_order_idempotency_key',
+        unique: true,
+        partialFilterExpression: { idempotency_key: { $type: 'string' } }
+      }
+    )
+  }
   /** Fail closed on standalone MongoDB: never fall back to partial order writes. */
   async withTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
     const session = this.client.startSession()

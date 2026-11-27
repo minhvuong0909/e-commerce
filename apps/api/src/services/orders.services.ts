@@ -16,6 +16,7 @@ import { createMailTransporter } from '~/config/mail'
 import { payos } from '~/config/payment'
 import voucherService from './vouchers.services'
 import telegramService from './telegram.services'
+import { buildIdempotencyKey, isDuplicateKeyError, orderFingerprint } from '~/utils/idempotency'
 
 const mailTransporter = createMailTransporter()
 
@@ -26,20 +27,30 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   [PaymentMethod.PAYOS]: 'Chuyển khoản (PayOS)',
   [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng'
 }
+type CreatedOrder = { acknowledged: boolean; insertedId: ObjectId; replayed?: boolean }
+
 class OrdersService {
+  /** Order already created for this idempotency key → same response, no new stock/notification side effects. */
+  private async findReplay(idempotency_key: string): Promise<CreatedOrder | null> {
+    const existing = await databaseService.orders.findOne({ idempotency_key }, { projection: { _id: 1 } })
+    return existing ? { acknowledged: true, insertedId: existing._id, replayed: true } : null
+  }
+
   private async finalizeOrder({
     user_id,
     guest_customer,
     items,
     payload,
-    selectedCartItems
+    selectedCartItems,
+    idempotency_key
   }: {
     user_id?: string
     guest_customer?: { name: string; phone: string; email?: string }
     items: GuestOrderItemInput[]
     payload: CreateOrderReqBody | CreateGuestOrderReqBody
     selectedCartItems?: ObjectId[]
-  }) {
+    idempotency_key: string
+  }): Promise<CreatedOrder> {
     items = normalizeOrderItems(items)
     for (const [key, max] of [
       ['recipient_name', 120],
@@ -99,8 +110,6 @@ class OrdersService {
       lng,
       delivery_method_id: payload.delivery_method_id
     })
-    const shipping_fee = quote.shipping_fee
-
     const recipient_name = payload.recipient_name?.trim()
     const phone = payload.phone?.trim()
     const address_line = payload.address_line?.trim()
@@ -112,7 +121,70 @@ class OrdersService {
       })
     }
 
-    const order = await databaseService.withTransaction(async (session) => {
+    let order: CreatedOrder
+    try {
+      order = await this.createInTransaction({
+        user_id,
+        guest_customer,
+        items,
+        payload,
+        selectedCartItems,
+        idempotency_key,
+        delivery_method,
+        quote,
+        recipient_name,
+        phone,
+        address_line,
+        note
+      })
+    } catch (error) {
+      // A concurrent submit with the same key won the unique index; this transaction rolled back.
+      if (isDuplicateKeyError(error)) {
+        const replay = await this.findReplay(idempotency_key)
+        if (replay) return replay
+      }
+      throw error
+    }
+
+    this.sendOrderConfirmationEmail(order.insertedId.toString()).catch((err) =>
+      console.error('Gửi email xác nhận đơn hàng thất bại:', err)
+    )
+    this.sendTelegramOrderNotification(order.insertedId.toString()).catch((err) =>
+      console.error('Gửi Telegram báo đơn thất bại:', err)
+    )
+
+    return order
+  }
+
+  private async createInTransaction({
+    user_id,
+    guest_customer,
+    items,
+    payload,
+    selectedCartItems,
+    idempotency_key,
+    delivery_method,
+    quote,
+    recipient_name,
+    phone,
+    address_line,
+    note
+  }: {
+    user_id?: string
+    guest_customer?: { name: string; phone: string; email?: string }
+    items: GuestOrderItemInput[]
+    payload: CreateOrderReqBody | CreateGuestOrderReqBody
+    selectedCartItems?: ObjectId[]
+    idempotency_key: string
+    delivery_method: { _id: ObjectId }
+    quote: { shipping_fee: number; lat: number; lng: number; distance_km: number }
+    recipient_name: string
+    phone: string
+    address_line: string
+    note?: string
+  }): Promise<CreatedOrder> {
+    const shipping_fee = quote.shipping_fee
+    return databaseService.withTransaction(async (session) => {
       const products = await databaseService.products
         .find({ _id: { $in: items.map((item) => new ObjectId(item.product_id)) } }, { session })
         .toArray()
@@ -175,7 +247,8 @@ class OrdersService {
             lng: quote.lng,
             distance_km: quote.distance_km,
             address_source: payload.address_source
-          }
+          },
+          idempotency_key
         }),
         { session }
       )
@@ -185,27 +258,20 @@ class OrdersService {
       })
       await databaseService.order_items.insertMany(orderItems, { session })
       await voucherService.markUsed(voucherResult?.voucher?._id, session)
-      return created
+      return { acknowledged: created.acknowledged, insertedId: created.insertedId }
     })
-
-    this.sendOrderConfirmationEmail(order.insertedId.toString()).catch((err) =>
-      console.error('Gửi email xác nhận đơn hàng thất bại:', err)
-    )
-    this.sendTelegramOrderNotification(order.insertedId.toString()).catch((err) =>
-      console.error('Gửi Telegram báo đơn thất bại:', err)
-    )
-
-    return order
   }
 
   async createOrderItem({
     user_id,
     cart_item_id,
-    payload
+    payload,
+    client_key
   }: {
     user_id: string
     cart_item_id: string[]
     payload: CreateOrderReqBody
+    client_key?: string
   }) {
     if (
       !Array.isArray(cart_item_id) ||
@@ -215,6 +281,14 @@ class OrdersService {
       new Set(cart_item_id).size !== cart_item_id.length
     )
       badRequest('Danh sách giỏ hàng không hợp lệ.')
+    // Checked before reading the cart: a retried submit finds its cart items already consumed.
+    const idempotency_key = buildIdempotencyKey(
+      { user_id },
+      client_key,
+      orderFingerprint({ ...payload, items: cart_item_id.map((id) => ({ product_id: `cart:${id}`, quantity: 0 })) })
+    )
+    const replay = await this.findReplay(idempotency_key)
+    if (replay) return replay
     // get cart active
     const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
     if (!cart) {
@@ -241,20 +315,29 @@ class OrdersService {
       user_id,
       items: cartItems.map((item) => ({ product_id: item.product_id.toString(), quantity: item.quantity })),
       payload,
-      selectedCartItems: cartItems.map((item) => item._id!)
+      selectedCartItems: cartItems.map((item) => item._id!),
+      idempotency_key
     })
 
     return order
   }
 
-  async createGuestOrder(payload: CreateGuestOrderReqBody) {
+  async createGuestOrder(payload: CreateGuestOrderReqBody, client_key?: string) {
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
       throw new ErrorWithStatus({
         message: CART_MESSAGES.NO_SELECTED_CART_ITEMS,
         status: HTTP_STATUS.BAD_REQUEST
       })
     }
+    const idempotency_key = buildIdempotencyKey(
+      { guest_phone: String(payload.phone ?? '') },
+      client_key,
+      orderFingerprint({ ...payload, items: normalizeOrderItems(payload.items) })
+    )
+    const replay = await this.findReplay(idempotency_key)
+    if (replay) return replay
     return this.finalizeOrder({
+      idempotency_key,
       guest_customer: {
         name: payload.recipient_name?.trim(),
         phone: payload.phone?.trim(),

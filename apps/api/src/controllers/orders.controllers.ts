@@ -5,6 +5,7 @@ import { ORDER_MESSAGES } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import ordersService from '~/services/orders.services'
 import { getParam } from '~/utils/params'
+import { readClientKey } from '~/utils/idempotency'
 
 export const createOrderController = async (
   req: Request<ParamsDictionary, unknown, any>,
@@ -15,9 +16,10 @@ export const createOrderController = async (
   const order = await ordersService.createOrderItem({
     user_id: user_id,
     cart_item_id: req.body.items,
-    payload: req.body
+    payload: req.body,
+    client_key: readClientKey(req.get('Idempotency-Key'))
   })
-  res.status(HTTP_STATUS.CREATED).json({
+  res.status(order.replayed ? HTTP_STATUS.OK : HTTP_STATUS.CREATED).json({
     message: ORDER_MESSAGES.CREATE_ORDER_SUCCESS,
     result: order
   })
@@ -28,8 +30,8 @@ export const createGuestOrderController = async (
   res: Response,
   next: NextFunction
 ) => {
-  const order = await ordersService.createGuestOrder(req.body)
-  res.status(HTTP_STATUS.CREATED).json({
+  const order = await ordersService.createGuestOrder(req.body, readClientKey(req.get('Idempotency-Key')))
+  res.status(order.replayed ? HTTP_STATUS.OK : HTTP_STATUS.CREATED).json({
     message: ORDER_MESSAGES.CREATE_ORDER_SUCCESS,
     result: order
   })

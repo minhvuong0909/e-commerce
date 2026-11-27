@@ -10,14 +10,15 @@ const mocks = vi.hoisted(() => ({
   voucher: vi.fn(),
   consume: vi.fn(),
   delivery: vi.fn(),
-  quote: vi.fn()
+  quote: vi.fn(),
+  findOrder: vi.fn()
 }))
 vi.mock('../database.service', () => ({
   default: {
     withTransaction: mocks.transaction,
     delivery_methods: { findOne: mocks.delivery },
     products: { find: mocks.products, updateOne: mocks.reserve },
-    orders: { insertOne: mocks.insert },
+    orders: { insertOne: mocks.insert, findOne: mocks.findOrder },
     order_items: { insertMany: mocks.lines }
   }
 }))
@@ -56,6 +57,7 @@ describe('order reservation boundaries', () => {
     mocks.insert.mockResolvedValue({ insertedId: new ObjectId() })
     mocks.lines.mockResolvedValue({})
     mocks.consume.mockResolvedValue(undefined)
+    mocks.findOrder.mockResolvedValue(null)
   })
   it('aggregates duplicate lines and reserves once inside the transaction', async () => {
     const body = payload()
@@ -87,6 +89,77 @@ describe('order reservation boundaries', () => {
     await expect(
       ordersService.createGuestOrder({ ...payload(), payment_method: PaymentMethod.PAYOS })
     ).rejects.toThrow()
+    expect(mocks.transaction).not.toHaveBeenCalled()
+  })
+})
+
+describe('duplicate order protection (idempotency)', () => {
+  const productId = new ObjectId(),
+    deliveryId = new ObjectId(),
+    existingId = new ObjectId()
+  const payload = () => ({
+    delivery_method_id: deliveryId.toHexString(),
+    payment_method: PaymentMethod.CASH_ON_DELIVERY,
+    recipient_name: 'Test',
+    phone: '0900000000',
+    address_line: 'Test address',
+    lat: 10,
+    lng: 106,
+    items: [{ product_id: productId.toHexString(), quantity: 1 }]
+  })
+  let notify: ReturnType<typeof vi.spyOn>
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.spyOn(ordersService as any, 'sendOrderConfirmationEmail').mockResolvedValue(undefined)
+    notify = vi.spyOn(ordersService as any, 'sendTelegramOrderNotification').mockResolvedValue(undefined)
+    mocks.transaction.mockImplementation((work) => work({}))
+    mocks.products.mockReturnValue({ toArray: async () => [{ _id: productId, price: 100000, status: PRODUCT_STATUS.Active }] })
+    mocks.reserve.mockResolvedValue({ modifiedCount: 1 })
+    mocks.delivery.mockResolvedValue({ _id: deliveryId })
+    mocks.quote.mockResolvedValue({ shipping_fee: 20000, lat: 10, lng: 106, distance_km: 1 })
+    mocks.insert.mockResolvedValue({ acknowledged: true, insertedId: new ObjectId() })
+    mocks.lines.mockResolvedValue({})
+    mocks.findOrder.mockResolvedValue(null)
+  })
+
+  it('stores a buyer-scoped key built from the Idempotency-Key header', async () => {
+    await ordersService.createGuestOrder(payload(), 'checkout-abc12345')
+    const saved = mocks.insert.mock.calls[0][0]
+    expect(saved.idempotency_key).toBe('g:0900000000:k:checkout-abc12345')
+  })
+
+  it('returns the existing order for a repeated key without touching stock or notifying again', async () => {
+    mocks.findOrder.mockResolvedValue({ _id: existingId })
+    const result = await ordersService.createGuestOrder(payload(), 'checkout-abc12345')
+    expect(result).toEqual({ acknowledged: true, insertedId: existingId, replayed: true })
+    expect(mocks.transaction).not.toHaveBeenCalled()
+    expect(mocks.reserve).not.toHaveBeenCalled()
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('resolves a concurrent duplicate (unique index violation) to the winning order', async () => {
+    mocks.findOrder.mockResolvedValueOnce(null).mockResolvedValueOnce({ _id: existingId })
+    mocks.insert.mockRejectedValue(Object.assign(new Error('E11000 duplicate key'), { code: 11000 }))
+    const result = await ordersService.createGuestOrder(payload(), 'checkout-abc12345')
+    expect(result.insertedId).toBe(existingId)
+    expect(result.replayed).toBe(true)
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it('falls back to a fingerprint key when the client sends none', async () => {
+    await ordersService.createGuestOrder(payload())
+    expect(mocks.insert.mock.calls[0][0].idempotency_key).toMatch(/^g:0900000000:fp:[0-9a-f]{32}:\d+$/)
+  })
+
+  it('checks for a replay before the cart is read on authenticated checkout', async () => {
+    mocks.findOrder.mockResolvedValue({ _id: existingId })
+    const result = await ordersService.createOrderItem({
+      user_id: new ObjectId().toHexString(),
+      cart_item_id: [new ObjectId().toHexString()],
+      payload: payload() as any,
+      client_key: 'checkout-abc12345'
+    })
+    expect(result.replayed).toBe(true)
     expect(mocks.transaction).not.toHaveBeenCalled()
   })
 })

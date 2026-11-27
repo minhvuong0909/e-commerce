@@ -104,7 +104,10 @@ app.use(defaultErrorHandler)
 
 initializeServer({
   connect: () => databaseService.connect(),
-  initialize: () => seedDeliverysController(),
+  initialize: async () => {
+    await databaseService.ensureIndexes()
+    await seedDeliverysController()
+  },
   listen: () =>
     app.listen(port, '0.0.0.0', () => {
       console.log(`Server backend đang chạy trên port ${port}`)
