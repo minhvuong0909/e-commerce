@@ -2,18 +2,37 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import cn from '../../utils/cn'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'gradient' | 'accent'
+type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
   variant?: ButtonVariant
+  size?: ButtonSize
   full?: boolean
   loading?: boolean
+}
+
+const variants: Record<ButtonVariant, string> = {
+  primary: 'bg-ink-950 text-white hover:bg-ink-800 shadow-xs',
+  accent: 'bg-berry-600 text-white hover:bg-berry-700 shadow-glow',
+  gradient: 'bg-gradient-to-r from-berry-600 via-berry-500 to-lilac-500 text-white shadow-glow hover:brightness-110',
+  secondary: 'border-[1.5px] border-ink-200 bg-white text-ink-950 hover:border-ink-950',
+  outline: 'border-[1.5px] border-ink-950 bg-transparent text-ink-950 hover:bg-ink-950 hover:text-white',
+  ghost: 'bg-transparent text-ink-700 hover:bg-ink-100 hover:text-ink-950',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
+}
+
+const sizes: Record<ButtonSize, string> = {
+  sm: 'min-h-9 px-4 text-[13px]',
+  md: 'min-h-11 px-5 text-sm',
+  lg: 'min-h-[3.25rem] px-7 text-base'
 }
 
 export default function Button({
   children,
   className = '',
   variant = 'primary',
+  size = 'md',
   full = false,
   loading = false,
   disabled = false,
@@ -22,36 +41,24 @@ export default function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading
 
-  const variants: Record<ButtonVariant, string> = {
-    primary:
-      'bg-[#1C1917] text-[#FAF7F2] shadow-sm hover:-translate-y-0.5 hover:bg-[#2E2723] hover:shadow-md active:translate-y-0',
-    accent:
-      'bg-[#A16207] text-white shadow-sm hover:-translate-y-0.5 hover:bg-[#854D0E] hover:shadow-md active:translate-y-0',
-    gradient:
-      'bg-gradient-to-r from-[#1C1917] via-[#44403C] to-[#A16207] text-white shadow-sm hover:-translate-y-0.5 hover:shadow-md hover:shadow-[#A16207]/20 active:translate-y-0',
-    secondary:
-      'border border-[#E7E0D8] bg-white text-[#1C1917] shadow-xs hover:-translate-y-0.5 hover:border-[#D6C8B8] hover:bg-[#FAF7F2] active:translate-y-0',
-    outline:
-      'border border-[#D6C8B8] bg-transparent text-[#1C1917] hover:border-[#A16207] hover:bg-[#FAF7F2] active:scale-[0.99]',
-    ghost: 'bg-transparent text-[#594D42] hover:bg-[#F5EFE6] hover:text-[#1C1917] active:scale-[0.99]',
-    danger:
-      'bg-rose-600 text-white shadow-sm hover:-translate-y-0.5 hover:bg-rose-700 active:translate-y-0'
-  }
-
   return (
     <button
       type={type}
       disabled={isDisabled}
+      aria-busy={loading || undefined}
       className={cn(
-        'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] focus-visible:ring-offset-2',
+        'inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-berry-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         variants[variant],
+        sizes[size],
         full && 'w-full',
-        isDisabled && 'cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-none',
+        isDisabled && 'pointer-events-none opacity-50 shadow-none',
         className
       )}
       {...props}
     >
-      {loading ? <span className='h-4 w-4 animate-spin rounded-full border-2 border-current/30 border-t-current' /> : null}
+      {loading ? (
+        <span aria-hidden className='h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent' />
+      ) : null}
       {children}
     </button>
   )

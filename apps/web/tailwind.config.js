@@ -1,70 +1,67 @@
+/**
+ * Vibrant Glow design tokens — see design-system/web/MASTER.md
+ * ink   : aubergine neutrals (text, dark surfaces)
+ * berry : primary brand / CTA
+ * lilac, peach, lime : supporting accents for bento tiles & highlights
+ */
+const ink = {
+  0: '#FFFFFF',
+  50: '#FAF7FA',
+  100: '#F3EEF4',
+  200: '#E6DDE8',
+  300: '#C9BCCD',
+  400: '#9C8DA2',
+  500: '#76667C',
+  600: '#5C4D62',
+  700: '#46384B',
+  800: '#2F2234',
+  900: '#24182A',
+  950: '#1B0F1F'
+}
+
+const berry = {
+  50: '#FFF0F6',
+  100: '#FFE0EC',
+  200: '#FFC2DA',
+  300: '#FF94BD',
+  400: '#F45D99',
+  500: '#E0307A',
+  600: '#C21C63',
+  700: '#9E1550',
+  800: '#7D1442',
+  900: '#5E1033'
+}
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'Playfair Display', 'Georgia', 'serif'],
-        cormorant: ['"Cormorant Garamond"', 'Playfair Display', 'serif'],
-        sans: ['Plus Jakarta Sans', 'Montserrat', 'Inter', 'system-ui', 'sans-serif'],
-        serif: ['Playfair Display', '"Cormorant Garamond"', 'Georgia', 'serif']
+        display: ['"Bricolage Grotesque"', '"Be Vietnam Pro"', 'system-ui', 'sans-serif'],
+        sans: ['"Be Vietnam Pro"', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif']
       },
       colors: {
-        luxury: {
-          primary: '#1C1917',
-          secondary: '#44403C',
-          accent: '#A16207',
-          'accent-hover': '#854D0E',
-          bg: '#FAF7F2',
-          card: '#FFFFFF',
-          muted: '#F5EFE6',
-          border: '#E7E0D8',
-          'border-strong': '#D6C8B8',
-          text: '#1C1917',
-          'text-secondary': '#594D42',
-          'text-muted': '#786C60'
-        },
-        ink: {
-          50: '#faf9f8',
-          100: '#f3f0ec',
-          200: '#e6dfd7',
-          500: '#8c7d70',
-          700: '#594d42',
-          900: '#2b2621',
-          950: '#1C1917'
-        },
-        brand: {
-          50: '#FAF7F2',
-          100: '#EFE9E0',
-          200: '#E7E0D8',
-          500: '#A16207',
-          600: '#854D0E',
-          700: '#5C4B3C',
-          900: '#1C1917'
-        },
-        terracotta: {
-          50: '#FDF6F0',
-          100: '#FBEBDD',
-          500: '#C47A5A',
-          600: '#AB6042',
-          700: '#874830'
-        },
-        sand: {
-          50: '#FAF7F2',
-          100: '#F5EFE6',
-          200: '#E7E0D8'
-        },
-        mint: {
-          50: '#f0fdf6',
-          100: '#dcfce9',
-          500: '#22c55e',
-          600: '#16a34a'
-        }
+        canvas: '#FFFAF7',
+        ink,
+        berry,
+        // legacy alias so any untouched class still lands on-brand
+        brand: berry,
+        lilac: { 50: '#F7F4FF', 100: '#EDE7FF', 200: '#DCD0FF', 300: '#C4B1FF', 500: '#8B5CF6', 700: '#5B34C4' },
+        peach: { 50: '#FFF7F1', 100: '#FFEBDD', 200: '#FFD5BC', 300: '#FFB78F', 500: '#F27A3D', 700: '#B4501E' },
+        lime: { 100: '#F4FCD0', 200: '#E9F99B', 300: '#D4F25A', 500: '#8DB51A', 700: '#4F6A07' }
       },
       boxShadow: {
-        soft: '0 18px 55px rgba(43, 33, 24, 0.08)',
-        lift: '0 24px 70px rgba(43, 33, 24, 0.14)',
-        card: '0 2px 12px rgba(43, 33, 24, 0.04), 0 16px 42px rgba(43, 33, 24, 0.06)',
-        'warm-glow': '0 0 25px rgba(154, 128, 105, 0.18)'
+        xs: '0 1px 2px rgba(27, 15, 31, 0.06)',
+        soft: '0 10px 30px -12px rgba(27, 15, 31, 0.18)',
+        lift: '0 24px 48px -20px rgba(27, 15, 31, 0.28)',
+        card: '0 1px 2px rgba(27, 15, 31, 0.04), 0 12px 32px -16px rgba(27, 15, 31, 0.16)',
+        glow: '0 12px 36px -10px rgba(224, 48, 122, 0.45)'
+      },
+      borderRadius: {
+        xl: '0.875rem',
+        '2xl': '1.25rem',
+        '3xl': '1.75rem',
+        '4xl': '2.25rem'
       },
       keyframes: {
         'fade-up': {
@@ -72,17 +69,23 @@ export default {
           '100%': { opacity: '1', transform: 'translateY(0)' }
         },
         'soft-pop': {
-          '0%': { opacity: '0', transform: 'scale(0.98)' },
+          '0%': { opacity: '0', transform: 'scale(0.97)' },
           '100%': { opacity: '1', transform: 'scale(1)' }
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' }
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' }
         }
       },
       animation: {
-        'fade-up': 'fade-up 420ms ease-out both',
-        'soft-pop': 'soft-pop 360ms ease-out both'
-      },
-      borderRadius: {
-        '2xl': '1.25rem',
-        '3xl': '1.75rem'
+        'fade-up': 'fade-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        'soft-pop': 'soft-pop 320ms cubic-bezier(0.22, 1, 0.36, 1) both',
+        marquee: 'marquee 38s linear infinite',
+        float: 'float 6s ease-in-out infinite'
       }
     }
   },

@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
         sub: `Đơn giá trung bình: ${money(avgOrderValue)}`,
         change: '+15.4% so với kỳ trước',
         icon: DollarSign,
-        gradient: 'from-amber-600 to-[#2B2118]',
+        gradient: 'from-amber-600 to-ink-950',
         badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
       },
       {
@@ -92,8 +92,8 @@ export default function AdminDashboardPage() {
         sub: `Tổng số đơn: ${orders.length} đơn hàng`,
         change: pendingOrdersCount > 0 ? `Cần xử lý ${pendingOrdersCount} đơn` : 'Đã hoàn tất toàn bộ',
         icon: ShoppingBag,
-        gradient: 'from-[#9A8069] to-[#2B2118]',
-        badgeBg: pendingOrdersCount > 0 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-slate-50 text-slate-700'
+        gradient: 'from-berry-600 to-ink-950',
+        badgeBg: pendingOrdersCount > 0 ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-ink-50 text-ink-700'
       },
       {
         label: 'DANH MỤC SẢN PHẨM',
@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
         sub: `Tổng đã bán: ${products.reduce((acc, p) => acc + (p.soldNumber || 0), 0)} sp`,
         change: 'Đang hoạt động trên Cửa Hàng',
         icon: Package2,
-        gradient: 'from-[#2B2118] to-[#4A3B2C]',
+        gradient: 'from-ink-950 to-ink-950',
         badgeBg: 'bg-blue-50 text-blue-700 border-blue-200'
       },
       {
@@ -178,13 +178,13 @@ export default function AdminDashboardPage() {
   if (loading && orders.length === 0) {
     return (
       <div className='space-y-6 animate-pulse'>
-        <div className='h-28 rounded-3xl bg-slate-200/70' />
+        <div className='h-28 rounded-3xl bg-ink-200/70' />
         <div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-4'>
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className='h-36 rounded-3xl bg-slate-200/70' />
+            <div key={index} className='h-36 rounded-3xl bg-ink-200/70' />
           ))}
         </div>
-        <div className='h-96 rounded-3xl bg-slate-200/70' />
+        <div className='h-96 rounded-3xl bg-ink-200/70' />
       </div>
     )
   }
@@ -208,12 +208,12 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <div className='space-y-6 text-slate-800 font-sans pb-12'>
+    <div className='space-y-6 text-ink-800 font-sans pb-12'>
       {/* 1. Executive Control Header */}
-      <section className='relative overflow-hidden rounded-3xl border border-[#9A8069]/20 bg-gradient-to-br from-[#2B2118] via-[#3A2D22] to-[#1E1711] p-6 text-white shadow-xl'>
+      <section className='relative overflow-hidden rounded-3xl border border-berry-600/20 bg-gradient-to-br from-ink-950 via-ink-950 to-ink-950 p-6 text-white shadow-xl'>
         {/* Subtle decorative background blur */}
-        <div className='pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#C47A5A]/20 blur-3xl' />
-        <div className='pointer-events-none absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-[#9A8069]/20 blur-3xl' />
+        <div className='pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-berry-600/20 blur-3xl' />
+        <div className='pointer-events-none absolute -bottom-20 left-1/3 h-64 w-64 rounded-full bg-berry-600/20 blur-3xl' />
 
         <div className='relative z-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between'>
           <div>
@@ -227,7 +227,7 @@ export default function AdminDashboardPage() {
               </span>
 
               {lastUpdated && (
-                <span className='inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300'>
+                <span className='inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-ink-300'>
                   <Clock size={12} /> Cập nhật: {lastUpdated}
                 </span>
               )}
@@ -236,7 +236,7 @@ export default function AdminDashboardPage() {
             <h1 className='mt-3 font-display text-2xl font-extrabold tracking-tight text-white sm:text-3xl'>
               Tổng Quan Trung Tâm Điều Hành
             </h1>
-            <p className='mt-1 text-xs text-slate-300 max-w-2xl leading-relaxed'>
+            <p className='mt-1 text-xs text-ink-300 max-w-2xl leading-relaxed'>
               Theo dõi biến động doanh thu, đơn hàng PayOS thời gian thực và kiểm soát tồn kho kho hàng toàn hệ thống.
             </p>
           </div>
@@ -255,14 +255,14 @@ export default function AdminDashboardPage() {
 
             <Link
               to='/admin/products'
-              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-[#9A8069] px-4 text-xs font-bold text-white hover:bg-[#856d58] transition shadow-md'
+              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-berry-600 px-4 text-xs font-bold text-white hover:bg-ink-500 transition shadow-md'
             >
               <PlusCircle size={15} /> Thêm Sản Phẩm
             </Link>
 
             <Link
               to='/admin/orders'
-              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-5 text-xs font-bold text-[#2B2118] hover:bg-amber-50 transition shadow-md'
+              className='inline-flex h-11 items-center gap-2 rounded-2xl bg-white px-5 text-xs font-bold text-ink-950 hover:bg-amber-50 transition shadow-md'
             >
               <span>Quản Lý Đơn Hàng</span>
               <ArrowUpRight size={15} />
@@ -278,15 +278,15 @@ export default function AdminDashboardPage() {
           return (
             <div
               key={card.label}
-              className='group relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-[#9A8069]/40 hover:shadow-md'
+              className='group relative overflow-hidden rounded-3xl border border-ink-200/90 bg-white p-5 shadow-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-berry-600/40 hover:shadow-md'
             >
               <div className='flex items-start justify-between gap-3'>
                 <div className='space-y-1 min-w-0'>
-                  <span className='text-[10px] font-extrabold uppercase tracking-wider text-slate-400'>
+                  <span className='text-[10px] font-extrabold uppercase tracking-wider text-ink-400'>
                     {card.label}
                   </span>
-                  <h3 className='font-mono text-2xl font-black tracking-tight text-slate-900 truncate'>{card.value}</h3>
-                  <p className='text-xs text-slate-500 font-medium truncate'>{card.sub}</p>
+                  <h3 className='font-mono text-2xl font-black tracking-tight text-ink-900 truncate'>{card.value}</h3>
+                  <p className='text-xs text-ink-500 font-medium truncate'>{card.sub}</p>
                 </div>
 
                 <div
@@ -300,7 +300,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Status footer pill */}
-              <div className='mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs'>
+              <div className='mt-4 pt-3 border-t border-ink-100 flex items-center justify-between text-xs'>
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 rounded-lg border px-2.5 py-0.5 text-[11px] font-bold',
@@ -309,7 +309,7 @@ export default function AdminDashboardPage() {
                 >
                   {card.change}
                 </span>
-                <span className='text-[10px] text-slate-400 font-medium'>Live Sync</span>
+                <span className='text-[10px] text-ink-400 font-medium'>Live Sync</span>
               </div>
             </div>
           )
@@ -317,14 +317,14 @@ export default function AdminDashboardPage() {
       </section>
 
       {/* 3. Executive Workspace Tabs Header */}
-      <section className='rounded-3xl border border-slate-200 bg-white p-2 shadow-xs flex flex-wrap items-center justify-between gap-2'>
-        <div className='flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-2xl w-full sm:w-auto'>
+      <section className='rounded-3xl border border-ink-200 bg-white p-2 shadow-xs flex flex-wrap items-center justify-between gap-2'>
+        <div className='flex items-center gap-1.5 p-1 bg-ink-100/80 rounded-2xl w-full sm:w-auto'>
           <button
             type='button'
             onClick={() => setActiveTab('analytics')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'analytics' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'analytics' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
             )}
           >
             <BarChart3 size={15} />
@@ -336,7 +336,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('orders')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'orders' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'orders' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
             )}
           >
             <ShoppingBag size={15} />
@@ -348,7 +348,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('inventory')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'inventory' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'inventory' ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-900'
             )}
           >
             <Layers size={15} />
@@ -356,7 +356,7 @@ export default function AdminDashboardPage() {
           </button>
         </div>
 
-        <div className='hidden lg:flex items-center gap-4 px-4 text-xs text-slate-500 font-medium'>
+        <div className='hidden lg:flex items-center gap-4 px-4 text-xs text-ink-500 font-medium'>
           <span className='flex items-center gap-1.5'>
             <span className='h-2 w-2 rounded-full bg-emerald-500' />
             PayOS Auto Webhook
@@ -372,21 +372,21 @@ export default function AdminDashboardPage() {
       {activeTab === 'analytics' && (
         <section className='grid gap-6 xl:grid-cols-[1.7fr_1fr]'>
           {/* Main 7-Day Revenue Graph Card */}
-          <div className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-6'>
-            <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5'>
+          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-6'>
+            <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-ink-100 pb-5'>
               <div>
-                <h2 className='font-display text-lg font-bold text-slate-900'>Biểu Đồ Doanh Thu 7 Ngày Gần Nhất</h2>
-                <p className='mt-0.5 text-xs text-slate-500'>
+                <h2 className='font-display text-lg font-bold text-ink-900'>Biểu Đồ Doanh Thu 7 Ngày Gần Nhất</h2>
+                <p className='mt-0.5 text-xs text-ink-500'>
                   Thống kê doanh số theo ngày thực tế bao gồm tiền sản phẩm và phí vận chuyển.
                 </p>
               </div>
 
               <div className='flex items-center gap-3'>
-                <div className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-right'>
-                  <span className='text-[10px] font-bold uppercase tracking-wider text-slate-400 block'>
+                <div className='rounded-2xl border border-ink-200 bg-ink-50 px-4 py-2.5 text-right'>
+                  <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
                     Tổng 7 Ngày
                   </span>
-                  <span className='font-mono text-base font-black text-[#C47A5A]'>{money(total7DayRevenue)}</span>
+                  <span className='font-mono text-base font-black text-berry-600'>{money(total7DayRevenue)}</span>
                 </div>
               </div>
             </div>
@@ -432,7 +432,7 @@ export default function AdminDashboardPage() {
               }))
 
               return (
-                <div className='relative rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 p-2 overflow-hidden'>
+                <div className='relative rounded-2xl bg-gradient-to-br from-ink-50 to-white border border-ink-200/80 p-2 overflow-hidden'>
                   <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className='w-full' style={{ height: '210px' }}>
                     <defs>
                       <linearGradient id='areaGrad' x1='0' y1='0' x2='0' y2='1'>
@@ -534,31 +534,31 @@ export default function AdminDashboardPage() {
 
             {/* Quick Analytics Summary Footer */}
             <div className='grid gap-4 sm:grid-cols-3 pt-2'>
-              <div className='rounded-2xl border border-slate-200 bg-slate-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-slate-400 block'>
+              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
+                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
                   Ngày Cao Nhất
                 </span>
                 <div className='mt-1 flex items-baseline justify-between'>
-                  <span className='font-mono text-sm font-extrabold text-slate-900'>
+                  <span className='font-mono text-sm font-extrabold text-ink-900'>
                     {bestDay ? bestDay.label : 'N/A'}
                   </span>
-                  <span className='font-mono text-xs font-bold text-[#C47A5A]'>
+                  <span className='font-mono text-xs font-bold text-berry-600'>
                     {bestDay ? money(bestDay.revenue) : '0đ'}
                   </span>
                 </div>
               </div>
 
-              <div className='rounded-2xl border border-slate-200 bg-slate-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-slate-400 block'>
+              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
+                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
                   TB Doanh Thu / Ngày
                 </span>
-                <div className='mt-1 font-mono text-sm font-extrabold text-slate-900'>
+                <div className='mt-1 font-mono text-sm font-extrabold text-ink-900'>
                   {money(Math.round(total7DayRevenue / 7))}
                 </div>
               </div>
 
-              <div className='rounded-2xl border border-slate-200 bg-slate-50/70 p-4'>
-                <span className='text-[10px] font-bold uppercase tracking-wider text-slate-400 block'>
+              <div className='rounded-2xl border border-ink-200 bg-ink-50/70 p-4'>
+                <span className='text-[10px] font-bold uppercase tracking-wider text-ink-400 block'>
                   Tỷ Lệ Đơn Hoàn Thành
                 </span>
                 <div className='mt-1 font-mono text-sm font-extrabold text-emerald-600 flex items-center gap-1'>
@@ -576,10 +576,10 @@ export default function AdminDashboardPage() {
           {/* Right Column: Gateway Health & Top Selling Side Card */}
           <div className='space-y-6'>
             {/* System Status Card */}
-            <div className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-4'>
-              <div className='flex items-center justify-between border-b border-slate-100 pb-3'>
-                <h3 className='font-display text-base font-bold text-slate-900 flex items-center gap-2'>
-                  <Zap size={18} className='text-[#9A8069]' />
+            <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-4'>
+              <div className='flex items-center justify-between border-b border-ink-100 pb-3'>
+                <h3 className='font-display text-base font-bold text-ink-900 flex items-center gap-2'>
+                  <Zap size={18} className='text-berry-600' />
                   <span>Trạng Thái Cổng PayOS</span>
                 </h3>
                 <span className='rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800'>
@@ -588,50 +588,50 @@ export default function AdminDashboardPage() {
               </div>
 
               <div className='space-y-3 text-xs'>
-                <div className='flex items-center justify-between rounded-xl bg-slate-50 p-3'>
-                  <span className='text-slate-600 font-medium flex items-center gap-2'>
-                    <CreditCard size={15} className='text-slate-400' />
+                <div className='flex items-center justify-between rounded-xl bg-ink-50 p-3'>
+                  <span className='text-ink-600 font-medium flex items-center gap-2'>
+                    <CreditCard size={15} className='text-ink-400' />
                     Thanh Toán QR PayOS
                   </span>
                   <span className='font-mono font-bold text-emerald-600'>99.9% Up</span>
                 </div>
 
-                <div className='flex items-center justify-between rounded-xl bg-slate-50 p-3'>
-                  <span className='text-slate-600 font-medium flex items-center gap-2'>
-                    <CheckCircle2 size={15} className='text-slate-400' />
+                <div className='flex items-center justify-between rounded-xl bg-ink-50 p-3'>
+                  <span className='text-ink-600 font-medium flex items-center gap-2'>
+                    <CheckCircle2 size={15} className='text-ink-400' />
                     Tốc độ xử lý Webhook
                   </span>
-                  <span className='font-mono font-bold text-slate-800'>&lt; 120ms</span>
+                  <span className='font-mono font-bold text-ink-800'>&lt; 120ms</span>
                 </div>
               </div>
             </div>
 
             {/* Compact Top Sellers Side Watchlist */}
-            <div className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-5'>
-              <div className='flex items-center justify-between border-b border-slate-100 pb-3'>
+            <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
+              <div className='flex items-center justify-between border-b border-ink-100 pb-3'>
                 <div>
-                  <h3 className='font-display text-base font-bold text-slate-900'>Top 4 Sản Phẩm Bán Chạy</h3>
-                  <p className='text-xs text-slate-500'>Được khách đặt mua nhiều nhất</p>
+                  <h3 className='font-display text-base font-bold text-ink-900'>Top 4 Sản Phẩm Bán Chạy</h3>
+                  <p className='text-xs text-ink-500'>Được khách đặt mua nhiều nhất</p>
                 </div>
-                <TrendingUp size={18} className='text-[#9A8069]' />
+                <TrendingUp size={18} className='text-berry-600' />
               </div>
 
               <div className='space-y-3'>
                 {topSelling.slice(0, 4).map((product, idx) => (
                   <div
                     key={product._id}
-                    className='flex items-center justify-between gap-3 rounded-2xl bg-slate-50/70 p-3 border border-slate-100'
+                    className='flex items-center justify-between gap-3 rounded-2xl bg-ink-50/70 p-3 border border-ink-100'
                   >
                     <div className='flex items-center gap-3 min-w-0'>
-                      <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[#2B2118] text-xs font-mono font-bold text-amber-200'>
+                      <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-ink-950 text-xs font-mono font-bold text-amber-200'>
                         #{idx + 1}
                       </span>
                       <div className='min-w-0'>
-                        <div className='truncate text-xs font-bold text-slate-900'>{product.name}</div>
-                        <div className='font-mono text-[11px] text-slate-500'>Tồn kho: {product.quantity} sp</div>
+                        <div className='truncate text-xs font-bold text-ink-900'>{product.name}</div>
+                        <div className='font-mono text-[11px] text-ink-500'>Tồn kho: {product.quantity} sp</div>
                       </div>
                     </div>
-                    <span className='font-mono text-xs font-extrabold text-[#C47A5A] shrink-0'>
+                    <span className='font-mono text-xs font-extrabold text-berry-600 shrink-0'>
                       {product.soldNumber || 0} đã bán
                     </span>
                   </div>
@@ -644,26 +644,26 @@ export default function AdminDashboardPage() {
 
       {/* 5. Tab 2: Recent Orders Mini Table */}
       {activeTab === 'orders' && (
-        <section className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-6'>
-          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-4'>
+        <section className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-6'>
+          <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-ink-100 pb-4'>
             <div>
-              <h2 className='font-display text-lg font-bold text-slate-900'>Danh Sách Đơn Hàng Gần Đây</h2>
-              <p className='mt-0.5 text-xs text-slate-500'>
+              <h2 className='font-display text-lg font-bold text-ink-900'>Danh Sách Đơn Hàng Gần Đây</h2>
+              <p className='mt-0.5 text-xs text-ink-500'>
                 Hiển thị {recentOrders.length} đơn hàng phát sinh gần đây nhất.
               </p>
             </div>
 
             <Link
               to='/admin/orders'
-              className='inline-flex items-center gap-1 text-xs font-bold text-[#9A8069] hover:underline'
+              className='inline-flex items-center gap-1 text-xs font-bold text-berry-600 hover:underline'
             >
               Xem toàn bộ danh sách đơn ({orders.length}) <ArrowUpRight size={14} />
             </Link>
           </div>
 
-          <div className='overflow-x-auto rounded-2xl border border-slate-200'>
+          <div className='overflow-x-auto rounded-2xl border border-ink-200'>
             <table className='w-full text-left text-xs'>
-              <thead className='bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-200'>
+              <thead className='bg-ink-50 text-ink-500 font-bold uppercase tracking-wider border-b border-ink-200'>
                 <tr>
                   <th className='p-4'>Mã Đơn Hàng</th>
                   <th className='p-4'>Thời Gian</th>
@@ -672,10 +672,10 @@ export default function AdminDashboardPage() {
                   <th className='p-4 text-right'>Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className='divide-y divide-slate-100 bg-white font-medium'>
+              <tbody className='divide-y divide-ink-100 bg-white font-medium'>
                 {recentOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className='p-8 text-center text-slate-400'>
+                    <td colSpan={5} className='p-8 text-center text-ink-400'>
                       Chưa có đơn hàng nào.
                     </td>
                   </tr>
@@ -683,10 +683,10 @@ export default function AdminDashboardPage() {
                   recentOrders.map((order) => {
                     const statusInfo = getOrderStatusMeta(order.status)
                     return (
-                      <tr key={order._id} className='hover:bg-slate-50/80 transition'>
-                        <td className='p-4 font-mono font-bold text-slate-900'>#{order._id.slice(-8).toUpperCase()}</td>
-                        <td className='p-4 text-slate-600 font-mono'>{formatDate(order.created_at)}</td>
-                        <td className='p-4 font-mono font-bold text-[#C47A5A]'>
+                      <tr key={order._id} className='hover:bg-ink-50/80 transition'>
+                        <td className='p-4 font-mono font-bold text-ink-900'>#{order._id.slice(-8).toUpperCase()}</td>
+                        <td className='p-4 text-ink-600 font-mono'>{formatDate(order.created_at)}</td>
+                        <td className='p-4 font-mono font-bold text-berry-600'>
                           {money(order.total_price + order.shipping_fee)}
                         </td>
                         <td className='p-4'>
@@ -695,7 +695,7 @@ export default function AdminDashboardPage() {
                         <td className='p-4 text-right'>
                           <Link
                             to={`/admin/orders/${order._id}`}
-                            className='inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition'
+                            className='inline-flex items-center gap-1 rounded-xl border border-ink-200 bg-white px-3 py-1.5 text-xs font-bold text-ink-700 hover:bg-ink-100 hover:text-ink-900 transition'
                           >
                             <span>Chi tiết</span>
                             <ExternalLink size={13} />
@@ -715,19 +715,19 @@ export default function AdminDashboardPage() {
       {activeTab === 'inventory' && (
         <section className='grid gap-6 xl:grid-cols-2'>
           {/* Low Stock Watchlist */}
-          <div className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-5'>
-            <div className='flex items-center justify-between border-b border-slate-100 pb-4'>
+          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
+            <div className='flex items-center justify-between border-b border-ink-100 pb-4'>
               <div>
                 <h2 className='font-display text-lg font-bold text-rose-900 flex items-center gap-2'>
                   <AlertTriangle size={20} className='text-rose-600' />
                   <span>Sản Phẩm Cần Nhập Thêm ({lowStockProducts.length})</span>
                 </h2>
-                <p className='mt-0.5 text-xs text-slate-500'>
+                <p className='mt-0.5 text-xs text-ink-500'>
                   Sản phẩm có lượng tồn kho dưới ngưỡng an toàn (&lt;= {LOW_STOCK_THRESHOLD} sp).
                 </p>
               </div>
 
-              <Link to='/admin/products' className='text-xs font-bold text-[#9A8069] hover:underline'>
+              <Link to='/admin/products' className='text-xs font-bold text-berry-600 hover:underline'>
                 Quản lý sản phẩm
               </Link>
             </div>
@@ -745,8 +745,8 @@ export default function AdminDashboardPage() {
                     className='flex items-center justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50/40 p-4'
                   >
                     <div className='min-w-0'>
-                      <div className='truncate text-xs font-bold text-slate-900'>{prod.name}</div>
-                      <div className='mt-1 flex items-center gap-2 font-mono text-[11px] text-slate-500'>
+                      <div className='truncate text-xs font-bold text-ink-900'>{prod.name}</div>
+                      <div className='mt-1 flex items-center gap-2 font-mono text-[11px] text-ink-500'>
                         <span>Đã bán: {prod.soldNumber || 0}</span>
                         <span>•</span>
                         <span className='font-bold text-rose-700'>Còn tồn: {prod.quantity} sp</span>
@@ -766,14 +766,14 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Full Top Selling List */}
-          <div className='rounded-3xl border border-slate-200 bg-white p-6 shadow-xs space-y-5'>
-            <div className='flex items-center justify-between border-b border-slate-100 pb-4'>
+          <div className='rounded-3xl border border-ink-200 bg-white p-6 shadow-xs space-y-5'>
+            <div className='flex items-center justify-between border-b border-ink-100 pb-4'>
               <div>
-                <h2 className='font-display text-lg font-bold text-slate-900 flex items-center gap-2'>
-                  <TrendingUp size={20} className='text-[#9A8069]' />
+                <h2 className='font-display text-lg font-bold text-ink-900 flex items-center gap-2'>
+                  <TrendingUp size={20} className='text-berry-600' />
                   <span>Xếp Hạng Bán Chạy Toàn Cửa Hàng</span>
                 </h2>
-                <p className='mt-0.5 text-xs text-slate-500'>Dựa trên tổng lượng sản phẩm bán ra thực tế.</p>
+                <p className='mt-0.5 text-xs text-ink-500'>Dựa trên tổng lượng sản phẩm bán ra thực tế.</p>
               </div>
             </div>
 
@@ -782,28 +782,28 @@ export default function AdminDashboardPage() {
                 const maxSold = Math.max(...topSelling.map((item) => item.soldNumber || 0), 1)
                 const pct = Math.max(12, Math.round(((product.soldNumber || 0) / maxSold) * 100))
                 return (
-                  <div key={product._id} className='rounded-2xl border border-slate-100 bg-slate-50/60 p-4 space-y-2.5'>
+                  <div key={product._id} className='rounded-2xl border border-ink-100 bg-ink-50/60 p-4 space-y-2.5'>
                     <div className='flex items-center justify-between gap-3'>
                       <div className='flex min-w-0 items-center gap-3'>
-                        <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[#2B2118] text-xs font-mono font-bold text-amber-200'>
+                        <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-ink-950 text-xs font-mono font-bold text-amber-200'>
                           #{index + 1}
                         </span>
                         <div className='min-w-0'>
-                          <div className='truncate font-display text-xs font-bold text-slate-900'>{product.name}</div>
-                          <div className='mt-0.5 font-mono text-[11px] text-slate-500'>
+                          <div className='truncate font-display text-xs font-bold text-ink-900'>{product.name}</div>
+                          <div className='mt-0.5 font-mono text-[11px] text-ink-500'>
                             Giá bán: {money(product.price)} • Tồn: {product.quantity} sp
                           </div>
                         </div>
                       </div>
 
-                      <span className='font-mono text-xs font-black text-[#C47A5A] shrink-0'>
+                      <span className='font-mono text-xs font-black text-berry-600 shrink-0'>
                         {product.soldNumber || 0} đã bán
                       </span>
                     </div>
 
-                    <div className='h-2 w-full overflow-hidden rounded-full bg-white border border-slate-200'>
+                    <div className='h-2 w-full overflow-hidden rounded-full bg-white border border-ink-200'>
                       <div
-                        className='h-full rounded-full bg-gradient-to-r from-[#2B2118] via-[#786452] to-[#9A8069] transition-all duration-500'
+                        className='h-full rounded-full bg-gradient-to-r from-ink-950 via-ink-500 to-berry-600 transition-all duration-500'
                         style={{ width: `${pct}%` }}
                       />
                     </div>

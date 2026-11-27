@@ -133,7 +133,7 @@ export default function AdminProductEditPage() {
     return (
       <div className='flex min-h-[320px] flex-col items-center justify-center gap-3'>
         <RefreshCw className='h-8 w-8 animate-spin text-brand-600' />
-        <p className='text-sm font-semibold text-slate-500'>Đang tải sản phẩm...</p>
+        <p className='text-sm font-semibold text-ink-500'>Đang tải sản phẩm...</p>
       </div>
     )
   }
@@ -378,13 +378,13 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
                     type='button'
                     onClick={handleGenerateDescription}
                     disabled={aiLoading}
-                    className='inline-flex items-center gap-1.5 rounded-full border border-[#eaded8] bg-white px-3 py-1 text-xs font-bold text-[#b07a72] transition hover:bg-[#fdf2f0] disabled:opacity-50'
+                    className='inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-bold text-berry-600 transition hover:bg-berry-50 disabled:opacity-50'
                   >
                     <Sparkles size={13} />
                     {aiLoading ? 'AI đang viết...' : 'AI viết mô tả'}
                   </button>
                 </div>
-                <textarea rows={7} {...register('description')} className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-4 text-base font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10' />
+                <textarea rows={7} {...register('description')} className='w-full resize-none rounded-2xl border border-ink-200 bg-white px-4 py-4 text-base font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10' />
                 <InputError message={errors.description?.message} />
               </label>
             </div>
@@ -394,7 +394,7 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
                 <Save size={18} />
                 Cập nhật
               </Button>
-              <Link to={ROUTE_PATHS.ADMIN_PRODUCTS} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'>
+              <Link to={ROUTE_PATHS.ADMIN_PRODUCTS} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'>
                 <ArrowLeft size={16} />
                 Quay lại
               </Link>
@@ -404,13 +404,13 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
           <section className='surface-card space-y-5 rounded-3xl p-5 md:p-7'>
             <div>
               <h2 className='text-xl font-black text-ink-950'>Hình ảnh</h2>
-              <p className='mt-2 text-sm text-slate-500'>Ảnh hiện có và ảnh mới upload.</p>
+              <p className='mt-2 text-sm text-ink-500'>Ảnh hiện có và ảnh mới upload.</p>
             </div>
 
             {existingMedias.length > 0 ? (
               <div className='grid grid-cols-2 gap-3'>
                 {existingMedias.map((media) => (
-                  <div key={media.url} className='group relative overflow-hidden rounded-2xl border border-slate-200'>
+                  <div key={media.url} className='group relative overflow-hidden rounded-2xl border border-ink-200'>
                     <img src={media.url} alt='' className='h-24 w-full object-cover' />
                     <button
                       type='button'
@@ -428,7 +428,7 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
             <button
               type='button'
               onClick={() => fileRef.current?.click()}
-              className='flex h-32 w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 text-slate-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
+              className='flex h-32 w-full flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-ink-50 text-ink-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
             >
               <ImagePlus size={24} />
               <span className='mt-2 text-sm font-black'>Thêm ảnh mới</span>
@@ -438,8 +438,8 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
             {mediaPreview.length > 0 ? (
               <div className='grid grid-cols-2 gap-3'>
                 {mediaPreview.map((item) => (
-                  <div key={item.id} className='group relative rounded-2xl border border-slate-200 bg-slate-50 p-3'>
-                    <div className='line-clamp-2 text-xs font-bold text-slate-500'>{item.name}</div>
+                  <div key={item.id} className='group relative rounded-2xl border border-ink-200 bg-ink-50 p-3'>
+                    <div className='line-clamp-2 text-xs font-bold text-ink-500'>{item.name}</div>
                     <button type='button' onClick={() => removeNewMedia(item.id)} className='absolute right-2 top-2 text-rose-600'>
                       <Trash2 size={14} />
                     </button>
@@ -448,7 +448,7 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
               </div>
             ) : null}
 
-            <div className='rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm'>
+            <div className='rounded-3xl border border-ink-200 bg-ink-50 p-5 text-sm'>
               <PreviewRow label='Tên' value={watchedValues?.name || '-'} />
               <PreviewRow label='Giá' value={`${Number(watchedValues?.price || 0).toLocaleString('vi-VN')}đ`} />
               <PreviewRow label='Tồn kho' value={String(watchedValues?.quantity || 0)} />
@@ -493,7 +493,7 @@ function FormInput({
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className='flex items-center justify-between gap-3 py-1'>
-      <span className='text-slate-500'>{label}</span>
+      <span className='text-ink-500'>{label}</span>
       <span className='font-black text-ink-950'>{value}</span>
     </div>
   )

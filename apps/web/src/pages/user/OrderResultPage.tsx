@@ -1,26 +1,18 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Clock,
-  Headphones,
-  RefreshCw,
-  ShieldCheck,
-  ShoppingBag,
-  XCircle
-} from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ArrowLeft, CheckCircle2, Clock, PackageCheck, RefreshCw, ShoppingBag, XCircle } from 'lucide-react'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
+import { getToken } from '../../utils/authSession'
 
-type ResultStatus = 'success' | 'failed' | 'pending'
-
-const panelClass = 'rounded-lg border border-[#eaded8] bg-white overflow-hidden'
+type ResultStatus = 'success' | 'failed' | 'pending' | 'placed'
 
 function resolvePaymentResult(params: URLSearchParams): ResultStatus {
   const gatewayStatus = params.get('status')?.toLowerCase()
   const resultCode = params.get('resultCode')
 
+  if (params.get('paymentMethod') === 'COD' && params.get('orderId')) return 'placed'
   if (gatewayStatus === 'pending') return 'pending'
   if (resultCode === '0' || gatewayStatus === 'success') return 'success'
   if (resultCode && resultCode !== '0') return 'failed'
@@ -28,220 +20,184 @@ function resolvePaymentResult(params: URLSearchParams): ResultStatus {
 
   const orderId = params.get('orderId')
   if (orderId && !resultCode && !gatewayStatus) return 'pending'
-
   return 'failed'
-}
-
-function TrustStrip() {
-  const items = [
-    { icon: ShieldCheck, text: 'Thanh toán bảo mật' },
-    { icon: Headphones, text: 'support@vibrantmart.local' },
-    { icon: RefreshCw, text: 'Đổi trả minh bạch' }
-  ]
-
-  return (
-    <div className='mt-6 rounded-lg border border-[#eaded8] bg-[#fdf8f6] p-4'>
-      <p className='text-xs font-semibold uppercase tracking-wide text-[#8a7a74]'>Hỗ trợ & cam kết</p>
-      <ul className='mt-3 space-y-2'>
-        {items.map(({ icon: Icon, text }) => (
-          <li key={text} className='flex items-center gap-2 text-sm text-[#6b5f59]'>
-            <Icon size={15} className='shrink-0 text-[#b07a72]' />
-            {text}
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
 }
 
 function getFriendlyErrorMessage(resultCode: string | null, paymentMethod: string): string {
   if (paymentMethod === 'MOMO') {
-    if (!resultCode) return 'Giao dịch không thành công. Vui lòng thử lại.'
     switch (resultCode) {
       case '9000':
-        return 'Giao dịch đã bị hủy bởi người dùng.'
+        return 'Giao dịch đã bị hủy.'
       case '1006':
-        return 'Tài khoản ví MoMo không đủ số dư để thực hiện giao dịch.'
+        return 'Ví MoMo không đủ số dư để thực hiện giao dịch.'
       case '49':
-        return 'Giao dịch bị từ chối do người dùng hủy thanh toán trên ứng dụng MoMo.'
+        return 'Bạn đã hủy thanh toán trên ứng dụng MoMo.'
       case '1001':
-        return 'Giao dịch bị từ chối do tài khoản của bạn chưa được xác thực.'
+        return 'Tài khoản MoMo chưa được xác thực.'
       case '1002':
-        return 'Giao dịch bị từ chối do nhà phát hành ví MoMo.'
+        return 'Giao dịch bị từ chối bởi nhà phát hành ví.'
       case '1005':
-        return 'Giao dịch thất bại do mã QR hoặc thông tin thanh toán đã hết hạn.'
-      case '1':
-      case '99':
+        return 'Mã QR hoặc thông tin thanh toán đã hết hạn.'
       default:
-        return 'Giao dịch thanh toán qua MoMo không thành công. Vui lòng thử lại.'
+        return 'Thanh toán qua MoMo chưa thành công. Vui lòng thử lại.'
     }
   }
-  if (paymentMethod === 'PAYOS') {
-    return 'Giao dịch chuyển khoản qua PayOS đã bị hủy hoặc không thành công.'
-  }
-  return 'Giao dịch không thành công. Bạn có thể thử lại.'
+  if (paymentMethod === 'PAYOS') return 'Giao dịch PayOS đã bị hủy hoặc chưa thành công.'
+  return 'Giao dịch chưa thành công. Bạn có thể thử lại.'
 }
 
 export default function OrderResultPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const reduce = useReducedMotion()
+  const isSignedIn = Boolean(getToken())
 
-  const gatewayStatus = searchParams.get('status')
   const resultCode = searchParams.get('resultCode')
   const orderId = searchParams.get('orderId') || ''
-  const amountStr = searchParams.get('amount') || '0'
+  const amountValue = Number(searchParams.get('amount') || '0')
   const transId = searchParams.get('transId') || ''
   const paymentMethod = searchParams.get('paymentMethod') || 'MOMO'
-  const amountValue = Number(amountStr)
-  const paymentMethodLabel = (() => {
-    if (paymentMethod === 'COD') return 'Thanh toán khi nhận hàng'
-    if (paymentMethod === 'PAYPAL') return 'PayPal'
-    if (paymentMethod === 'PAYOS') return 'PayOS'
-    return 'Ví MoMo'
-  })()
+  const paymentMethodLabel =
+    { COD: 'Thanh toán khi nhận hàng', PAYPAL: 'PayPal', PAYOS: 'PayOS' }[paymentMethod] ?? 'Ví MoMo'
 
   const realOrderId = orderId.startsWith('ORDER-') ? orderId.split('-').slice(1).join('-') || orderId.replace('ORDER-', '') : orderId
   const orderCode = realOrderId ? `#${realOrderId.slice(-6).toUpperCase()}` : ''
-
   const status = resolvePaymentResult(searchParams)
-
   const orderDetailPath = realOrderId ? ROUTE_PATHS.USER_ORDER_DETAIL(realOrderId) : ROUTE_PATHS.USER_ORDERS
-
   const friendlyError = getFriendlyErrorMessage(resultCode, paymentMethod)
 
-  const headerConfig = {
+  const config = {
+    placed: {
+      icon: PackageCheck,
+      title: 'Đặt hàng thành công!',
+      desc: 'Shop sẽ xác nhận và liên hệ qua số điện thoại bạn đã nhập trước khi giao.',
+      tone: 'bg-lime-300 text-ink-950',
+      band: 'from-lime-200 via-lilac-100 to-berry-100'
+    },
     success: {
       icon: CheckCircle2,
-      title: 'Thanh toán thành công',
-      desc: 'Cảm ơn bạn! Đơn hàng đang được xử lý.',
-      bg: 'bg-[linear-gradient(180deg,#fdf8f6_0%,#f5ebe6_100%)]',
-      iconWrap: 'bg-[#b07a72]/15 text-[#b07a72]'
+      title: 'Thanh toán thành công!',
+      desc: 'Cảm ơn bạn. Đơn hàng đã được ghi nhận và đang được chuẩn bị.',
+      tone: 'bg-lime-300 text-ink-950',
+      band: 'from-lime-200 via-lilac-100 to-berry-100'
     },
     failed: {
       icon: XCircle,
       title: 'Thanh toán chưa hoàn tất',
       desc: friendlyError,
-      bg: 'bg-[linear-gradient(180deg,#fff5f5_0%,#fdf8f6_100%)]',
-      iconWrap: 'bg-rose-100 text-rose-600'
+      tone: 'bg-rose-500 text-white',
+      band: 'from-rose-100 via-berry-50 to-peach-100'
     },
     pending: {
       icon: Clock,
-      title: 'Đang xử lý thanh toán',
-      desc: 'Giao dịch đang được xác nhận. Vui lòng kiểm tra lại đơn hàng sau vài phút.',
-      bg: 'bg-[linear-gradient(180deg,#fffbf7_0%,#fdf8f6_100%)]',
-      iconWrap: 'bg-amber-100 text-amber-700'
+      title: 'Đang xác nhận thanh toán',
+      desc: 'Nếu tài khoản đã bị trừ tiền, trạng thái đơn sẽ tự cập nhật sau ít phút.',
+      tone: 'bg-peach-300 text-ink-950',
+      band: 'from-peach-100 via-lilac-50 to-berry-50'
     }
   }[status]
-
-  const HeaderIcon = headerConfig.icon
+  const Icon = config.icon
+  const positive = status === 'success' || status === 'placed'
 
   return (
-    <div className='mx-auto max-w-xl px-4 py-10 md:px-6 md:py-14'>
-      <div className={panelClass}>
-        <div className={cn('flex flex-col items-center px-6 py-10 text-center', headerConfig.bg)}>
-          <span className={cn('grid h-16 w-16 place-items-center rounded-full', headerConfig.iconWrap)}>
-            <HeaderIcon size={32} strokeWidth={1.75} />
-          </span>
-          <h1 className='mt-5 text-2xl font-semibold text-[#3d3330]'>{headerConfig.title}</h1>
-          <p className='mt-2 max-w-sm text-sm leading-6 text-[#8a7a74]'>{headerConfig.desc}</p>
+    <div className='mx-auto max-w-xl px-4 py-10 md:py-16'>
+      <motion.div
+        initial={reduce ? false : { opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className='overflow-hidden rounded-4xl bg-white ring-1 ring-ink-100'
+      >
+        <div className={cn('relative flex flex-col items-center bg-gradient-to-br px-6 pb-10 pt-12 text-center', config.band)}>
+          <motion.span
+            initial={reduce ? false : { scale: 0, rotate: -20 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.15 }}
+            className={cn('grid h-20 w-20 place-items-center rounded-[1.75rem] shadow-soft', config.tone)}
+          >
+            <Icon size={38} strokeWidth={2} aria-hidden />
+          </motion.span>
+          <h1 className='mt-6 font-display text-3xl font-bold md:text-4xl'>{config.title}</h1>
+          <p className='mt-2 max-w-sm text-ink-700'>{config.desc}</p>
         </div>
 
-        <div className='space-y-4 p-6 md:p-8'>
-          {(orderCode || amountValue > 0 || transId) && (
-            <div className='space-y-3 rounded-lg border border-[#f0e4de] bg-[#fdf8f6] p-4 text-sm'>
-              {orderCode ? (
-                <div className='flex justify-between gap-4'>
-                  <span className='text-[#8a7a74]'>Mã đơn</span>
-                  <span className='font-semibold text-[#3d3330]'>{orderCode}</span>
-                </div>
-              ) : null}
-              {amountValue > 0 ? (
-                <div className='flex justify-between gap-4'>
-                  <span className='text-[#8a7a74]'>Số tiền</span>
-                  <span className='text-lg font-bold text-[#3d3330]'>{money(amountValue)}</span>
-                </div>
-              ) : null}
-              <div className='flex justify-between gap-4'>
-                <span className='text-[#8a7a74]'>Phương thức</span>
-                <span className='font-semibold text-[#3d3330]'>{paymentMethodLabel}</span>
+        <div className='space-y-5 p-6 md:p-8'>
+          <dl className='divide-y divide-ink-100 rounded-3xl bg-ink-50 px-5 text-sm'>
+            {orderCode ? (
+              <div className='flex justify-between gap-4 py-3'>
+                <dt className='text-ink-500'>Mã đơn</dt>
+                <dd className='font-semibold'>{orderCode}</dd>
               </div>
-              {transId ? (
-                <div className='flex justify-between gap-4'>
-                  <span className='shrink-0 text-[#8a7a74]'>Mã GD</span>
-                  <span className='break-all text-right font-mono text-xs font-semibold text-[#3d3330]'>{transId}</span>
-                </div>
-              ) : null}
+            ) : null}
+            {amountValue > 0 ? (
+              <div className='flex justify-between gap-4 py-3'>
+                <dt className='text-ink-500'>Số tiền</dt>
+                <dd className='font-display text-lg font-bold'>{money(amountValue)}</dd>
+              </div>
+            ) : null}
+            <div className='flex justify-between gap-4 py-3'>
+              <dt className='text-ink-500'>Phương thức</dt>
+              <dd className='font-semibold'>{paymentMethodLabel}</dd>
             </div>
-          )}
+            {transId ? (
+              <div className='flex justify-between gap-4 py-3'>
+                <dt className='shrink-0 text-ink-500'>Mã giao dịch</dt>
+                <dd className='break-all text-right font-mono text-xs font-semibold'>{transId}</dd>
+              </div>
+            ) : null}
+          </dl>
 
-          {status === 'success' ? (
-            <p className='rounded-lg border border-[#eaded8] bg-[#fdf8f6] px-4 py-3 text-center text-sm leading-6 text-[#6b5f59]'>
-              Dự kiến giao trong bán kính 25km — shop sẽ xác nhận và liên hệ khi đơn sẵn sàng giao.
-              {gatewayStatus || resultCode ? (
-                <span className='mt-1 block text-xs text-[#8a7a74]'>Email xác nhận sẽ được gửi nếu bạn đã bật thông báo.</span>
-              ) : null}
+          {status === 'placed' && !isSignedIn ? (
+            <p className='rounded-3xl bg-lilac-50 px-5 py-4 text-sm text-lilac-700'>
+              Lưu lại mã đơn {orderCode} để tiện tra cứu. Tạo tài khoản để theo dõi đơn hàng trực tuyến cho các lần mua sau.
             </p>
           ) : null}
 
-          {status === 'pending' ? (
-            <p className='rounded-lg border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm leading-6 text-amber-900'>
-              Nếu đã trừ tiền, trạng thái sẽ cập nhật tự động. Bạn có thể mở chi tiết đơn để kiểm tra hoặc thanh toán lại.
-            </p>
-          ) : null}
-
-          {status === 'failed' ? (
-            <p className='rounded-lg border border-rose-200/80 bg-rose-50/80 px-4 py-3 text-sm leading-6 text-rose-800'>
-              {friendlyError}
-            </p>
-          ) : null}
-
-          <div className='flex flex-col gap-2 pt-1'>
-            {status === 'failed' && realOrderId ? (
+          <div className='grid gap-2'>
+            {status === 'failed' && realOrderId && isSignedIn ? (
               <button
                 type='button'
                 onClick={() => navigate(orderDetailPath)}
-                className='flex h-11 w-full items-center justify-center gap-2 rounded-md bg-[#3d3330] text-sm font-semibold text-white hover:bg-[#2a2421]'
+                className='flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-berry-600 font-semibold text-white hover:bg-berry-700'
               >
-                <RefreshCw size={16} />
-                Thử thanh toán lại
+                <RefreshCw size={17} /> Thử thanh toán lại
               </button>
             ) : null}
-
-            <button
-              type='button'
-              onClick={() => navigate(orderDetailPath)}
-              className={cn(
-                'flex h-11 w-full items-center justify-center gap-2 rounded-md text-sm font-semibold',
-                status === 'failed' && realOrderId
-                  ? 'border border-[#3d3330] text-[#3d3330] hover:bg-[#fdf8f6]'
-                  : 'bg-[#3d3330] text-white hover:bg-[#2a2421]'
-              )}
-            >
-              <ShoppingBag size={16} />
-              Xem đơn hàng
-            </button>
-
+            {isSignedIn ? (
+              <button
+                type='button'
+                onClick={() => navigate(orderDetailPath)}
+                className={cn(
+                  'flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full font-semibold',
+                  positive || status === 'pending' ? 'bg-ink-950 text-white hover:bg-ink-800' : 'border-[1.5px] border-ink-200 hover:border-ink-950'
+                )}
+              >
+                <ShoppingBag size={17} /> Xem đơn hàng
+              </button>
+            ) : (
+              <Link
+                to={ROUTE_PATHS.AUTH_REGISTER}
+                className='flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-950 font-semibold text-white hover:bg-ink-800'
+              >
+                Tạo tài khoản
+              </Link>
+            )}
             {status === 'failed' ? (
               <Link
                 to={ROUTE_PATHS.USER_CART}
-                className='flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#eaded8] text-sm font-semibold text-[#3d3330] hover:bg-[#fdf8f6]'
+                className='flex h-12 w-full items-center justify-center rounded-full border-[1.5px] border-ink-200 font-semibold hover:border-ink-950'
               >
                 Quay lại giỏ hàng
               </Link>
             ) : null}
-
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='flex h-11 w-full items-center justify-center gap-2 rounded-md border border-[#eaded8] text-sm font-semibold text-[#6b5f59] hover:bg-[#fdf8f6]'
+              className='flex h-12 w-full items-center justify-center gap-2 rounded-full font-semibold text-ink-700 hover:bg-ink-100'
             >
-              <ArrowLeft size={16} />
-              Tiếp tục mua sắm
+              <ArrowLeft size={17} /> Tiếp tục mua sắm
             </Link>
           </div>
-
-          <TrustStrip />
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

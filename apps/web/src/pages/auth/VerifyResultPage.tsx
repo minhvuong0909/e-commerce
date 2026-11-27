@@ -14,7 +14,7 @@ export default function VerifyResultPage() {
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Xác minh email</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Kết quả xác minh email của bạn.</p>
+        <p className='mt-2 text-sm leading-6 text-ink-500'>Kết quả xác minh email của bạn.</p>
       </div>
 
       {isSuccess ? (
@@ -52,7 +52,7 @@ export default function VerifyResultPage() {
 
         <Link
           to={ROUTE_PATHS.AUTH_LOGIN}
-          className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+          className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl border border-ink-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-ink-300 hover:shadow-card'
         >
           Đăng nhập
         </Link>

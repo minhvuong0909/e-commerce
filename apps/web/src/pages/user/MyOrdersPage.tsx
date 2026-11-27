@@ -1,107 +1,68 @@
 import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { ArrowRight, PackageOpen, RefreshCw, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronRight, PackageOpen, RefreshCw } from 'lucide-react'
 import EmptyState from '../../components/ui/EmptyState'
 import StatusBadge from '../../components/ui/StatusBadge'
-import { orderMatchesFilter, ORDER_BADGE_CLASS, parseOrderFilterStatus, TABS } from '../../constants/order'
+import { orderMatchesFilter, parseOrderFilterStatus, TABS } from '../../constants/order'
 import type { OrderFilterStatus, OrderUI } from '../../models/OrderRequests'
 import { useMyOrders } from '../../hooks/useMyOrders'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
 import cn from '../../utils/cn'
 
-const panelClass = 'rounded-2xl border border-[#E7E0D8] bg-white shadow-soft'
-
-function paymentPillClass(status?: number) {
+function paymentTone(status?: number) {
   switch (status) {
     case 1:
-      return 'border-emerald-200/90 bg-emerald-50 text-emerald-800'
+      return 'bg-emerald-100 text-emerald-800'
     case 2:
-      return 'border-rose-200/90 bg-rose-50 text-rose-800'
+      return 'bg-rose-100 text-rose-700'
     case 3:
-      return 'border-stone-200 bg-stone-50 text-stone-700'
+      return 'bg-ink-100 text-ink-700'
     default:
-      return 'border-amber-200/90 bg-amber-50 text-amber-900'
+      return 'bg-peach-100 text-peach-700'
   }
 }
 
-function OrderListSkeleton() {
+const STEP_INDEX: Record<number, number> = { 0: 0, 1: 1, 2: 2, 3: 3 }
+
+function MiniProgress({ rawStatus }: { rawStatus: number }) {
+  if (rawStatus === 4) return null
+  const idx = STEP_INDEX[rawStatus] ?? 0
   return (
-    <div className='space-y-3' aria-busy='true' aria-label='Đang tải đơn hàng'>
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className={cn(panelClass, 'h-28 animate-pulse bg-[#FAF7F2] md:h-20')} />
+    <div className='flex gap-1' aria-hidden>
+      {[0, 1, 2, 3].map((i) => (
+        <span key={i} className={cn('h-1.5 flex-1 rounded-full', i <= idx ? 'bg-ink-950' : 'bg-ink-100')} />
       ))}
     </div>
   )
 }
 
-function OrderRow({ order }: { order: OrderUI }) {
+function OrderCard({ order }: { order: OrderUI }) {
   return (
-    <article className={cn(panelClass, 'p-4 transition hover:border-[#A16207] hover:shadow-md md:p-0')}>
-      <div className='hidden grid-cols-[minmax(140px,1.1fr)_minmax(100px,0.9fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,0.8fr)_auto] items-center gap-3 px-5 py-4 text-sm md:grid'>
+    <Link
+      to={ROUTE_PATHS.USER_ORDER_DETAIL(order.id)}
+      className='group block rounded-4xl bg-white p-5 ring-1 ring-ink-100 transition hover:-translate-y-0.5 hover:shadow-lift sm:p-6'
+    >
+      <div className='flex flex-wrap items-start justify-between gap-3'>
         <div>
-          <p className='font-bold text-[#1C1917]'>{order.code}</p>
-          <p className='mt-0.5 text-xs text-[#786C60]'>{order.paymentMethod}</p>
-        </div>
-        <p className='text-[#44403C] text-xs font-medium'>{order.date}</p>
-        <StatusBadge tone={order.status} className={ORDER_BADGE_CLASS[order.status]}>
-          {order.statusLabel}
-        </StatusBadge>
-        <span
-          className={cn(
-            'inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold',
-            paymentPillClass(order.rawPaymentStatus)
-          )}
-        >
-          {order.paymentStatusLabel ?? '—'}
-        </span>
-        <p className='font-extrabold text-[#B45309]'>{money(order.total)}</p>
-        <Link
-          to={`/user/orders/${order.id}`}
-          className='inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#1C1917] px-3.5 text-xs font-bold text-[#1C1917] transition hover:bg-[#1C1917] hover:text-white focus-visible:ring-2 focus-visible:ring-[#A16207]'
-        >
-          Chi tiết
-          <ArrowRight size={13} />
-        </Link>
-      </div>
-
-      <div className='space-y-3 md:hidden'>
-        <div className='flex items-start justify-between gap-3'>
-          <div>
-            <p className='text-xs font-bold uppercase tracking-wider text-[#A16207]'>Mã đơn</p>
-            <p className='mt-0.5 font-bold text-[#1C1917]'>{order.code}</p>
-            <p className='mt-1 text-xs text-[#786C60]'>{order.date}</p>
-          </div>
-          <p className='text-right text-base font-extrabold text-[#B45309]'>{money(order.total)}</p>
-        </div>
-
-        <div className='flex flex-wrap gap-2'>
-          <StatusBadge tone={order.status} className={ORDER_BADGE_CLASS[order.status]}>
-            {order.statusLabel}
-          </StatusBadge>
-          <span
-            className={cn(
-              'inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold',
-              paymentPillClass(order.rawPaymentStatus)
-            )}
-          >
-            {order.paymentStatusLabel}
-          </span>
-        </div>
-
-        <div className='flex items-center justify-between gap-3 border-t border-[#E7E0D8] pt-3'>
-          <p className='text-xs text-[#786C60]'>
-            Giao hàng: <span className='font-semibold text-[#44403C]'>{order.statusLabel}</span>
+          <p className='font-display text-xl font-bold'>Đơn {order.code}</p>
+          <p className='mt-0.5 text-sm text-ink-500'>
+            {order.date} · {order.items.length} sản phẩm · {order.paymentMethod}
           </p>
-          <Link
-            to={`/user/orders/${order.id}`}
-            className='inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#1C1917] px-4 text-xs font-bold text-white transition hover:bg-[#A16207]'
-          >
-            Chi tiết
-            <ArrowRight size={13} />
-          </Link>
         </div>
+        <p className='font-display text-2xl font-bold'>{money(order.total)}</p>
       </div>
-    </article>
+      <div className='mt-4 flex flex-wrap items-center gap-2'>
+        <StatusBadge tone={order.status}>{order.statusLabel}</StatusBadge>
+        <span className={cn('chip px-2.5 py-1 text-xs font-bold', paymentTone(order.rawPaymentStatus))}>{order.paymentStatusLabel ?? '—'}</span>
+        <span className='ml-auto inline-flex items-center gap-1 text-sm font-semibold text-ink-950'>
+          Chi tiết <ChevronRight size={16} className='transition group-hover:translate-x-0.5' aria-hidden />
+        </span>
+      </div>
+      <div className='mt-4'>
+        <MiniProgress rawStatus={order.rawStatus} />
+      </div>
+    </Link>
   )
 }
 
@@ -109,106 +70,91 @@ export default function MyOrdersPage() {
   const location = useLocation()
   const { data: orders = [], isLoading, isError, refetch, isFetching } = useMyOrders()
 
-  const activeStatus = useMemo<OrderFilterStatus>(() => {
-    const statusFromQuery = new URLSearchParams(location.search).get('status')
-    return parseOrderFilterStatus(statusFromQuery)
-  }, [location.search])
-
-  const filtered = useMemo(
-    () => orders.filter((o) => orderMatchesFilter(o.rawStatus, activeStatus)),
-    [orders, activeStatus]
+  const activeStatus = useMemo<OrderFilterStatus>(
+    () => parseOrderFilterStatus(new URLSearchParams(location.search).get('status')),
+    [location.search]
   )
+  const filtered = useMemo(() => orders.filter((o) => orderMatchesFilter(o.rawStatus, activeStatus)), [orders, activeStatus])
+  const counts = useMemo(() => {
+    const map: Record<string, number> = { all: orders.length }
+    TABS.forEach((t) => {
+      if (t.value !== 'all') map[t.value] = orders.filter((o) => orderMatchesFilter(o.rawStatus, t.value)).length
+    })
+    return map
+  }, [orders])
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-      <div className='mb-6 flex flex-col gap-2'>
-        <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#A16207]'>Order center</p>
-        <h1 className='font-display text-3xl font-extrabold tracking-tight text-[#1C1917]'>Đơn hàng của tôi</h1>
-        <p className='max-w-2xl text-xs md:text-sm leading-relaxed text-[#786C60]'>
-          Theo dõi trạng thái giao hàng, thanh toán và tổng tiền cho mọi đơn mỹ phẩm của bạn.
-        </p>
-      </div>
+    <div className='mx-auto max-w-4xl px-4 py-8 md:px-6 md:py-12'>
+      <h1 className='font-display text-4xl font-bold md:text-5xl'>Đơn hàng</h1>
+      <p className='mt-2 text-ink-600'>Theo dõi giao hàng và thanh toán cho mọi đơn của bạn.</p>
 
-      <div className='mb-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+      <nav aria-label='Lọc theo trạng thái' className='no-scrollbar -mx-4 mt-8 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0'>
         {TABS.map((tab) => {
           const active = activeStatus === tab.value
           return (
             <Link
               key={tab.value}
-              to={`/user/orders${tab.value === 'all' ? '' : `?status=${tab.value}`}`}
+              to={`${ROUTE_PATHS.USER_ORDERS}${tab.value === 'all' ? '' : `?status=${tab.value}`}`}
+              aria-current={active ? 'page' : undefined}
               className={cn(
-                'inline-flex min-h-9 shrink-0 items-center rounded-full border px-4 text-xs font-bold transition-all',
-                active
-                  ? 'border-[#1C1917] bg-[#1C1917] text-white shadow-xs'
-                  : 'border-[#E7E0D8] bg-white text-[#786C60] hover:border-[#A16207] hover:text-[#1C1917]'
+                'chip h-10 shrink-0 border-[1.5px] px-4 transition',
+                active ? 'border-ink-950 bg-ink-950 text-white' : 'border-ink-200 bg-white text-ink-700 hover:border-ink-950'
               )}
             >
               {tab.label}
+              {!isLoading && counts[tab.value] ? (
+                <span className={cn('rounded-full px-1.5 text-xs', active ? 'bg-white/20' : 'bg-ink-100')}>{counts[tab.value]}</span>
+              ) : null}
             </Link>
           )
         })}
-      </div>
+      </nav>
 
-      <div className='min-h-[320px]'>
+      <div className='mt-6 min-h-[320px]'>
         {isLoading ? (
-          <OrderListSkeleton />
-        ) : isError ? (
-          <div className={cn(panelClass, 'px-6 py-12 text-center')}>
-            <p className='text-base font-bold text-rose-700'>Không tải được đơn hàng</p>
-            <p className='mt-2 text-xs text-[#786C60]'>Vui lòng kiểm tra kết nối mạng và thử lại.</p>
-            <button
-              type='button'
-              onClick={() => refetch()}
-              disabled={isFetching}
-              className='mt-5 inline-flex h-10 items-center gap-2 rounded-xl border border-[#1C1917] px-4 text-xs font-bold text-[#1C1917] hover:bg-[#FAF7F2] transition disabled:opacity-50'
-            >
-              <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
-              Thử lại
-            </button>
+          <div className='space-y-3' aria-busy='true'>
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className='h-40 animate-pulse rounded-4xl bg-ink-100' />
+            ))}
           </div>
+        ) : isError ? (
+          <EmptyState
+            icon={<RefreshCw size={26} />}
+            title='Không tải được đơn hàng'
+            desc='Kiểm tra kết nối mạng rồi thử lại nhé.'
+            action={
+              <button
+                type='button'
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className='inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-ink-950 px-6 font-semibold text-white disabled:opacity-50'
+              >
+                <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} /> Thử lại
+              </button>
+            }
+          />
         ) : filtered.length === 0 ? (
           <EmptyState
-            icon={<PackageOpen size={28} className='text-[#A16207]' />}
-            title='Chưa có đơn hàng nào'
-            desc='Routine chăm sóc sắc đẹp cao cấp bắt đầu từ đây — hãy khám phá các bộ sưu tập tinh hoa của chúng tôi.'
+            icon={<PackageOpen size={28} />}
+            title={activeStatus === 'all' ? 'Chưa có đơn hàng nào' : 'Không có đơn ở trạng thái này'}
+            desc='Khi bạn đặt hàng, mọi cập nhật sẽ xuất hiện tại đây.'
             action={
               <Link
-                to='/user/home'
-                className='inline-flex h-10 items-center justify-center rounded-xl bg-[#1C1917] px-6 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#A16207] transition-all shadow-sm'
+                to={ROUTE_PATHS.USER_HOME}
+                className='inline-flex h-12 items-center gap-2 rounded-full bg-ink-950 px-7 font-semibold text-white hover:bg-berry-600'
               >
-                Khám phá sản phẩm
+                Khám phá sản phẩm <ArrowRight size={18} />
               </Link>
             }
           />
         ) : (
           <div className='space-y-3'>
-            <div
-              className={cn(
-                panelClass,
-                'hidden grid-cols-[minmax(140px,1.1fr)_minmax(100px,0.9fr)_minmax(120px,1fr)_minmax(120px,1fr)_minmax(100px,0.8fr)_auto] gap-3 bg-[#FAF7F2] px-5 py-3 text-xs font-bold uppercase tracking-wider text-[#786C60] md:grid'
-              )}
-            >
-              <span>Mã đơn</span>
-              <span>Ngày đặt</span>
-              <span>Trạng thái</span>
-              <span>Thanh toán</span>
-              <span>Tổng tiền</span>
-              <span className='text-right'> </span>
-            </div>
-
             {filtered.map((order) => (
-              <OrderRow key={order.id} order={order} />
+              <OrderCard key={order.id} order={order} />
             ))}
           </div>
         )}
       </div>
-
-      {!isLoading && !isError && filtered.length > 0 ? (
-        <p className='mt-8 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-[#786C60]'>
-          <Sparkles size={14} className='text-[#A16207]' />
-          Cảm ơn bạn đã tin tưởng Vibrant Mart
-        </p>
-      ) : null}
     </div>
   )
 }

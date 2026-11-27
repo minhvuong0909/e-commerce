@@ -55,7 +55,7 @@ export default function AdminCategoryEditPage() {
     return (
       <div className='flex min-h-[280px] flex-col items-center justify-center gap-3'>
         <RefreshCw className='h-8 w-8 animate-spin text-brand-600' />
-        <p className='text-sm font-semibold text-slate-500'>Đang tải danh mục...</p>
+        <p className='text-sm font-semibold text-ink-500'>Đang tải danh mục...</p>
       </div>
     )
   }
@@ -91,7 +91,7 @@ export default function AdminCategoryEditPage() {
             rows={6}
             value={form.desc}
             onChange={(e) => setForm((p) => ({ ...p, desc: e.target.value }))}
-            className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
+            className='w-full resize-none rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
             required
           />
         </label>
@@ -102,7 +102,7 @@ export default function AdminCategoryEditPage() {
           </Button>
           <Link
             to={ROUTE_PATHS.ADMIN_CATEGORIES}
-            className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+            className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-ink-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-ink-300 hover:shadow-card'
           >
             Hủy
           </Link>

@@ -1,85 +1,63 @@
-# Design System Master File: Vibrant Mart (Web)
+# Design System Master — Vibrant Mart "Vibrant Glow" (Web)
 
-> **LOGIC:** When building a specific page, first check `design-system/web/pages/[page-name].md`.
-> If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
+> When building a page, check `design-system/web/pages/[page].md` first; its rules override this file.
+> Tokens live in `apps/web/tailwind.config.js` and `apps/web/src/index.css`. Use token classes, never raw hex.
 
----
+**Stack:** React 19 · TypeScript · Vite 7 · Tailwind 3.4 · Framer Motion · lucide-react
+**Direction (ui-ux-pro-max):** Soft UI Evolution + bento layout. Beauty/skincare e-commerce, variance 7 · motion 6 · density 5.
 
-**Project:** Vibrant Mart (E-Commerce Luxury & Editorial Skincare)  
-**Framework:** React 19 + TypeScript + Vite 7 + Tailwind CSS 3.4 + Framer Motion  
-**Standard:** UI/UX Pro Max System  
+## 1. Brand
 
----
+- Playful-premium, confident, honest. Big expressive display type, soft colour tiles, a deep aubergine anchor.
+- Wordmark: `BrandMark` component (`V` monogram tile + lime dot + `vibrant.mart`).
+- No invented claims: no fake partner logos, fake review counts, unconfigured free-shipping or "SSL 256-bit" badges.
 
-## 1. Brand Identity & Design Direction
+## 2. Colour tokens
 
-- **Brand Spirit:** Warm Luxury, Editorial Beauty, Mindful Skincare.
-- **Visual Aesthetic:** Liquid Glass meets Editorial Warmth — subtle translucent glassmorphism (`backdrop-blur-md`), warm cashmere borders, micro-interactions without layout shifts, generous breathing space.
-- **Typography Tone:** Editorial Serif for expressive headlines (`Playfair Display` / `Cormorant`) paired with hyper-legible Geometric/Neo-grotesque Sans (`Plus Jakarta Sans` / `Montserrat`) for body copy and pricing.
+| Role | Token | Hex | Use |
+|---|---|---|---|
+| Canvas | `bg-canvas` | `#FFFAF7` | Page background |
+| Ink (anchor) | `ink-950` | `#1B0F1F` | Text, primary buttons, dark panels, footer |
+| Ink muted | `ink-600` / `ink-500` | `#5C4D62` / `#76667C` | Body copy / captions (≥4.5:1 on canvas) |
+| Lines | `ink-100` / `ink-200` | `#F3EEF4` / `#E6DDE8` | Rings, dividers, input borders |
+| Primary | `berry-600` | `#C21C63` | CTAs (`variant='accent'`), links, focus ring |
+| Primary on dark | `berry-500` / `berry-300` | `#E0307A` / `#FF94BD` | CTA on ink panels, accents on dark |
+| Tiles | `berry-50/100`, `lilac-50/100`, `peach-100/200`, `lime-200/300` | — | Product-card tints, bento tiles, category tiles |
+| Pop | `lime-300` | `#D4F25A` | "Mới" badge, done states, highlights on ink (always with ink text) |
 
----
+`brand-*` is a legacy alias of `berry-*`.
 
-## 2. Global Color System & Design Tokens
+## 3. Typography
 
-| Role | Token Name | Hex Value | Semantic Usage |
-|------|------------|-----------|----------------|
-| **Primary / Deep Ink** | `--color-primary` | `#1C1917` | Headers, primary buttons, logo mark |
-| **On Primary** | `--color-on-primary` | `#FFFFFF` | Text on primary dark backgrounds |
-| **Secondary / Warm Stone** | `--color-secondary` | `#44403C` | Subheadings, navigation items |
-| **Accent / Artisan Gold** | `--color-accent` | `#A16207` | Key CTAs, badges, highlight accents |
-| **Accent Hover** | `--color-accent-hover` | `#854D0E` | Active and hover states for gold accents |
-| **Background / Warm Cream** | `--color-background` | `#FAF7F2` | Page background, natural warm paper tone |
-| **Surface / Card** | `--color-card` | `#FFFFFF` | Product cards, dialogs, form sheets |
-| **Surface Muted / Sand** | `--color-muted` | `#F5EFE6` | Secondary panels, skeleton placeholders |
-| **Border Soft** | `--color-border` | `#E7E0D8` | Dividers, card boundaries (subtle cashmere) |
-| **Border Strong** | `--color-border-strong` | `#D6C8B8` | Focused states, input borders on hover |
-| **Text Primary** | `--color-text-primary` | `#1C1917` | Main headings & key numbers (contrast > 12:1) |
-| **Text Secondary** | `--color-text-secondary` | `#594D42` | Body copy, descriptions (contrast > 6.5:1) |
-| **Text Muted** | `--color-text-muted` | `#786C60` | Footers, captions, timestamps (contrast >= 4.5:1) |
-| **Price / Highlight** | `--color-price` | `#B45309` | Product pricing & key conversion numbers |
-| **Success / Mint** | `--color-success` | `#15803D` | In-stock badges, order success states |
-| **Destructive / Rose** | `--color-destructive` | `#DC2626` | Error alerts, out of stock, delete actions |
+- Display: **Bricolage Grotesque** 500–800 (`font-display`, tight tracking, `text-wrap: balance`).
+- Body/UI: **Be Vietnam Pro** 400–800 (full Vietnamese diacritics).
+- Scale: hero `text-[2.75rem] → lg:text-[5.25rem]`, section `text-3xl → md:text-[2.75rem]`, page title `text-4xl → md:text-5xl`, body `15px`.
+- Eyebrow: `.eyebrow` (12px, 0.14em tracking, berry dot).
 
----
+## 4. Shape, elevation, motion
 
-## 3. Typography Scale & Pairings
+- Radius: inputs `xl`, small cards `3xl`, sections/panels `4xl` (2.25rem), buttons/chips `full`.
+- Surfaces are flat white with `ring-1 ring-ink-100`; shadows only on overlays (`shadow-lift`) and CTAs (`shadow-glow`).
+- Motion: 200–300ms ease-out; stagger grid reveal (`staggerContainer`/`fadeUpItem`); ticker `animate-marquee`; all disabled under `prefers-reduced-motion`.
 
-- **Heading Display:** `'Playfair Display', Cormorant, Georgia, serif`
-  - Hero `H1`: `font-display font-extrabold text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-[1.15]`
-  - Section `H2`: `font-display font-bold text-2xl sm:text-3xl md:text-4xl tracking-tight leading-snug`
-  - Card/Modal `H3`: `font-display font-bold text-lg sm:text-xl text-[#1C1917]`
-- **Body & UI Sans:** `'Plus Jakarta Sans', Montserrat, system-ui, -apple-system, sans-serif`
-  - Body Normal: `text-sm leading-relaxed text-[#594D42]`
-  - Eyebrows / Chips: `text-[11px] font-bold uppercase tracking-[0.18em]`
-  - Price: `font-extrabold text-[#B45309] tracking-tight`
+## 5. Components
 
----
+- `Button` — variants `primary | accent | secondary | outline | ghost | danger | gradient`, sizes `sm | md | lg`, pill shape.
+- `Input` / `.field` / `.field-label` — 48px, 1.5px border, berry focus halo.
+- `ProductCard` — tinted 4:5 image tile (`tint` cycles via `CARD_TINTS`), badges top-left, wishlist top-right, hover actions (always visible on touch).
+- `StatusBadge`, `EmptyState`, `SectionHeader`, `PaginationBar` (numbered), `QuickViewModal` (bottom-sheet on mobile, Esc to close).
 
-## 4. Spacing, Rhythm & Elevation
+## 6. Layout
 
-| Scale Token | Value | Applied To |
-|-------------|-------|------------|
-| `space-xs` | `4px` (`0.25rem`) | Micro gaps, icon label spacing |
-| `space-sm` | `8px` (`0.5rem`) | Chip padding, list spacing |
-| `space-md` | `16px` (`1rem`) | Component internal padding, input height padding |
-| `space-lg` | `24px` (`1.5rem`) | Card padding, grid gap on mobile |
-| `space-xl` | `32px` (`2rem`) | Section padding on mobile, modal inset |
-| `space-2xl` | `48px` (`3rem`) | Desktop section spacing |
-| `space-3xl` | `64px` (`4rem`) | Hero vertical spacing |
+- Container `max-w-[1320px]`, gutters `px-4 md:px-6`.
+- Storefront: marquee ticker → sticky glass header (search with `/` shortcut + live suggestions) → category rail (real categories) → content → ink footer. Mobile: floating pill dock.
+- Home: bento hero (live best-seller) → category tiles → best-seller rail → 4-step routine → shop grid (search/category/sort in URL, `#shop`) → promises → join band.
+- Admin: ink sidebar + light workspace (`.admin-theme`), same tokens, denser.
 
-### Elevation & Shadows
-- `--shadow-soft`: `0 8px 30px rgba(43, 33, 24, 0.05)`
-- `--shadow-lift`: `0 16px 40px rgba(43, 33, 24, 0.09)`
-- `--shadow-glass`: `0 10px 30px rgba(43, 33, 24, 0.07)`
+## 7. Pre-delivery checklist
 
----
-
-## 5. UI/UX Pro Max Rules & Accessibility Checklist
-
-1. **Vector-Only Icons:** Use Lucide SVG icons exclusively. **NO emoji used as icons**.
-2. **Touch Targets & Hit Areas:** All buttons, links, and icon controls have a touch target >= 44x44px.
-3. **Interactive Lift Without Layout Jitter:** Hover elevation uses `translateY(-3px)` with smooth cubic-bezier easing (`cubic-bezier(0.16, 1, 0.3, 1)`), avoiding layout shift.
-4. **Accessible Forms:** All inputs must have associated labels, clear focus rings (`focus:ring-4 focus:ring-[#A16207]/15`), and accessible error messages (`aria-invalid`, `aria-describedby`).
-5. **Reduced Motion:** Honor `prefers-reduced-motion: reduce` by disabling aggressive translation or continuous auto-rotation.
-6. **Responsive Layouts:** Flawlessly adapted across 375px (mobile), 768px (tablet), 1024px (desktop), 1440px (wide screen).
+- [ ] Token classes only — no raw hex (exception: third-party brand colours e.g. MoMo `#A50064`).
+- [ ] Every icon-only control has `aria-label`; decorative icons `aria-hidden`.
+- [ ] Touch targets ≥ 40px; focus visible (berry ring).
+- [ ] Check 390 / 768 / 1440px.
+- [ ] Copy states only what the backend actually supports.

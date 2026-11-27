@@ -46,7 +46,7 @@ export default function ResendVerifyEmailPage() {
         <h2 className='mt-5 text-2xl font-black tracking-tight text-ink-950'>
           {sentOnce ? 'Đã gửi lại email' : 'Xác minh email'}
         </h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>
+        <p className='mt-2 text-sm leading-6 text-ink-500'>
           {sentOnce
             ? 'Vui lòng kiểm tra hộp thư để hoàn tất xác minh tài khoản.'
             : 'Gửi lại link xác minh tới email đã đăng ký của bạn.'}
@@ -75,7 +75,7 @@ export default function ResendVerifyEmailPage() {
             {cooldown > 0 ? `Gửi lại sau ${cooldown}s` : 'Gửi lại email xác minh'}
           </Button>
 
-          <p className='text-center text-sm text-slate-500'>
+          <p className='text-center text-sm text-ink-500'>
             Quay lại{' '}
             <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
               Đăng nhập

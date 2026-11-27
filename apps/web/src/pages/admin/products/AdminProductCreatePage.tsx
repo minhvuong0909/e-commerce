@@ -283,7 +283,7 @@ export default function AdminProductCreatePage() {
           <section className='surface-strong rounded-3xl p-5 md:p-7'>
             <div className='mb-7'>
               <h2 className='text-xl font-black text-ink-950'>Thông tin sản phẩm</h2>
-              <p className='mt-2 text-sm leading-6 text-slate-500'>Nhập thông tin cơ bản, giá bán, tồn kho và mô tả.</p>
+              <p className='mt-2 text-sm leading-6 text-ink-500'>Nhập thông tin cơ bản, giá bán, tồn kho và mô tả.</p>
             </div>
 
             <div className='grid gap-5 md:grid-cols-2'>
@@ -359,7 +359,7 @@ export default function AdminProductCreatePage() {
                     type='button'
                     onClick={handleGenerateDescription}
                     disabled={aiLoading}
-                    className='inline-flex items-center gap-1.5 rounded-full border border-[#eaded8] bg-white px-3 py-1 text-xs font-bold text-[#b07a72] transition hover:bg-[#fdf2f0] disabled:opacity-50'
+                    className='inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3 py-1 text-xs font-bold text-berry-600 transition hover:bg-berry-50 disabled:opacity-50'
                   >
                     <Sparkles size={13} />
                     {aiLoading ? 'AI đang viết...' : 'AI viết mô tả'}
@@ -369,7 +369,7 @@ export default function AdminProductCreatePage() {
                   rows={7}
                   {...register('description')}
                   placeholder='Mô tả sản phẩm...'
-                  className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-4 text-base font-semibold text-ink-950 outline-none transition placeholder:text-slate-400 focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
+                  className='w-full resize-none rounded-2xl border border-ink-200 bg-white px-4 py-4 text-base font-semibold text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
                 />
                 <InputError message={errors.description?.message} />
               </label>
@@ -386,7 +386,7 @@ export default function AdminProductCreatePage() {
               </Button>
               <Link
                 to='/admin/products'
-                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'
+                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-bold text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
               >
                 <ArrowLeft size={16} />
                 Quay lại
@@ -397,13 +397,13 @@ export default function AdminProductCreatePage() {
           <section className='surface-card rounded-3xl p-5 md:p-7'>
             <div>
               <h2 className='text-xl font-black text-ink-950'>Hình ảnh</h2>
-              <p className='mt-2 text-sm leading-6 text-slate-500'>Quản lý ảnh hiển thị ngoài trang mua sắm.</p>
+              <p className='mt-2 text-sm leading-6 text-ink-500'>Quản lý ảnh hiển thị ngoài trang mua sắm.</p>
             </div>
 
             <button
               type='button'
               onClick={() => fileRef.current?.click()}
-              className='mt-5 flex h-[188px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 text-slate-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
+              className='mt-5 flex h-[188px] w-full flex-col items-center justify-center rounded-3xl border border-dashed border-ink-300 bg-ink-50 text-ink-500 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
             >
               <ImagePlus size={28} />
               <span className='mt-3 text-sm font-black'>Bấm để chọn ảnh</span>
@@ -416,8 +416,8 @@ export default function AdminProductCreatePage() {
             <div className='mt-5 grid grid-cols-2 gap-3'>
               {mediaPreview.length > 0
                 ? mediaPreview.slice(0, 6).map((item) => (
-                    <div key={item.id} className='group relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 p-3'>
-                      <div className='line-clamp-2 flex h-16 items-center text-xs font-bold text-slate-500'>{item.name}</div>
+                    <div key={item.id} className='group relative overflow-hidden rounded-2xl border border-ink-200 bg-ink-50 p-3'>
+                      <div className='line-clamp-2 flex h-16 items-center text-xs font-bold text-ink-500'>{item.name}</div>
                       <button
                         type='button'
                         onClick={() => removeMedia(item.id)}
@@ -428,10 +428,10 @@ export default function AdminProductCreatePage() {
                       </button>
                     </div>
                   ))
-                : Array.from({ length: 4 }).map((_, index) => <div key={index} className='h-24 rounded-2xl bg-slate-50' />)}
+                : Array.from({ length: 4 }).map((_, index) => <div key={index} className='h-24 rounded-2xl bg-ink-50' />)}
             </div>
 
-            <div className='mt-5 rounded-3xl border border-slate-200 bg-slate-50 p-5'>
+            <div className='mt-5 rounded-3xl border border-ink-200 bg-ink-50 p-5'>
               <div className='text-base font-black text-ink-950'>Xem nhanh</div>
               <div className='mt-4 space-y-3 text-sm'>
                 <PreviewRow label='Tên sản phẩm' value={watchedValues.name || '-'} />
@@ -473,7 +473,7 @@ function FormInput({
 function PreviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className='flex items-center justify-between gap-3'>
-      <span className='text-slate-500'>{label}</span>
+      <span className='text-ink-500'>{label}</span>
       <span className='text-right font-black text-ink-950'>{value}</span>
     </div>
   )

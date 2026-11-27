@@ -1,3 +1,5 @@
+> ⚠️ Superseded by the "Vibrant Glow" redesign — see ../MASTER.md. Kept for history; colours/trust-badge rules below are outdated.
+
 # Page Override: Checkout & Cart Flow
 
 > Overrides `design-system/web/MASTER.md` for the Cart & Checkout Pages (`/user/cart`, `/user/checkout`, `/user/orders/*`).

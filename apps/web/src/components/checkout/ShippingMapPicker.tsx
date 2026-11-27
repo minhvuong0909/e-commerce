@@ -5,6 +5,7 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
 import markerIcon from 'leaflet/dist/images/marker-icon.png'
 import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import 'leaflet/dist/leaflet.css'
+import { MousePointerClick } from 'lucide-react'
 
 const defaultIcon = L.icon({
   iconUrl: markerIcon,
@@ -41,8 +42,8 @@ export default function ShippingMapPicker({ storeLat, storeLng, value, onPick }:
   )
 
   return (
-    <div className='overflow-hidden rounded-2xl border border-slate-200'>
-      <MapContainer center={center} zoom={14} scrollWheelZoom className='h-72 w-full'>
+    <div className='overflow-hidden rounded-3xl ring-1 ring-ink-100'>
+      <MapContainer center={center} zoom={14} scrollWheelZoom className='h-80 w-full'>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -51,8 +52,8 @@ export default function ShippingMapPicker({ storeLat, storeLng, value, onPick }:
         {value ? <Marker position={[value.lat, value.lng]} /> : null}
         <MapClickHandler onPick={onPick} />
       </MapContainer>
-      <p className='border-t border-slate-200 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-500'>
-        Nhấn vào bản đồ để chọn vị trí giao hàng. Marker cửa hàng: 160 Lã Xuân Oai.
+      <p className='flex items-center gap-2 bg-ink-50 px-4 py-2.5 text-xs text-ink-600'>
+        <MousePointerClick size={14} aria-hidden /> Nhấn vào bản đồ để ghim vị trí nhận hàng — địa chỉ sẽ tự điền.
       </p>
     </div>
   )

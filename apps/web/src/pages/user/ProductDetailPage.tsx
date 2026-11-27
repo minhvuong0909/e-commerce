@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import {
-  ArrowLeft,
-  Heart,
-  Minus,
-  Plus,
-  ShoppingBag,
-  Star
-} from 'lucide-react'
+import { ChevronRight, Heart, MessageSquareText, Minus, Package, Plus, ShoppingBag, Star, Zap } from 'lucide-react'
+import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
+import Button from '../../components/ui/Button'
+import ProductCard, { CARD_TINTS } from '../../components/ui/ProductCard'
 import { useProductDetail } from '../../hooks/useProductDetail'
+import { useProducts } from '../../hooks/useProducts'
 import { useCartActions } from '../../hooks/useCartActions'
 import { useWishlist } from '../../hooks/useWishlist'
 import cn from '../../utils/cn'
@@ -20,6 +17,7 @@ import { createProductReviewApi, getProductReviewsApi, type ProductReview } from
 import { getApiErrorMessage } from '../../utils/apiError'
 import { getToken } from '../../utils/authSession'
 import { ROUTE_PATHS } from '../../routes/route.paths'
+import { easeOut } from '../../constants/motion'
 
 const RATING_LABELS: Record<number, string> = {
   1: 'Rất kém',
@@ -29,6 +27,18 @@ const RATING_LABELS: Record<number, string> = {
   5: 'Tuyệt vời'
 }
 
+const asReviewList = (value: unknown): ProductReview[] => (Array.isArray(value) ? value : [])
+
+function Stars({ value, size = 14 }: { value: number; size?: number }) {
+  return (
+    <span className='inline-flex' aria-hidden>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star key={i} size={size} className={i <= Math.round(value) ? 'fill-peach-500 text-peach-500' : 'fill-ink-200 text-ink-200'} />
+      ))}
+    </span>
+  )
+}
+
 export default function ProductDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -36,6 +46,7 @@ export default function ProductDetailPage() {
   const { data: product, isLoading: loading } = useProductDetail(id)
   const { addToCart, isAdding: adding } = useCartActions()
   const { isWishlisted, toggleWishlist } = useWishlist()
+  const { data: related } = useProducts(1, 5, { sort: 'best_selling' })
 
   const [qty, setQty] = useState(1)
   const [activeImageIndex, setActiveImageIndex] = useState(0)
@@ -45,100 +56,82 @@ export default function ProductDetailPage() {
   const [reviewComment, setReviewComment] = useState('')
   const [reviewLoading, setReviewLoading] = useState(false)
 
-  const isFavorited = useMemo(() => (product ? isWishlisted(product._id) : false), [product, isWishlisted])
+  const isFavorited = product ? isWishlisted(product._id) : false
 
   const images = useMemo(() => {
-    const rawList: string[] = []
-    if (product?.thumbnail) rawList.push(product.thumbnail)
-    if (Array.isArray(product?.medias)) {
-      for (const item of product.medias) {
-        if (typeof item === 'string') rawList.push(item)
-        else if (item && typeof item === 'object' && 'url' in item && typeof item.url === 'string') {
-          rawList.push(item.url)
-        }
-      }
+    const raw: string[] = []
+    if (product?.thumbnail) raw.push(product.thumbnail)
+    for (const item of product?.medias ?? []) {
+      if (typeof item === 'string') raw.push(item)
+      else if (item && typeof item.url === 'string') raw.push(item.url)
     }
-    const uniqueList = Array.from(new Set(rawList.filter(Boolean)))
-    return uniqueList.map((url) => formatImageUrl(url))
+    return Array.from(new Set(raw.filter(Boolean))).map((url) => formatImageUrl(url))
   }, [product])
 
   const activeImage = images[activeImageIndex] ?? images[0]
   const isOutOfStock = !product || product.quantity <= 0
   const isOverStock = Boolean(product && product.quantity > 0 && qty > product.quantity)
+  const canBuy = !isOutOfStock && !isOverStock
+
+  const reviewStats = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0]
+    reviews.forEach((r) => {
+      const n = Math.min(5, Math.max(1, Math.round(r.rating)))
+      counts[n - 1] += 1
+    })
+    const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0
+    return { counts, avg }
+  }, [reviews])
 
   const handleAddToCart = useCallback(() => {
-    if (!product || isOutOfStock || isOverStock) return
-    addToCart({
-      product_id: product._id,
-      quantity: qty
-    })
-  }, [product, isOutOfStock, isOverStock, addToCart, qty])
+    if (!product || !canBuy) return
+    addToCart({ product_id: product._id, quantity: qty })
+  }, [product, canBuy, addToCart, qty])
 
   const handleBuyNow = useCallback(() => {
-    if (!product || isOutOfStock || isOverStock) return
+    if (!product || !canBuy) return
     navigate(ROUTE_PATHS.USER_CHECKOUT, {
-      state: {
-        guestItems: [
-          {
-            _id: `guest-${product._id}`,
-            cart_id: 'guest',
-            quantity: qty,
-            product_infor: product
-          }
-        ]
-      }
+      state: { guestItems: [{ _id: `guest-${product._id}`, cart_id: 'guest', quantity: qty, product_infor: product }] }
     })
-  }, [navigate, isOutOfStock, isOverStock, product, qty])
+  }, [navigate, canBuy, product, qty])
 
   useEffect(() => {
     if (!id) return
-    let isSubscribed = true
+    let alive = true
     getProductReviewsApi(id)
-      .then((res) => {
-        if (isSubscribed) setReviews(res.data.result || [])
-      })
-      .catch(() => {
-        if (isSubscribed) setReviews([])
-      })
+      .then((res) => alive && setReviews(asReviewList(res.data.result)))
+      .catch(() => alive && setReviews([]))
     return () => {
-      isSubscribed = false
+      alive = false
     }
   }, [id])
 
   const handleSubmitReview = useCallback(async () => {
-    if (!id || !product) return
-    if (!getToken()) return
-    if (!reviewComment.trim()) return
+    if (!id || !product || !getToken() || !reviewComment.trim()) return
     try {
       setReviewLoading(true)
       await createProductReviewApi(id, { rating: reviewRating, comment: reviewComment.trim() })
       setReviewComment('')
       const res = await getProductReviewsApi(id)
-      setReviews(res.data.result || [])
+      setReviews(asReviewList(res.data.result))
+      toast.success('Cảm ơn bạn đã đánh giá!')
     } catch (err) {
-      alert(getApiErrorMessage(err, 'Không thể gửi đánh giá'))
+      toast.error(getApiErrorMessage(err, 'Không thể gửi đánh giá'))
     } finally {
       setReviewLoading(false)
     }
   }, [id, product, reviewComment, reviewRating])
 
-  const inc = useCallback(() => {
-    setQty((q) => (product ? Math.min(product.quantity, q + 1) : q))
-  }, [product])
-
-  const dec = useCallback(() => {
-    setQty((q) => Math.max(1, q - 1))
-  }, [])
-
   if (loading) {
     return (
-      <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-        <div className='grid gap-8 lg:grid-cols-2'>
-          <div className='aspect-square animate-pulse rounded-3xl bg-[#F5EFE6]' />
-          <div className='space-y-4'>
-            <div className='h-8 w-3/4 animate-pulse rounded-xl bg-[#F5EFE6]' />
-            <div className='h-5 w-1/2 animate-pulse rounded-xl bg-[#F5EFE6]' />
-            <div className='h-16 w-48 animate-pulse rounded-2xl bg-[#F5EFE6]' />
+      <div className='mx-auto max-w-[1320px] px-4 py-8 md:px-6'>
+        <div className='grid gap-10 lg:grid-cols-[1.15fr_1fr]'>
+          <div className='aspect-square animate-pulse rounded-4xl bg-ink-100' />
+          <div className='space-y-4 pt-4'>
+            <div className='h-4 w-24 animate-pulse rounded-full bg-ink-100' />
+            <div className='h-12 w-4/5 animate-pulse rounded-2xl bg-ink-100' />
+            <div className='h-10 w-40 animate-pulse rounded-2xl bg-ink-100' />
+            <div className='h-32 w-full animate-pulse rounded-3xl bg-ink-100' />
           </div>
         </div>
       </div>
@@ -147,66 +140,50 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className='mx-auto max-w-7xl px-4 py-8 md:px-6'>
-        <Alert variant='error' title='Lỗi' desc='Không tìm thấy sản phẩm.' />
+      <div className='mx-auto max-w-2xl px-4 py-16'>
+        <Alert variant='error' title='Không tìm thấy sản phẩm' desc='Sản phẩm có thể đã ngừng bán hoặc đường dẫn không đúng.' />
+        <Link to={ROUTE_PATHS.USER_HOME} className='mt-6 inline-flex font-semibold text-berry-600 hover:underline'>
+          ← Về trang chủ
+        </Link>
       </div>
     )
   }
 
   const activeStarCount = hoverRating ?? reviewRating
+  const relatedProducts = (related?.products ?? []).filter((p) => p._id !== product._id).slice(0, 4)
+  const specs = [
+    product.origin && { label: 'Xuất xứ', value: product.origin },
+    product.volume && { label: 'Dung tích', value: `${product.volume} ml` },
+    product.weight && { label: 'Trọng lượng', value: `${product.weight} g` },
+    { label: 'Đã bán', value: String(product.soldNumber ?? 0) }
+  ].filter(Boolean) as Array<{ label: string; value: string }>
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#2B2118] min-h-screen'>
-      {/* Back navigation */}
-      <Link
-        to='/user/home'
-        className='mb-6 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#786C60] transition hover:text-[#1C1917] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded-md px-1 py-0.5'
-      >
-        <ArrowLeft size={16} />
-        Quay lại trang chủ
-      </Link>
+    <div className='mx-auto max-w-[1320px] px-4 pb-10 pt-6 md:px-6'>
+      <nav aria-label='Breadcrumb' className='flex items-center gap-1.5 text-sm text-ink-500'>
+        <Link to={ROUTE_PATHS.USER_HOME} className='hover:text-ink-950'>
+          Trang chủ
+        </Link>
+        <ChevronRight size={14} aria-hidden />
+        <a href={`${ROUTE_PATHS.USER_HOME}#shop`} className='hover:text-ink-950'>
+          Cửa hàng
+        </a>
+        <ChevronRight size={14} aria-hidden />
+        <span className='truncate text-ink-950' aria-current='page'>
+          {product.name}
+        </span>
+      </nav>
 
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className='grid gap-8 lg:grid-cols-2'
-      >
-        {/* Left Column: Product Image Gallery */}
-        <div className='space-y-4'>
-          <div className='relative overflow-hidden rounded-3xl border border-[#E7E0D8] bg-white shadow-soft'>
-            <div className='aspect-square overflow-hidden bg-[#F5EFE6]/40 p-6 flex items-center justify-center'>
-              {activeImage ? (
-                <img
-                  src={activeImage}
-                  alt={product.name}
-                  referrerPolicy='no-referrer'
-                  className='h-full w-full object-contain transition duration-500 hover:scale-105'
-                  loading='eager'
-                  decoding='async'
-                />
-              ) : (
-                <div className='grid h-full place-items-center text-sm font-medium text-[#786C60]'>Chưa có ảnh</div>
-              )}
-            </div>
-
-            {/* Favorite toggle badge on main image */}
-            <button
-              type='button'
-              onClick={() => toggleWishlist(product)}
-              className={cn(
-                'absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#594D42] shadow-sm transition hover:border-rose-300 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-                isFavorited && 'border-rose-200 bg-rose-50 text-rose-600'
-              )}
-              aria-label={isFavorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
-            >
-              <Heart size={18} className={cn(isFavorited && 'fill-current')} />
-            </button>
-          </div>
-
-          {/* Thumbnail Strip */}
+      <div className='mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14'>
+        {/* gallery */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: easeOut }}
+          className='flex flex-col-reverse gap-3 md:flex-row'
+        >
           {images.length > 1 ? (
-            <div className='flex gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+            <div className='no-scrollbar flex gap-2 overflow-x-auto md:max-h-[640px] md:w-20 md:flex-col md:overflow-y-auto'>
               {images.map((url, index) => (
                 <button
                   key={`${url}-${index}`}
@@ -215,289 +192,274 @@ export default function ProductDetailPage() {
                   aria-label={`Xem ảnh ${index + 1}`}
                   aria-pressed={activeImageIndex === index}
                   className={cn(
-                    'h-20 w-20 shrink-0 overflow-hidden rounded-2xl border-2 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-                    activeImageIndex === index
-                      ? 'border-[#A16207] ring-2 ring-[#A16207]/20 shadow-xs'
-                      : 'border-[#E7E0D8] opacity-70 hover:opacity-100'
+                    'h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-berry-50 ring-2 transition',
+                    activeImageIndex === index ? 'ring-ink-950' : 'ring-transparent opacity-60 hover:opacity-100'
                   )}
                 >
-                  <img
-                    src={url}
-                    alt=''
-                    referrerPolicy='no-referrer'
-                    className='h-full w-full object-cover'
-                    loading='lazy'
-                    decoding='async'
-                  />
+                  <img src={url} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover mix-blend-multiply' loading='lazy' />
                 </button>
               ))}
             </div>
           ) : null}
-        </div>
-
-        {/* Right Column: Product Info & Actions */}
-        <div className='lg:sticky lg:top-28 lg:self-start'>
-          <div className='rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'>
-            {/* Tags & Rating */}
-            <div className='flex flex-wrap items-center gap-2'>
-              {product.rating_number ? (
-                <span className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#E7E0D8] px-3 py-1 text-xs font-bold text-[#1C1917]'>
-                  <Star size={13} className='fill-amber-400 text-amber-400' />
-                  {Number(product.rating_number).toFixed(1)}
-                </span>
-              ) : null}
-              {product.origin ? (
-                <span className='rounded-full bg-[#F5EFE6] px-3 py-1 text-xs font-semibold text-[#786C60]'>
-                  Xuất xứ: {product.origin}
-                </span>
-              ) : null}
-            </div>
-
-            {/* Title */}
-            <h1 className='mt-4 font-display text-2xl font-extrabold leading-snug text-[#1C1917] md:text-3xl'>{product.name}</h1>
-
-            {/* Price Box */}
-            <div className='mt-5 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs'>
-              <p className='text-xs font-bold uppercase tracking-wider text-[#786C60]'>Giá Niêm Yết</p>
-              <p className='mt-1 text-3xl font-extrabold text-[#B45309]'>{money(product.price)}</p>
-            </div>
-
-            {/* Specifications Quick Info - ONLY REAL DATA */}
-            <div className='mt-5 grid grid-cols-2 gap-2 text-xs font-semibold text-[#594D42] sm:grid-cols-3'>
-              <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
-                <span className='text-[#786C60]'>Tình trạng:</span>{' '}
-                {isOutOfStock ? (
-                  <span className='font-bold text-rose-600'>Hết hàng</span>
-                ) : (
-                  <span className='font-bold text-emerald-600'>Còn {product.quantity} sp</span>
-                )}
-              </div>
-              {product.volume ? (
-                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#786C60]'>Dung tích:</span> {product.volume} ml
-                </div>
-              ) : null}
-              {product.weight ? (
-                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#786C60]'>Trọng lượng:</span> {product.weight} g
-                </div>
-              ) : null}
-              {product.soldNumber !== undefined && product.soldNumber > 0 ? (
-                <div className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-2.5'>
-                  <span className='text-[#786C60]'>Đã bán:</span> {product.soldNumber}
-                </div>
-              ) : null}
-            </div>
-
-            {/* Warnings */}
-            {(isOutOfStock || isOverStock) && (
-              <div className='mt-4'>
-                <Alert
-                  variant='warning'
-                  title={isOutOfStock ? 'Hết hàng' : 'Vượt tồn kho'}
-                  desc={isOutOfStock ? 'Sản phẩm hiện đã hết hàng.' : 'Vui lòng giảm số lượng đặt mua.'}
+          <div className='relative flex-1 overflow-hidden rounded-4xl bg-berry-50'>
+            <div className='aspect-square'>
+              {activeImage ? (
+                <img
+                  key={activeImage}
+                  src={activeImage}
+                  alt={product.name}
+                  referrerPolicy='no-referrer'
+                  className='h-full w-full object-contain p-8 mix-blend-multiply animate-soft-pop md:p-14'
                 />
-              </div>
-            )}
-
-            {/* Quantity Selector */}
-            {!isOutOfStock && (
-              <div className='mt-6 flex items-center justify-between gap-4 border-t border-[#E7E0D8] pt-5'>
-                <div>
-                  <p className='font-display text-sm font-bold text-[#1C1917]'>Số lượng</p>
-                  <p className='mt-0.5 text-xs text-[#786C60]'>Chọn số lượng cần mua</p>
-                </div>
-
-                <div className='flex items-center rounded-full border border-[#E7E0D8] bg-[#FAF7F2] p-1 shadow-xs'>
-                  <button
-                    type='button'
-                    onClick={dec}
-                    disabled={qty <= 1}
-                    className='grid h-9 w-9 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                    aria-label='Giảm số lượng'
-                  >
-                    <Minus size={15} />
-                  </button>
-                  <span className='w-10 text-center text-sm font-bold text-[#1C1917]'>{qty}</span>
-                  <button
-                    type='button'
-                    onClick={inc}
-                    disabled={qty >= product.quantity}
-                    className='grid h-9 w-9 place-items-center rounded-full text-[#1C1917] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                    aria-label='Tăng số lượng'
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className='mt-6 grid grid-cols-[1fr_auto] gap-3'>
-              <button
-                type='button'
-                onClick={handleBuyNow}
-                disabled={isOutOfStock || isOverStock}
-                className='col-span-2 inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1C1917] px-6 text-sm font-bold uppercase tracking-wider text-[#FAF7F2] shadow-sm transition duration-200 hover:bg-[#A16207] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-              >
-                Mua Ngay
-              </button>
-
-              <button
-                type='button'
-                disabled={isOutOfStock || isOverStock || adding}
-                onClick={handleAddToCart}
-                className='inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-full border-2 border-[#1C1917] bg-white px-6 text-xs font-bold uppercase tracking-wider text-[#1C1917] shadow-xs transition hover:bg-[#FAF7F2] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-              >
-                <ShoppingBag size={18} />
-                <span>{adding ? 'Đang thêm...' : 'Thêm vào giỏ'}</span>
-              </button>
-
-              <button
-                type='button'
-                onClick={() => toggleWishlist(product)}
-                aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
-                aria-pressed={isFavorited}
-                className={cn(
-                  'inline-flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#E7E0D8] bg-white text-[#594D42] shadow-xs transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-                  isFavorited && 'border-rose-300 bg-rose-50 text-rose-600'
-                )}
-              >
-                <Heart size={18} className={cn(isFavorited && 'fill-current')} />
-              </button>
+              ) : (
+                <div className='grid h-full place-items-center text-sm text-ink-500'>Chưa có ảnh</div>
+              )}
             </div>
+            {(product.soldNumber ?? 0) >= 10 ? (
+              <span className='chip absolute left-4 top-4 bg-berry-600 text-white'>Bán chạy</span>
+            ) : null}
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
 
-      {/* Description - Only show when actual description exists */}
-      {product.description ? (
-        <motion.section
+        {/* info */}
+        <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.35 }}
-          className='mt-10 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
+          transition={{ duration: 0.45, delay: 0.06, ease: easeOut }}
+          className='lg:sticky lg:top-36 lg:self-start'
         >
-          <span className='text-xs font-bold uppercase tracking-wider text-[#A16207]'>Mô tả sản phẩm</span>
-          <h2 className='mt-1 font-display text-2xl font-extrabold text-[#1C1917]'>Thông Tin Chi Tiết</h2>
-          <div className='mt-4 max-w-4xl space-y-3 text-sm leading-relaxed text-[#594D42] md:text-base'>
-            {product.description.split('\n').map((paragraph, idx) => (
-              <p key={idx}>{paragraph}</p>
-            ))}
-          </div>
-        </motion.section>
-      ) : null}
+          <p className='eyebrow'>{product.origin || 'Chính hãng'}</p>
+          <h1 className='mt-3 font-display text-3xl font-bold leading-[1.1] text-ink-950 md:text-[2.75rem]'>{product.name}</h1>
 
-      {/* Interactive Review Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.16, duration: 0.35 }}
-        className='mt-8 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
-      >
-        <span className='text-xs font-bold uppercase tracking-wider text-[#A16207]'>Đánh giá</span>
-        <div className='mt-2 flex flex-col gap-3 md:flex-row md:items-end md:justify-between'>
-          <div>
-            <h2 className='font-display text-2xl font-extrabold text-[#1C1917]'>Nhận Xét &amp; Đánh Giá</h2>
-            <p className='mt-1 text-xs text-[#786C60]'>{reviews.length} nhận xét</p>
+          <a href='#reviews' className='mt-4 inline-flex items-center gap-2 text-sm text-ink-600 hover:text-ink-950'>
+            <Stars value={product.rating_number || reviewStats.avg} />
+            <span className='font-semibold text-ink-950'>{(product.rating_number || reviewStats.avg || 0).toFixed(1)}</span>
+            <span>· {reviews.length} đánh giá</span>
+          </a>
+
+          <div className='mt-6 flex items-end gap-3'>
+            <span className='font-display text-4xl font-bold text-ink-950'>{money(product.price)}</span>
+            <span className={cn('chip mb-1', isOutOfStock ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-800')}>
+              <span className={cn('h-1.5 w-1.5 rounded-full', isOutOfStock ? 'bg-rose-500' : 'bg-emerald-500')} aria-hidden />
+              {isOutOfStock ? 'Hết hàng' : product.quantity <= 5 ? `Chỉ còn ${product.quantity}` : 'Còn hàng'}
+            </span>
           </div>
-          {product.rating_number ? (
-            <div className='inline-flex items-center gap-1 rounded-full bg-[#FAF7F2] border border-[#E7E0D8] px-4 py-1.5 text-sm font-bold text-[#1C1917]'>
-              <Star size={15} className='fill-amber-400 text-amber-400' />
-              {Number(product.rating_number).toFixed(1)}
+
+          {isOverStock ? <Alert className='mt-5' variant='warning' title='Vượt tồn kho' desc={`Chỉ còn ${product.quantity} sản phẩm.`} /> : null}
+
+          {!isOutOfStock ? (
+            <div className='mt-8'>
+              <span className='field-label'>Số lượng</span>
+              <div className='inline-flex h-12 items-center rounded-full border-[1.5px] border-ink-200 bg-white px-1'>
+                <button
+                  type='button'
+                  onClick={() => setQty((q) => Math.max(1, q - 1))}
+                  disabled={qty <= 1}
+                  className='grid h-10 w-10 cursor-pointer place-items-center rounded-full hover:bg-ink-100 disabled:opacity-30'
+                  aria-label='Giảm số lượng'
+                >
+                  <Minus size={16} />
+                </button>
+                <span className='w-10 text-center font-semibold' aria-live='polite'>
+                  {qty}
+                </span>
+                <button
+                  type='button'
+                  onClick={() => setQty((q) => Math.min(product.quantity, q + 1))}
+                  disabled={qty >= product.quantity}
+                  className='grid h-10 w-10 cursor-pointer place-items-center rounded-full hover:bg-ink-100 disabled:opacity-30'
+                  aria-label='Tăng số lượng'
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
             </div>
           ) : null}
+
+          <div className='mt-6 hidden gap-3 sm:flex'>
+            <Button variant='accent' size='lg' className='flex-1' disabled={!canBuy} onClick={handleBuyNow}>
+              <Zap size={18} /> Mua ngay
+            </Button>
+            <Button variant='primary' size='lg' className='flex-1' disabled={!canBuy} loading={adding} onClick={handleAddToCart}>
+              <ShoppingBag size={18} /> Thêm vào giỏ
+            </Button>
+            <button
+              type='button'
+              onClick={() => toggleWishlist(product)}
+              aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
+              aria-pressed={isFavorited}
+              className={cn(
+                'grid h-[3.25rem] w-[3.25rem] shrink-0 cursor-pointer place-items-center rounded-full border-[1.5px] transition',
+                isFavorited ? 'border-berry-300 bg-berry-50 text-berry-600' : 'border-ink-200 text-ink-700 hover:border-ink-950'
+              )}
+            >
+              <Heart size={20} className={cn(isFavorited && 'fill-current')} />
+            </button>
+          </div>
+
+          <dl className='mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-3xl bg-ink-100 ring-1 ring-ink-100'>
+            {specs.map((s) => (
+              <div key={s.label} className='bg-white p-4'>
+                <dt className='text-xs text-ink-500'>{s.label}</dt>
+                <dd className='mt-0.5 font-semibold text-ink-950'>{s.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className='mt-4 flex items-center gap-3 rounded-3xl bg-lilac-50 p-4 text-sm text-ink-700'>
+            <Package size={20} className='shrink-0 text-lilac-700' aria-hidden />
+            Phí vận chuyển được tính chính xác theo địa chỉ ở bước thanh toán.
+          </div>
+        </motion.div>
+      </div>
+
+      {/* description */}
+      {product.description ? (
+        <section className='mt-16 grid gap-6 border-t border-ink-100 pt-10 lg:grid-cols-[280px_1fr]'>
+          <h2 className='font-display text-2xl font-bold'>Mô tả sản phẩm</h2>
+          <div className='max-w-3xl space-y-4 text-[15px] leading-relaxed text-ink-700'>
+            {product.description.split('\n').filter(Boolean).map((p, i) => (
+              <p key={i}>{p}</p>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* reviews */}
+      <section id='reviews' className='mt-16 scroll-mt-36 grid gap-10 border-t border-ink-100 pt-10 lg:grid-cols-[280px_1fr]'>
+        <div>
+          <h2 className='font-display text-2xl font-bold'>Đánh giá</h2>
+          <div className='mt-4 flex items-end gap-2'>
+            <span className='font-display text-6xl font-bold leading-none'>{reviewStats.avg ? reviewStats.avg.toFixed(1) : '–'}</span>
+            <span className='pb-1 text-sm text-ink-500'>/ 5</span>
+          </div>
+          <div className='mt-2'>
+            <Stars value={reviewStats.avg} size={16} />
+          </div>
+          <p className='mt-1 text-sm text-ink-500'>{reviews.length} đánh giá</p>
+          <div className='mt-5 space-y-1.5'>
+            {[5, 4, 3, 2, 1].map((n) => {
+              const count = reviewStats.counts[n - 1]
+              const pct = reviews.length ? (count / reviews.length) * 100 : 0
+              return (
+                <div key={n} className='flex items-center gap-2 text-xs text-ink-600'>
+                  <span className='w-3'>{n}</span>
+                  <div className='h-2 flex-1 overflow-hidden rounded-full bg-ink-100'>
+                    <div className='h-full rounded-full bg-peach-500' style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className='w-6 text-right'>{count}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
-        <div className='mt-6 grid gap-6 lg:grid-cols-[1fr_380px]'>
+        <div className='grid gap-6 xl:grid-cols-[1fr_360px]'>
           <div className='space-y-3'>
             {reviews.length === 0 ? (
-              <div className='rounded-2xl border border-dashed border-[#E7E0D8] p-8 text-sm font-medium text-[#786C60] text-center bg-[#FAF7F2]'>
-                Chưa có đánh giá nào cho sản phẩm này.
+              <div className='flex flex-col items-center rounded-3xl border border-dashed border-ink-200 p-10 text-center'>
+                <MessageSquareText size={28} className='text-ink-300' aria-hidden />
+                <p className='mt-3 font-semibold'>Chưa có đánh giá</p>
+                <p className='mt-1 text-sm text-ink-500'>Hãy là người đầu tiên chia sẻ trải nghiệm.</p>
               </div>
             ) : (
               reviews.map((review) => (
-                <article key={review._id} className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs'>
-                  <div className='flex items-center justify-between gap-3'>
-                    <p className='font-display font-bold text-[#1C1917]'>{review.customer_name}</p>
-                    <span className='inline-flex items-center gap-1 text-xs font-bold text-amber-700 bg-white border border-[#E7E0D8] px-3 py-1 rounded-full'>
-                      <Star size={13} className='fill-amber-400 text-amber-400' />
-                      {review.rating} / 5
+                <article key={review._id} className='rounded-3xl bg-white p-5 ring-1 ring-ink-100'>
+                  <div className='flex items-center gap-3'>
+                    <span aria-hidden className='grid h-10 w-10 place-items-center rounded-full bg-berry-100 font-display font-bold text-berry-700'>
+                      {(review.customer_name || '?').charAt(0).toUpperCase()}
                     </span>
+                    <div className='min-w-0 flex-1'>
+                      <p className='truncate font-semibold'>{review.customer_name}</p>
+                      <Stars value={review.rating} size={12} />
+                      <span className='sr-only'>{review.rating} trên 5 sao</span>
+                    </div>
                   </div>
-                  <p className='mt-2 text-xs leading-relaxed text-[#594D42]'>{review.comment}</p>
+                  <p className='mt-3 text-sm leading-relaxed text-ink-700'>{review.comment}</p>
                 </article>
               ))
             )}
           </div>
 
-          {/* Review Form */}
-          <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-6 shadow-xs'>
-            <h3 className='font-display font-bold text-[#1C1917] text-base mb-4'>Gửi nhận xét của bạn</h3>
+          <div className='h-fit rounded-3xl bg-ink-950 p-6 text-white'>
+            <h3 className='font-display text-xl font-bold'>Viết đánh giá</h3>
             {getToken() ? (
-              <div className='space-y-4'>
-                <div>
-                  <label className='block text-xs font-bold text-[#594D42] mb-2 uppercase tracking-wider'>Đánh giá chất lượng</label>
-                  <div className='flex items-center gap-2'>
-                    <div className='flex items-center gap-1'>
-                      {[1, 2, 3, 4, 5].map((starIndex) => (
-                        <button
-                          key={starIndex}
-                          type='button'
-                          onClick={() => setReviewRating(starIndex)}
-                          onMouseEnter={() => setHoverRating(starIndex)}
-                          onMouseLeave={() => setHoverRating(null)}
-                          className='p-1 transition duration-150 transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                        >
-                          <Star
-                            size={24}
-                            className={cn(
-                              starIndex <= activeStarCount
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'fill-[#E7E0D8] text-[#E7E0D8]'
-                            )}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                    <span className='text-xs font-bold text-[#A16207] ml-1'>
-                      {RATING_LABELS[activeStarCount]} ({activeStarCount} sao)
-                    </span>
+              <div className='mt-4 space-y-4'>
+                <fieldset>
+                  <legend className='text-sm text-ink-300'>Bạn chấm mấy sao?</legend>
+                  <div className='mt-2 flex items-center gap-1' onMouseLeave={() => setHoverRating(null)}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type='button'
+                        onClick={() => setReviewRating(n)}
+                        onMouseEnter={() => setHoverRating(n)}
+                        aria-label={`${n} sao – ${RATING_LABELS[n]}`}
+                        aria-pressed={reviewRating === n}
+                        className='cursor-pointer p-1 transition hover:scale-110'
+                      >
+                        <Star size={26} className={n <= activeStarCount ? 'fill-peach-300 text-peach-300' : 'fill-white/15 text-white/15'} />
+                      </button>
+                    ))}
+                    <span className='ml-2 text-sm font-semibold text-peach-200'>{RATING_LABELS[activeStarCount]}</span>
                   </div>
-                </div>
-
-                <div>
-                  <label className='block text-xs font-bold text-[#594D42] mb-2 uppercase tracking-wider'>Nội dung nhận xét</label>
+                </fieldset>
+                <label className='block'>
+                  <span className='text-sm text-ink-300'>Cảm nhận của bạn</span>
                   <textarea
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     rows={4}
-                    placeholder='Chia sẻ trải nghiệm và cảm nhận của bạn về sản phẩm...'
-                    className='w-full rounded-xl border border-[#E7E0D8] bg-white p-3.5 text-xs text-[#1C1917] outline-none transition focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
+                    maxLength={1000}
+                    placeholder='Kết cấu, mùi hương, hiệu quả sau khi dùng…'
+                    className='mt-2 w-full rounded-2xl border-[1.5px] border-white/15 bg-white/5 p-3.5 text-sm text-white outline-none placeholder:text-ink-400 focus:border-berry-300'
                   />
-                </div>
-
-                <button
-                  type='button'
-                  onClick={handleSubmitReview}
-                  disabled={reviewLoading || !reviewComment.trim()}
-                  className='h-11 w-full rounded-full bg-[#1C1917] text-xs font-bold uppercase tracking-widest text-white shadow-sm transition hover:bg-[#A16207] disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                >
-                  {reviewLoading ? 'Đang gửi...' : 'Gửi Đánh Giá Ngay'}
-                </button>
+                </label>
+                <Button variant='accent' full loading={reviewLoading} disabled={!reviewComment.trim()} onClick={handleSubmitReview}>
+                  Gửi đánh giá
+                </Button>
               </div>
             ) : (
-              <div className='text-xs leading-relaxed text-[#594D42]'>
-                Bạn cần{' '}
-                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-bold text-[#A16207] hover:underline'>
+              <p className='mt-3 text-sm leading-relaxed text-ink-300'>
+                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-semibold text-lime-300 hover:underline'>
                   Đăng nhập
                 </Link>{' '}
-                để viết đánh giá sản phẩm này.
-              </div>
+                để chia sẻ trải nghiệm về sản phẩm này.
+              </p>
             )}
           </div>
         </div>
-      </motion.section>
+      </section>
+
+      {relatedProducts.length ? (
+        <section className='mt-16 border-t border-ink-100 pt-10'>
+          <h2 className='font-display text-2xl font-bold md:text-3xl'>Có thể bạn cũng thích</h2>
+          <div className='mt-6 grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-4 md:gap-x-5'>
+            {relatedProducts.map((p, i) => (
+              <ProductCard key={p._id} product={p} tint={CARD_TINTS[i % CARD_TINTS.length]} />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* mobile sticky buy bar (sits above the dock) */}
+      <div className='fixed inset-x-3 bottom-[5.25rem] z-40 flex gap-2 rounded-full bg-white p-1.5 shadow-lift ring-1 ring-ink-100 sm:hidden'>
+        <button
+          type='button'
+          onClick={() => toggleWishlist(product)}
+          aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
+          aria-pressed={isFavorited}
+          className={cn('grid h-12 w-12 shrink-0 cursor-pointer place-items-center rounded-full', isFavorited ? 'text-berry-600' : 'text-ink-700')}
+        >
+          <Heart size={20} className={cn(isFavorited && 'fill-current')} />
+        </button>
+        <Button variant='primary' className='flex-1' disabled={!canBuy} loading={adding} onClick={handleAddToCart}>
+          Thêm giỏ
+        </Button>
+        <Button variant='accent' className='flex-1' disabled={!canBuy} onClick={handleBuyNow}>
+          Mua ngay
+        </Button>
+      </div>
     </div>
   )
 }

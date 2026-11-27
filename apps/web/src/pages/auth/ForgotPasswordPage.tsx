@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
             <MailCheck size={30} />
           </span>
           <h2 className='mt-5 text-2xl font-black tracking-tight text-ink-950'>Kiểm tra email của bạn</h2>
-          <p className='mt-2 text-sm leading-6 text-slate-500'>
+          <p className='mt-2 text-sm leading-6 text-ink-500'>
             Chúng tôi đã gửi link đặt lại mật khẩu tới <span className='font-black text-ink-900'>{email.trim()}</span>.
             Link có hiệu lực trong thời gian giới hạn.
           </p>
@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Quên mật khẩu</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Nhập email để nhận link đặt lại mật khẩu.</p>
+        <p className='mt-2 text-sm leading-6 text-ink-500'>Nhập email để nhận link đặt lại mật khẩu.</p>
       </div>
 
       <form className='space-y-4' onSubmit={handleSubmit} noValidate>
@@ -106,7 +106,7 @@ export default function ForgotPasswordPage() {
 
         <Alert variant='info' title='Tip' desc='Nếu không thấy email, hãy kiểm tra Spam / Junk hoặc thử gửi lại sau vài phút.' />
 
-        <p className='text-center text-sm text-slate-500'>
+        <p className='text-center text-sm text-ink-500'>
           Quay lại{' '}
           <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
             Đăng nhập

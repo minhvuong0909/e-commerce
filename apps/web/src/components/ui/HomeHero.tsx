@@ -1,236 +1,156 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ChevronLeft, ChevronRight, Droplets, Leaf, Pause, Play, ShieldCheck, Sparkles, Sun, Tag } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
+import { ArrowRight, ArrowUpRight, Star } from 'lucide-react'
+import { useProducts } from '../../hooks/useProducts'
+import { ROUTE_PATHS } from '../../routes/route.paths'
+import { formatImageUrl } from '../../utils/formatImageUrl'
+import money from '../../utils/money'
+import { easeOut } from '../../constants/motion'
 
-interface SlideItem {
-  id: number
-  badge: string
-  badgeIcon: React.ElementType
-  title: string
-  highlightTitle?: string
-  description: string
-  buttonText: string
-  buttonLink: string
-  image: string
-  footerIcon1: React.ElementType
-  footerText1: string
-  footerIcon2: React.ElementType
-  footerText2: string
-  cardIcon: React.ElementType
-  cardTitle: string
-  cardSub: string
-}
+const searchHref = (q: string) => `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(q)}#shop`
 
-const HERO_SLIDES: SlideItem[] = [
-  {
-    id: 1,
-    badge: 'Skincare & Natural Routine',
-    badgeIcon: Sparkles,
-    title: 'Làn da dịu nhẹ,',
-    highlightTitle: 'vẻ đẹp tự nhiên.',
-    description: 'Một chút chăm sóc mỗi ngày. Khám phá những sản phẩm chuẩn chuyên gia nuôi dưỡng vẻ đẹp thuần khiết.',
-    buttonText: 'Khám phá ngay',
-    buttonLink: '#new-arrivals',
-    image: '/images/hero_slide_routine.jpg',
-    footerIcon1: Leaf,
-    footerText1: 'Thành phần hữu cơ lành tính',
-    footerIcon2: ShieldCheck,
-    footerText2: 'Minh bạch nguồn gốc 100%',
-    cardIcon: Droplets,
-    cardTitle: 'Chăm da từ những điều giản dị',
-    cardSub: 'Làm sạch · Dưỡng ẩm · Bảo vệ'
-  },
-  {
-    id: 2,
-    badge: 'Ưu đãi đặc biệt mùa hè',
-    badgeIcon: Sun,
-    title: 'Bảo vệ toàn diện,',
-    highlightTitle: 'mùa hè không lo.',
-    description: 'Bảo vệ làn da trước tia UV với dòng kem chống nắng quang phổ rộng, thẩm thấu nhanh, không nhờn rít. Tặng mã giảm 15% cho đơn đầu tiên.',
-    buttonText: 'Săn Deal Chống Nắng',
-    buttonLink: '#featured-products',
-    image: '/images/hero_slide_sunscreen.jpg',
-    footerIcon1: ShieldCheck,
-    footerText1: 'Chỉ số SPF 50+ PA++++',
-    footerIcon2: Tag,
-    footerText2: 'Freeship đơn từ 299k',
-    cardIcon: Sun,
-    cardTitle: 'Chống nắng quang phổ rộng',
-    cardSub: 'Mỏng nhẹ · Không bóng nhờn · Kháng nước'
-  },
-  {
-    id: 3,
-    badge: 'Làm sạch chuyên sâu',
-    badgeIcon: Leaf,
-    title: 'Sạch lỗ chân lông,',
-    highlightTitle: 'da sáng mịn màng.',
-    description: 'Combo bộ ba Tẩy trang - Sữa rửa mặt - Toner cấp ẩm dịu nhẹ giúp cân bằng độ pH tự nhiên và thu nhỏ lỗ chân lông hiệu quả.',
-    buttonText: 'Xem Bộ Routine',
-    buttonLink: '#featured-products',
-    image: '/images/cleanser-routine-essentials.jpg',
-    footerIcon1: Droplets,
-    footerText1: 'Cấp ẩm tức thì 24H',
-    footerIcon2: ShieldCheck,
-    footerText2: 'Không chứa cồn & Paraben',
-    cardIcon: Sparkles,
-    cardTitle: 'Routine Làm Sạch Đạt Chuẩn',
-    cardSub: 'Dịu nhẹ cho mọi loại da, kể cả da nhạy cảm'
-  }
-]
-
+/** Bento hero: brand statement + live best-seller + two shortcut tiles. */
 export default function HomeHero() {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
+  const reduce = useReducedMotion()
+  const { data } = useProducts(1, 1, { sort: 'best_selling' })
+  const star = data?.products?.[0]
+  const totalProducts = data?.pagination?.totalItems
+  const starImg = star
+    ? formatImageUrl(
+        star.thumbnail || (typeof star.medias?.[0] === 'string' ? (star.medias[0] as string) : (star.medias?.[0] as { url?: string })?.url)
+      )
+    : undefined
 
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length)
-  }, [])
-
-  const handlePrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)
-  }, [])
-
-  useEffect(() => {
-    if (isPaused) return
-    const timer = setInterval(handleNext, 5000)
-    return () => clearInterval(timer)
-  }, [handleNext, isPaused])
-
-  const slide = HERO_SLIDES[currentIndex]
-  const BadgeIcon = slide.badgeIcon
-  const FooterIcon1 = slide.footerIcon1
-  const FooterIcon2 = slide.footerIcon2
-  const CardIcon = slide.cardIcon
+  const rise = (delay = 0) =>
+    reduce
+      ? {}
+      : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.6, delay, ease: easeOut } }
 
   return (
-    <section className='bg-[#FAF7F2] px-4 py-6 md:px-6 md:py-8'>
-      <div
-        className='group relative mx-auto grid max-w-7xl items-center gap-8 overflow-hidden rounded-[32px] border border-[#E7E0D8] bg-[#FFFFFF] p-6 shadow-soft md:grid-cols-[1.1fr_0.9fr] md:p-10 lg:gap-14 lg:p-14'
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onFocus={() => setIsPaused(true)}
-        onBlur={() => setIsPaused(false)}
-      >
-        {/* Left text column */}
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={slide.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.35 }}
-          >
-            <p className='inline-flex items-center gap-2 rounded-full border border-[#E7E0D8] bg-[#FAF7F2] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#A16207]'>
-              <BadgeIcon size={14} className='text-[#A16207]' />
-              <span>{slide.badge}</span>
-            </p>
+    <section className='px-4 pt-4 md:px-6 md:pt-6'>
+      <div className='mx-auto grid max-w-[1320px] gap-3 md:gap-4 lg:grid-cols-12 lg:grid-rows-[auto_auto]'>
+        {/* statement */}
+        <motion.div
+          {...rise(0)}
+          className='relative overflow-hidden rounded-4xl bg-ink-950 p-7 text-white sm:p-10 lg:col-span-7 lg:row-span-2 lg:p-14'
+        >
+          <div aria-hidden className='pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-berry-500/40 blur-3xl' />
+          <div aria-hidden className='pointer-events-none absolute -bottom-32 left-10 h-72 w-72 rounded-full bg-lilac-500/30 blur-3xl' />
 
-            <h1 className='mt-6 font-display text-4xl font-extrabold leading-[1.12] tracking-tight text-[#1C1917] sm:text-5xl lg:text-6xl'>
-              {slide.title}<br />
-              <span className='italic font-serif text-[#A16207]'>{slide.highlightTitle}</span>
+          <div className='relative flex h-full flex-col'>
+            <span className='chip w-fit bg-white/10 text-lime-200'>
+              <span className='h-1.5 w-1.5 rounded-full bg-lime-300' aria-hidden /> Skincare · Makeup · Body
+            </span>
+
+            <h1 className='mt-6 font-display text-[2.75rem] font-extrabold leading-[0.95] sm:text-6xl lg:text-[5.25rem]'>
+              Glow theo
+              <br />
+              cách của{' '}
+              <span className='relative inline-block'>
+                <span className='bg-gradient-to-r from-berry-300 via-berry-200 to-lilac-200 bg-clip-text text-transparent'>bạn.</span>
+                <svg aria-hidden viewBox='0 0 200 20' className='absolute -bottom-2 left-0 w-full text-lime-300' preserveAspectRatio='none'>
+                  <path d='M2 14 C 50 2, 150 2, 198 12' stroke='currentColor' strokeWidth='5' fill='none' strokeLinecap='round' />
+                </svg>
+              </span>
             </h1>
 
-            <p className='mt-5 max-w-md text-sm leading-relaxed text-[#594D42] md:text-base'>
-              {slide.description}
+            <p className='mt-6 max-w-md text-base leading-relaxed text-ink-300 sm:text-lg'>
+              Chọn đúng sản phẩm cho từng bước routine — từ làm sạch, serum đến chống nắng. Mua nhanh, giao tận nơi.
             </p>
 
-            <div className='mt-8 flex flex-wrap items-center gap-3.5'>
+            <div className='mt-8 flex flex-wrap gap-3'>
               <a
-                href={slide.buttonLink}
-                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1C1917] px-8 text-sm font-bold text-[#FAF7F2] shadow-sm transition-all duration-300 hover:bg-[#A16207] hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] focus-visible:ring-offset-2'
+                href='#shop'
+                className='inline-flex h-[3.25rem] items-center gap-2 rounded-full bg-berry-500 px-7 font-semibold text-white shadow-glow transition hover:bg-berry-400'
               >
-                <span>{slide.buttonText}</span>
-                <ArrowRight size={16} />
+                Mua sắm ngay <ArrowRight size={18} />
               </a>
-
-              <button
-                type='button'
-                onClick={() => setIsPaused((p) => !p)}
-                className='inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#E7E0D8] bg-white text-[#594D42] transition hover:border-[#A16207] hover:text-[#1C1917] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                aria-label={isPaused ? 'Phát trình chiếu banner' : 'Tạm dừng trình chiếu banner'}
-                title={isPaused ? 'Tiếp tục tự động chuyển slide' : 'Tạm dừng tự động chuyển slide'}
+              <a
+                href='#routine'
+                className='inline-flex h-[3.25rem] items-center rounded-full border-[1.5px] border-white/25 px-7 font-semibold text-white transition hover:border-white hover:bg-white/5'
               >
-                {isPaused ? <Play size={16} /> : <Pause size={16} />}
-              </button>
+                Xây routine 4 bước
+              </a>
             </div>
 
-            <div className='mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#E7E0D8] pt-5 text-xs font-semibold text-[#786C60]'>
-              <span className='inline-flex items-center gap-2'>
-                <FooterIcon1 size={16} className='text-[#A16207]' />
-                <span>{slide.footerText1}</span>
-              </span>
-              <span className='inline-flex items-center gap-2'>
-                <FooterIcon2 size={16} className='text-[#A16207]' />
-                <span>{slide.footerText2}</span>
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Right image carousel */}
-        <div className='relative aspect-[4/3] w-full overflow-hidden rounded-2xl md:aspect-auto md:h-[420px] bg-[#F5EFE6] border border-[#E7E0D8]'>
-          <AnimatePresence mode='wait'>
-            <motion.div
-              key={slide.id}
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.4 }}
-              className='h-full w-full'
-            >
-              <img
-                src={slide.image}
-                alt={slide.title}
-                className='h-full w-full object-cover rounded-2xl shadow-sm'
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Floating spec badge card */}
-          <div className='absolute bottom-4 left-4 right-4 flex items-center gap-3 rounded-2xl border border-[#E7E0D8] bg-white/95 p-4 shadow-lg backdrop-blur-md'>
-            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-              <CardIcon size={21} />
-            </span>
-            <div className='min-w-0 flex-1'>
-              <p className='truncate text-xs font-bold text-[#1C1917]'>{slide.cardTitle}</p>
-              <p className='mt-0.5 truncate text-[11px] font-medium text-[#786C60]'>{slide.cardSub}</p>
+            <div className='mt-auto flex flex-wrap gap-x-10 gap-y-4 pt-12 text-sm text-ink-300'>
+              {totalProducts ? (
+                <div>
+                  <div className='font-display text-3xl font-bold text-white'>{totalProducts}+</div>
+                  sản phẩm đang bán
+                </div>
+              ) : null}
+              <div>
+                <div className='font-display text-3xl font-bold text-white'>3</div>
+                cách thanh toán
+              </div>
+              <div>
+                <div className='font-display text-3xl font-bold text-white'>24/7</div>
+                theo dõi đơn hàng
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Navigation arrows */}
-        <button
-          type='button'
-          onClick={handlePrev}
-          className='absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#1C1917] shadow-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#1C1917] hover:text-white z-10 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#A16207]'
-          aria-label='Slide trước'
+        {/* live best-seller */}
+        <motion.div {...rise(0.08)} className='relative min-h-[22rem] overflow-hidden rounded-4xl lg:col-span-5'>
+          <img
+            src='/images/hero_slide_routine.jpg'
+            alt='Routine chăm sóc da buổi sáng'
+            className='absolute inset-0 h-full w-full object-cover'
+            fetchPriority='high'
+          />
+          <div aria-hidden className='absolute inset-0 bg-gradient-to-t from-ink-950/60 via-transparent to-transparent' />
+          {star ? (
+            <Link
+              to={ROUTE_PATHS.USER_PRODUCT_DETAIL(star._id)}
+              className='group absolute inset-x-4 bottom-4 flex items-center gap-3 rounded-3xl bg-white/95 p-3 pr-4 shadow-lift backdrop-blur transition hover:bg-white sm:inset-x-auto sm:left-4 sm:max-w-sm motion-safe:animate-float'
+            >
+              <span className='h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-berry-50'>
+                {starImg ? <img src={starImg} alt='' className='h-full w-full object-contain p-1 mix-blend-multiply' /> : null}
+              </span>
+              <span className='min-w-0 flex-1'>
+                <span className='flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-berry-600'>
+                  <Star size={11} className='fill-current' aria-hidden /> Bán chạy nhất
+                </span>
+                <span className='mt-0.5 block truncate text-sm font-semibold text-ink-950'>{star.name}</span>
+                <span className='text-sm font-bold text-ink-950'>{money(star.price)}</span>
+              </span>
+              <ArrowUpRight size={18} className='shrink-0 text-ink-500 transition group-hover:text-berry-600' aria-hidden />
+            </Link>
+          ) : null}
+        </motion.div>
+
+        {/* shortcut tiles */}
+        <motion.a
+          {...rise(0.16)}
+          href={searchHref('chống nắng')}
+          className='group relative flex min-h-[12rem] flex-col justify-between overflow-hidden rounded-4xl bg-peach-200 p-6 lg:col-span-3'
         >
-          <ChevronLeft size={20} />
-        </button>
-
-        <button
-          type='button'
-          onClick={handleNext}
-          className='absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#1C1917] shadow-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#1C1917] hover:text-white z-10 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#A16207]'
-          aria-label='Slide sau'
+          <img
+            src='/images/spf-routine-essentials.png'
+            alt=''
+            aria-hidden
+            className='absolute -bottom-6 -right-6 h-40 w-40 object-contain transition duration-500 group-hover:-rotate-6 group-hover:scale-110'
+          />
+          <span className='chip w-fit bg-white/70 text-ink-950'>Mùa nắng</span>
+          <span className='relative font-display text-2xl font-bold leading-tight text-ink-950'>
+            Chống nắng
+            <br />
+            mỗi ngày
+          </span>
+        </motion.a>
+        <motion.a
+          {...rise(0.22)}
+          href={`${ROUTE_PATHS.USER_HOME}?sort=newest#shop`}
+          className='group relative flex min-h-[12rem] flex-col justify-between overflow-hidden rounded-4xl bg-lime-300 p-6 lg:col-span-2'
         >
-          <ChevronRight size={20} />
-        </button>
-
-        {/* Dots indicator */}
-        <div className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10'>
-          {HERO_SLIDES.map((s, idx) => (
-            <button
-              key={s.id}
-              type='button'
-              onClick={() => setCurrentIndex(idx)}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#A16207] ${
-                currentIndex === idx ? 'w-7 bg-[#A16207]' : 'w-2 bg-[#D6C8B8] hover:bg-[#786C60]'
-              }`}
-              aria-label={`Chuyển sang slide ${idx + 1}`}
-            />
-          ))}
-        </div>
+          <span className='chip w-fit bg-ink-950 text-lime-200'>New</span>
+          <span className='font-display text-2xl font-bold leading-tight text-ink-950'>Hàng mới về</span>
+          <span className='absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full bg-ink-950 text-white transition group-hover:rotate-45'>
+            <ArrowUpRight size={18} aria-hidden />
+          </span>
+        </motion.a>
       </div>
     </section>
   )

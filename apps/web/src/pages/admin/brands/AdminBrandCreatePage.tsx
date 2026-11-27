@@ -56,7 +56,7 @@ export default function AdminBrandCreatePage() {
         <div>
           <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Brand editor</p>
           <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>Tạo thương hiệu</h1>
-          <p className='mt-2 text-sm text-slate-500'>Thêm thương hiệu mới cho cửa hàng.</p>
+          <p className='mt-2 text-sm text-ink-500'>Thêm thương hiệu mới cho cửa hàng.</p>
         </div>
 
         <Link to={ROUTE_PATHS.ADMIN_BRANDS} className='text-sm font-black text-brand-600 hover:text-brand-900'>
@@ -108,7 +108,7 @@ export default function AdminBrandCreatePage() {
               value={form.desc}
               onChange={(e) => updateField('desc', e.target.value)}
               placeholder='Mô tả ngắn về thương hiệu...'
-              className='w-full resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition placeholder:text-slate-400 focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
+              className='w-full resize-none rounded-2xl border border-ink-200 bg-white px-4 py-3 text-sm font-semibold text-ink-950 outline-none transition placeholder:text-ink-400 focus:border-brand-500/[0.55] focus:ring-4 focus:ring-brand-500/10'
               required
             />
           </label>
@@ -120,7 +120,7 @@ export default function AdminBrandCreatePage() {
           </Button>
           <Link
             to={ROUTE_PATHS.ADMIN_BRANDS}
-            className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-slate-300 hover:shadow-card'
+            className='inline-flex min-h-12 items-center justify-center rounded-2xl border border-ink-200 bg-white px-5 text-sm font-bold text-ink-950 shadow-sm transition hover:border-ink-300 hover:shadow-card'
           >
             Hủy
           </Link>

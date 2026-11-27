@@ -34,20 +34,19 @@ export default function Input({
 
   const isPassword = type === 'password'
   const finalType = isPassword ? (showPass ? 'text' : 'password') : type
-
   const describedBy = error ? errorId : helperText ? helperId : undefined
 
   return (
-    <div className='space-y-1.5'>
+    <div>
       {label ? (
-        <label htmlFor={id} className='text-sm font-bold text-ink-900'>
+        <label htmlFor={id} className='field-label'>
           {label}
         </label>
       ) : null}
 
       <div className='relative'>
         {leftIcon ? (
-          <div className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400'>{leftIcon}</div>
+          <div className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-400'>{leftIcon}</div>
         ) : null}
 
         <input
@@ -60,11 +59,11 @@ export default function Input({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
           className={cn(
-            'premium-input',
-            leftIcon ? 'pl-11' : '',
-            rightSlot || isPassword ? 'pr-12' : '',
-            disabled ? 'cursor-not-allowed opacity-60' : '',
-            error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/15' : '',
+            'field',
+            leftIcon ? 'pl-11' : null,
+            rightSlot || isPassword ? 'pr-12' : null,
+            disabled && 'cursor-not-allowed bg-ink-50 opacity-70',
+            error && '!border-rose-400',
             className
           )}
           {...props}
@@ -74,12 +73,11 @@ export default function Input({
           <button
             type='button'
             onClick={() => setShowPass((s) => !s)}
-            className='absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-ink-950 focus:outline-none focus:ring-2 focus:ring-brand-500/40'
+            className='absolute right-1.5 top-1/2 grid h-10 w-10 -translate-y-1/2 cursor-pointer place-items-center rounded-full text-ink-500 transition hover:bg-ink-100 hover:text-ink-950'
             aria-label={showPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
             aria-pressed={showPass}
-            tabIndex={-1}
           >
-            {showPass ? <EyeOff size={17} /> : <Eye size={17} />}
+            {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         ) : null}
 
@@ -87,11 +85,11 @@ export default function Input({
       </div>
 
       {error ? (
-        <p id={errorId} role='alert' className='text-xs font-semibold text-rose-600'>
+        <p id={errorId} role='alert' className='mt-1.5 text-xs font-semibold text-rose-600'>
           {error}
         </p>
       ) : helperText ? (
-        <p id={helperId} className='text-xs font-medium text-slate-500'>
+        <p id={helperId} className='mt-1.5 text-xs text-ink-500'>
           {helperText}
         </p>
       ) : null}

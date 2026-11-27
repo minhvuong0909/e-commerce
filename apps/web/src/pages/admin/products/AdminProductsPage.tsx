@@ -35,7 +35,7 @@ function VisibilityBadge({ status }: { status?: number }) {
         'inline-flex rounded-full border px-3 py-1 text-xs font-black',
         isVisible
           ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          : 'border-slate-200 bg-slate-100 text-slate-500'
+          : 'border-ink-200 bg-ink-100 text-ink-500'
       )}
     >
       {isVisible ? 'Đang bán' : 'Đang ẩn'}
@@ -45,10 +45,10 @@ function VisibilityBadge({ status }: { status?: number }) {
 
 function SkeletonRow() {
   return (
-    <tr className='border-b border-slate-100'>
+    <tr className='border-b border-ink-100'>
       {[70, 40, 30, 25, 20].map((width, index) => (
         <td key={index} className='p-4'>
-          <div className='h-4 animate-pulse rounded-md bg-slate-100' style={{ width: `${width}%` }} />
+          <div className='h-4 animate-pulse rounded-md bg-ink-100' style={{ width: `${width}%` }} />
         </td>
       ))}
     </tr>
@@ -125,7 +125,7 @@ export default function AdminProductsPage() {
       <div className='space-y-5'>
         <div className='surface-card flex flex-col gap-3 rounded-3xl p-4 md:flex-row md:items-center md:justify-between'>
           <div className='relative w-full md:max-w-sm'>
-            <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
+            <Search size={16} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400' />
             <input
               value={search}
               onChange={(e) => {
@@ -139,7 +139,7 @@ export default function AdminProductsPage() {
 
           <div className='flex flex-col gap-2 sm:flex-row sm:items-center'>
             <div className='relative'>
-              <SlidersHorizontal size={15} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400' />
+              <SlidersHorizontal size={15} className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400' />
               <select
                 value={stockFilter}
                 onChange={(e) => {
@@ -159,7 +159,7 @@ export default function AdminProductsPage() {
             <button
               onClick={() => refetch()}
               disabled={isFetching}
-              className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50'
+              className='inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-ink-200 bg-white px-4 text-sm font-black text-ink-700 shadow-sm transition hover:bg-ink-50 disabled:opacity-50'
             >
               <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
               Làm mới
@@ -172,9 +172,9 @@ export default function AdminProductsPage() {
         <div className='surface-strong overflow-x-auto rounded-3xl'>
           <table className='w-full text-sm'>
             <thead>
-              <tr className='border-b border-slate-200 bg-slate-50/80'>
+              <tr className='border-b border-ink-200 bg-ink-50/80'>
                 {['Sản phẩm', 'Xuất xứ', 'Giá', 'Tồn kho', 'Hiển thị', 'Thao tác'].map((heading, index) => (
-                  <th key={heading} className={cn('px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-slate-400', index === 5 ? 'text-right' : 'text-left')}>
+                  <th key={heading} className={cn('px-5 py-4 text-xs font-black uppercase tracking-[0.12em] text-ink-400', index === 5 ? 'text-right' : 'text-left')}>
                     {heading}
                   </th>
                 ))}
@@ -186,7 +186,7 @@ export default function AdminProductsPage() {
 
               {!loading && products.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className='px-5 py-14 text-center text-sm font-semibold text-slate-500'>
+                  <td colSpan={6} className='px-5 py-14 text-center text-sm font-semibold text-ink-500'>
                     Không tìm thấy sản phẩm nào.
                   </td>
                 </tr>
@@ -198,27 +198,27 @@ export default function AdminProductsPage() {
                     const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
                     const imgUrl = product.thumbnail || mediaUrl
                     return (
-                      <tr key={product._id} className='border-b border-slate-100 transition hover:bg-slate-50/80 last:border-0'>
+                      <tr key={product._id} className='border-b border-ink-100 transition hover:bg-ink-50/80 last:border-0'>
                         <td className='px-5 py-4'>
                           <div className='flex items-center gap-3'>
-                            <div className='h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100'>
+                            <div className='h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-ink-200 bg-ink-100'>
                               {imgUrl ? (
                                 <img src={formatImageUrl(imgUrl)} alt={product.name} referrerPolicy='no-referrer' className='h-full w-full object-cover' />
                               ) : (
-                                <div className='flex h-full w-full items-center justify-center text-[10px] font-bold text-slate-400'>N/A</div>
+                                <div className='flex h-full w-full items-center justify-center text-[10px] font-bold text-ink-400'>N/A</div>
                               )}
                             </div>
 
                           <div className='min-w-0'>
                             <div className='truncate font-black text-ink-950'>{product.name}</div>
-                            <div className='mt-0.5 truncate font-mono text-xs font-semibold text-slate-400'>
+                            <div className='mt-0.5 truncate font-mono text-xs font-semibold text-ink-400'>
                               #{product._id.slice(-8).toUpperCase()}
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      <td className='px-5 py-4 font-semibold text-slate-500'>{product.origin}</td>
+                      <td className='px-5 py-4 font-semibold text-ink-500'>{product.origin}</td>
                       <td className='px-5 py-4 font-mono font-black text-ink-950'>{money(product.price)}</td>
                       <td className='px-5 py-4'>
                         <StockBadge quantity={product.quantity} />
@@ -234,7 +234,7 @@ export default function AdminProductsPage() {
                             className={cn(
                               'relative h-7 w-12 rounded-full border transition disabled:opacity-50',
                               product.status === 1
-                                ? 'border-slate-200 bg-slate-200'
+                                ? 'border-ink-200 bg-ink-200'
                                 : 'border-emerald-300 bg-emerald-500'
                             )}
                             aria-label={product.status === 1 ? 'Bật hiển thị sản phẩm' : 'Ẩn sản phẩm'}
@@ -242,7 +242,7 @@ export default function AdminProductsPage() {
                             <span
                               className={cn(
                                 'absolute top-1 grid h-5 w-5 place-items-center rounded-full bg-white text-[10px] shadow transition',
-                                product.status === 1 ? 'left-1 text-slate-400' : 'left-6 text-emerald-600'
+                                product.status === 1 ? 'left-1 text-ink-400' : 'left-6 text-emerald-600'
                               )}
                             >
                               {product.status === 1 ? <EyeOff size={11} /> : <Eye size={11} />}
@@ -255,7 +255,7 @@ export default function AdminProductsPage() {
                         <div className='flex items-center justify-end gap-2'>
                           <Link
                             to={`/admin/products/${product._id}/edit`}
-                            className='grid h-10 w-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-100 hover:text-ink-950'
+                            className='grid h-10 w-10 place-items-center rounded-xl border border-ink-200 bg-white text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
                             aria-label='Sửa sản phẩm'
                             title='Sửa'
                           >

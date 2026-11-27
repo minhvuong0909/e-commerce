@@ -120,14 +120,14 @@ export default function LoginPage() {
   return (
     <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
-        <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-[#E7E0D8] bg-[#FAF7F2] px-3.5 py-1 text-xs font-bold text-[#A16207]'>
+        <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-ink-50 px-3.5 py-1 text-xs font-bold text-berry-600'>
           <ShieldCheck size={14} />
           Bảo mật tài khoản
         </div>
-        <h2 className='font-display text-2xl font-extrabold tracking-tight text-[#1C1917]'>Đăng nhập</h2>
-        <p className='mt-2 text-xs leading-relaxed text-[#786C60]'>Chào mừng bạn quay lại. Đăng nhập để tiếp tục mua sắm các sản phẩm cao cấp.</p>
+        <h2 className='font-display text-4xl font-bold text-ink-950'>Đăng nhập</h2>
+        <p className='mt-2 text-[15px] leading-relaxed text-ink-600'>Chào mừng quay lại! Đăng nhập để tiếp tục mua sắm.</p>
         {redirectFrom ? (
-          <p className='mt-3 rounded-xl border border-amber-200/90 bg-amber-50 px-3.5 py-2.5 text-xs font-semibold text-amber-900'>
+          <p className='mt-3 rounded-xl border border-peach-200/90 bg-peach-50 px-3.5 py-2.5 text-xs font-semibold text-peach-900'>
             Bạn cần đăng nhập để mở trang yêu cầu.
           </p>
         ) : null}
@@ -149,7 +149,7 @@ export default function LoginPage() {
           value={forms.email}
           onChange={handleChange}
           error={errors.email}
-          leftIcon={<Mail size={16} className='text-[#A16207]' />}
+          leftIcon={<Mail size={16} className='text-berry-600' />}
         />
         <Input
           label='Mật khẩu'
@@ -160,35 +160,35 @@ export default function LoginPage() {
           value={forms.password}
           onChange={handleChange}
           error={errors.password}
-          leftIcon={<Lock size={16} className='text-[#A16207]' />}
+          leftIcon={<Lock size={16} className='text-berry-600' />}
         />
 
         <div className='flex items-center justify-between gap-4'>
-          <label className='flex cursor-pointer items-center gap-2 text-xs font-semibold text-[#44403C]'>
+          <label className='flex cursor-pointer items-center gap-2 text-xs font-semibold text-ink-700'>
             <input
               type='checkbox'
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className='h-4 w-4 rounded border-[#E7E0D8] accent-[#A16207]'
+              className='h-4 w-4 rounded border-ink-200 accent-berry-600'
             />
             Nhớ đăng nhập
           </label>
 
           <Link
             to={ROUTE_PATHS.AUTH_FORGOT_PASSWORD}
-            className='text-xs font-bold text-[#A16207] hover:underline'
+            className='text-xs font-bold text-berry-600 hover:underline'
           >
             Quên mật khẩu?
           </Link>
         </div>
 
-        <Button full variant='accent' type='submit' loading={loading} disabled={loading} className='!rounded-xl !py-3'>
+        <Button full variant='accent' type='submit' loading={loading} disabled={loading} size='lg'>
           Đăng nhập
         </Button>
 
         <div className='relative py-2'>
-          <div className='h-px w-full bg-[#E7E0D8]' />
-          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs font-medium text-[#786C60]'>
+          <div className='h-px w-full bg-ink-200' />
+          <div className='absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-canvas px-3 text-xs font-medium text-ink-500'>
             hoặc
           </div>
         </div>
@@ -196,19 +196,19 @@ export default function LoginPage() {
         <Button
           full
           type='button'
-          variant='outline'
+          variant='secondary'
+          size='lg'
           onClick={handleLoginGoogle}
           loading={googleLoading}
           disabled={googleLoading}
-          className='!rounded-xl !border-[#E7E0D8] !text-[#1C1917] hover:!bg-[#FAF7F2]'
         >
           <GoogleIcon />
           Đăng nhập với Google
         </Button>
 
-        <p className='pt-1 text-center text-xs text-[#786C60]'>
+        <p className='pt-1 text-center text-sm text-ink-600'>
           Chưa có tài khoản?{' '}
-          <Link to={ROUTE_PATHS.AUTH_REGISTER} className='font-bold text-[#A16207] hover:underline'>
+          <Link to={ROUTE_PATHS.AUTH_REGISTER} className='font-bold text-berry-600 hover:underline'>
             Đăng ký ngay
           </Link>
         </p>

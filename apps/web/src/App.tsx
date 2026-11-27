@@ -88,9 +88,9 @@ function ScrollToTop() {
 
 function PageLoadingFallback() {
   return (
-    <div className='flex min-h-[50vh] flex-col items-center justify-center space-y-3 py-16 text-[#b07a72]'>
-      <div className='h-9 w-9 animate-spin rounded-full border-3 border-current border-t-transparent' />
-      <p className='text-xs font-medium tracking-wide text-[#786452] animate-pulse'>Đang tải nội dung...</p>
+    <div className='flex min-h-[50vh] flex-col items-center justify-center gap-3 py-16 text-berry-600' role='status'>
+      <div className='h-9 w-9 animate-spin rounded-full border-[3px] border-current border-t-transparent' />
+      <p className='text-sm text-ink-500'>Đang tải…</p>
     </div>
   )
 }
@@ -101,7 +101,7 @@ export default function App() {
       <ScrollToTop />
       <AuthBootstrap />
       <AuthNoticeListener />
-      <Toaster richColors position='top-right' />
+      <Toaster richColors position='top-center' toastOptions={{ style: { borderRadius: '1rem', fontFamily: 'inherit' } }} />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
