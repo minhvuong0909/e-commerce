@@ -129,10 +129,7 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            <Route
-              path={ROUTE_SEGMENTS.USER_CHECKOUT}
-              element={<CheckoutPage />}
-            />
+            <Route path={ROUTE_SEGMENTS.USER_CHECKOUT} element={<CheckoutPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_ORDERS}
               element={
@@ -149,14 +146,7 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            <Route
-              path={ROUTE_SEGMENTS.USER_ORDER_RESULT}
-              element={
-                <RequireAuth>
-                  <OrderResultPage />
-                </RequireAuth>
-              }
-            />
+            <Route path={ROUTE_SEGMENTS.USER_ORDER_RESULT} element={<OrderResultPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_PROFILE}
               element={
@@ -294,5 +284,3 @@ export default function App() {
     </BrowserRouter>
   )
 }
-
-// Touch comment to trigger reload

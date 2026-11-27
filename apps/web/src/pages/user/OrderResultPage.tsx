@@ -94,6 +94,7 @@ export default function OrderResultPage() {
   const paymentMethod = searchParams.get('paymentMethod') || 'MOMO'
   const amountValue = Number(amountStr)
   const paymentMethodLabel = (() => {
+    if (paymentMethod === 'COD') return 'Thanh toán khi nhận hàng'
     if (paymentMethod === 'PAYPAL') return 'PayPal'
     if (paymentMethod === 'PAYOS') return 'PayOS'
     return 'Ví MoMo'

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -29,41 +30,44 @@ import money from '../../utils/money'
 import cn from '../../utils/cn'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const EMPTY_PRODUCTS: Product[] = []
+const EMPTY_ORDERS: OrderApiResponse[] = []
+
+async function loadDashboardData() {
+  const [ordersRes, productsRes] = await Promise.all([
+    getAllOrdersApi(ORDER_LIMIT, PAGE),
+    getAllProductsApi(PRODUCT_LIMIT, PAGE)
+  ])
+  return {
+    orders: (ordersRes.data.result ?? EMPTY_ORDERS) as OrderApiResponse[],
+    products: (productsRes.data.result ?? EMPTY_PRODUCTS) as Product[]
+  }
+}
 
 function formatShortDate(date: Date) {
   return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
 }
 
 export default function AdminDashboardPage() {
-  const [products, setProducts] = useState<Product[]>([])
-  const [orders, setOrders] = useState<OrderApiResponse[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'inventory'>('analytics')
-  const [lastUpdated, setLastUpdated] = useState<string>('')
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const [ordersRes, productsRes] = await Promise.all([
-        getAllOrdersApi(ORDER_LIMIT, PAGE),
-        getAllProductsApi(PRODUCT_LIMIT, PAGE)
-      ])
-      setOrders(ordersRes?.data?.result ?? [])
-      setProducts(productsRes?.data?.result ?? [])
-      setLastUpdated(new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))
-    } catch (err) {
-      setError('Không thể tải dữ liệu báo cáo dashboard. Vui lòng kiểm tra lại kết nối server.')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchDashboardData()
-  }, [])
+  const {
+    data,
+    isFetching: loading,
+    isError,
+    refetch,
+    dataUpdatedAt
+  } = useQuery({
+    queryKey: ['admin-dashboard', ORDER_LIMIT, PRODUCT_LIMIT, PAGE],
+    queryFn: loadDashboardData,
+    retry: false
+  })
+  const products = data?.products ?? EMPTY_PRODUCTS
+  const orders = data?.orders ?? EMPTY_ORDERS
+  const error = isError ? 'Không thể tải dữ liệu báo cáo dashboard. Vui lòng kiểm tra lại kết nối server.' : null
+  const lastUpdated = dataUpdatedAt
+    ? new Date(dataUpdatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    : ''
+  const fetchDashboardData = () => void refetch()
 
   // KPI Calculations
   const stats = useMemo(() => {
@@ -114,10 +118,7 @@ export default function AdminDashboardPage() {
 
   // Recent Orders
   const recentOrders = useMemo(
-    () =>
-      [...orders]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 7),
+    () => [...orders].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 7),
     [orders]
   )
 
@@ -161,18 +162,12 @@ export default function AdminDashboardPage() {
 
   // Top selling products
   const topSelling = useMemo(
-    () =>
-      [...products]
-        .sort((a, b) => (b.soldNumber || 0) - (a.soldNumber || 0))
-        .slice(0, 6),
+    () => [...products].sort((a, b) => (b.soldNumber || 0) - (a.soldNumber || 0)).slice(0, 6),
     [products]
   )
 
   // Total 7-day revenue
-  const total7DayRevenue = useMemo(
-    () => revenueChart.reduce((sum, day) => sum + day.revenue, 0),
-    [revenueChart]
-  )
+  const total7DayRevenue = useMemo(() => revenueChart.reduce((sum, day) => sum + day.revenue, 0), [revenueChart])
 
   // Best Revenue Day
   const bestDay = useMemo(() => {
@@ -290,9 +285,7 @@ export default function AdminDashboardPage() {
                   <span className='text-[10px] font-extrabold uppercase tracking-wider text-slate-400'>
                     {card.label}
                   </span>
-                  <h3 className='font-mono text-2xl font-black tracking-tight text-slate-900 truncate'>
-                    {card.value}
-                  </h3>
+                  <h3 className='font-mono text-2xl font-black tracking-tight text-slate-900 truncate'>{card.value}</h3>
                   <p className='text-xs text-slate-500 font-medium truncate'>{card.sub}</p>
                 </div>
 
@@ -331,9 +324,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('analytics')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'analytics'
-                ? 'bg-white text-[#2B2118] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'analytics' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
             )}
           >
             <BarChart3 size={15} />
@@ -345,9 +336,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('orders')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'orders'
-                ? 'bg-white text-[#2B2118] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'orders' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
             )}
           >
             <ShoppingBag size={15} />
@@ -359,9 +348,7 @@ export default function AdminDashboardPage() {
             onClick={() => setActiveTab('inventory')}
             className={cn(
               'flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all',
-              activeTab === 'inventory'
-                ? 'bg-white text-[#2B2118] shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+              activeTab === 'inventory' ? 'bg-white text-[#2B2118] shadow-xs' : 'text-slate-600 hover:text-slate-900'
             )}
           >
             <Layers size={15} />
@@ -399,9 +386,7 @@ export default function AdminDashboardPage() {
                   <span className='text-[10px] font-bold uppercase tracking-wider text-slate-400 block'>
                     Tổng 7 Ngày
                   </span>
-                  <span className='font-mono text-base font-black text-[#C47A5A]'>
-                    {money(total7DayRevenue)}
-                  </span>
+                  <span className='font-mono text-base font-black text-[#C47A5A]'>{money(total7DayRevenue)}</span>
                 </div>
               </div>
             </div>
@@ -438,8 +423,7 @@ export default function AdminDashboardPage() {
 
               const linePath = buildPath(pts)
               const areaPath =
-                linePath +
-                ` L ${pts[pts.length - 1].x} ${PAD_TOP + innerH} L ${pts[0].x} ${PAD_TOP + innerH} Z`
+                linePath + ` L ${pts[pts.length - 1].x} ${PAD_TOP + innerH} L ${pts[0].x} ${PAD_TOP + innerH} Z`
 
               // Y-axis gridlines
               const gridLines = [0, 0.25, 0.5, 0.75, 1].map((ratio) => ({
@@ -449,11 +433,7 @@ export default function AdminDashboardPage() {
 
               return (
                 <div className='relative rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 p-2 overflow-hidden'>
-                  <svg
-                    viewBox={`0 0 ${CHART_W} ${CHART_H}`}
-                    className='w-full'
-                    style={{ height: '210px' }}
-                  >
+                  <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className='w-full' style={{ height: '210px' }}>
                     <defs>
                       <linearGradient id='areaGrad' x1='0' y1='0' x2='0' y2='1'>
                         <stop offset='0%' stopColor='#9A8069' stopOpacity='0.35' />
@@ -484,10 +464,10 @@ export default function AdminDashboardPage() {
                           {gl.value >= 1000000
                             ? `${(gl.value / 1000000).toFixed(1)}M`
                             : gl.value >= 1000
-                            ? `${Math.round(gl.value / 1000)}K`
-                            : gl.value === 0
-                            ? '0'
-                            : gl.value}
+                              ? `${Math.round(gl.value / 1000)}K`
+                              : gl.value === 0
+                                ? '0'
+                                : gl.value}
                         </text>
                       </g>
                     ))}
@@ -538,8 +518,8 @@ export default function AdminDashboardPage() {
                               {pt.revenue >= 1000000
                                 ? `${(pt.revenue / 1000000).toFixed(1)}M`
                                 : pt.revenue >= 1000
-                                ? `${Math.round(pt.revenue / 1000)}K`
-                                : pt.revenue}
+                                  ? `${Math.round(pt.revenue / 1000)}K`
+                                  : pt.revenue}
                             </text>
                           </>
                         ) : (
@@ -638,7 +618,10 @@ export default function AdminDashboardPage() {
 
               <div className='space-y-3'>
                 {topSelling.slice(0, 4).map((product, idx) => (
-                  <div key={product._id} className='flex items-center justify-between gap-3 rounded-2xl bg-slate-50/70 p-3 border border-slate-100'>
+                  <div
+                    key={product._id}
+                    className='flex items-center justify-between gap-3 rounded-2xl bg-slate-50/70 p-3 border border-slate-100'
+                  >
                     <div className='flex items-center gap-3 min-w-0'>
                       <span className='grid h-7 w-7 shrink-0 place-items-center rounded-xl bg-[#2B2118] text-xs font-mono font-bold text-amber-200'>
                         #{idx + 1}
@@ -701,12 +684,8 @@ export default function AdminDashboardPage() {
                     const statusInfo = getOrderStatusMeta(order.status)
                     return (
                       <tr key={order._id} className='hover:bg-slate-50/80 transition'>
-                        <td className='p-4 font-mono font-bold text-slate-900'>
-                          #{order._id.slice(-8).toUpperCase()}
-                        </td>
-                        <td className='p-4 text-slate-600 font-mono'>
-                          {formatDate(order.created_at)}
-                        </td>
+                        <td className='p-4 font-mono font-bold text-slate-900'>#{order._id.slice(-8).toUpperCase()}</td>
+                        <td className='p-4 text-slate-600 font-mono'>{formatDate(order.created_at)}</td>
                         <td className='p-4 font-mono font-bold text-[#C47A5A]'>
                           {money(order.total_price + order.shipping_fee)}
                         </td>
@@ -748,10 +727,7 @@ export default function AdminDashboardPage() {
                 </p>
               </div>
 
-              <Link
-                to='/admin/products'
-                className='text-xs font-bold text-[#9A8069] hover:underline'
-              >
+              <Link to='/admin/products' className='text-xs font-bold text-[#9A8069] hover:underline'>
                 Quản lý sản phẩm
               </Link>
             </div>
@@ -841,4 +817,3 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
-

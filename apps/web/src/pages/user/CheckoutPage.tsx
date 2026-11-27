@@ -146,7 +146,7 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([])
   const [selectedDelivery, setSelectedDelivery] = useState<string>()
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PAYOS)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(isGuestCheckout ? PaymentMethod.CASH_ON_DELIVERY : PaymentMethod.PAYOS)
   const [loading, setLoading] = useState(false)
   const [addressMode, setAddressMode] = useState<AddressMode>('manual')
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
@@ -334,6 +334,7 @@ export default function CheckoutPage() {
   }
 
   const handleCheckout = async () => {
+    if (loading) return
     if (!selectedDelivery) {
       toast.error('Vui lòng chọn phương thức giao hàng')
       return
@@ -434,7 +435,7 @@ export default function CheckoutPage() {
         return
       }
 
-      navigate(isGuestCheckout ? ROUTE_PATHS.USER_ORDER_RESULT : ROUTE_PATHS.USER_ORDERS, {
+      navigate(isGuestCheckout ? `${ROUTE_PATHS.USER_ORDER_RESULT}?orderId=${encodeURIComponent(orderId ?? '')}&status=pending&paymentMethod=COD` : ROUTE_PATHS.USER_ORDERS, {
         state: { orderId, isGuestCheckout }
       })
     } catch (err) {
@@ -705,11 +706,11 @@ export default function CheckoutPage() {
                 </span>
                 <h2 className='font-display text-lg font-bold text-[#1C1917]'>4. Phương Thức Thanh Toán</h2>
               </div>
-              <span className='text-xs font-semibold text-[#786C60] inline-flex items-center gap-1'><Zap size={14} className='text-amber-500' /> Khuyên dùng PayOS</span>
+              <span className='text-xs font-semibold text-[#786C60] inline-flex items-center gap-1'><Zap size={14} className='text-amber-500' /> {isGuestCheckout ? 'Đăng nhập để thanh toán online' : 'Khuyên dùng PayOS'}</span>
             </div>
 
             <div className='space-y-3'>
-              {(Object.values(PaymentMethod) as PaymentMethod[]).map((method) => {
+              {(Object.values(PaymentMethod) as PaymentMethod[]).filter(method => method !== PaymentMethod.CREDIT_CARD && (!isGuestCheckout || method === PaymentMethod.CASH_ON_DELIVERY)).map((method) => {
                 const isSelected = paymentMethod === method
                 const meta = paymentMethodMeta[method]
 
