@@ -30,7 +30,7 @@ export default function AdminTableShell({
         {createTo ? (
           <Link
             to={createTo}
-            className='inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-berry-600 px-5 text-sm font-semibold text-white shadow-glow transition hover:bg-berry-700'
+            className='inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-berry-600 px-5 text-sm font-semibold text-white transition hover:bg-berry-700'
           >
             <Plus size={17} />
             {createLabel}

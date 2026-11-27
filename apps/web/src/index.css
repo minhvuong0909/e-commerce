@@ -6,12 +6,12 @@
 @layer base {
   :root {
     color-scheme: light;
-    --canvas: #fffaf7;
-    --ink: #1b0f1f;
-    --ink-muted: #5c4d62;
-    --line: #ece4ee;
-    --berry: #c21c63;
-    --berry-soft: #ffe0ec;
+    --canvas: #fbf9f6;
+    --ink: #171514;
+    --ink-muted: #5a544d;
+    --line: #e8e3dd;
+    --berry: #9f3850;
+    --berry-soft: #f6e1e4;
   }
 
   * {
@@ -49,8 +49,8 @@
   }
 
   ::selection {
-    background: #ffc2da;
-    color: #1b0f1f;
+    background: #edc3ca;
+    color: #171514;
   }
 
   :focus-visible {
@@ -66,12 +66,12 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #e6dde8;
+    background: #e4dfd9;
     border: 3px solid var(--canvas);
     border-radius: 999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #c9bccd;
+    background: #c8c1b9;
   }
 }
 
@@ -82,14 +82,14 @@
   .premium-panel {
     border: 1px solid var(--line);
     background: #ffffff;
-    border-radius: 1.25rem;
-    box-shadow: 0 1px 2px rgba(27, 15, 31, 0.04), 0 12px 32px -18px rgba(27, 15, 31, 0.16);
+    border-radius: 0.875rem;
+    box-shadow: 0 1px 2px rgba(23, 21, 20, 0.04);
   }
 
   .surface-muted {
     border: 1px solid var(--line);
-    background: #faf7fa;
-    border-radius: 1.25rem;
+    background: #faf8f6;
+    border-radius: 0.875rem;
   }
 
   .interactive-lift {
@@ -99,9 +99,9 @@
       border-color 220ms ease;
   }
   .interactive-lift:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 24px 48px -24px rgba(27, 15, 31, 0.3);
-    border-color: #e6dde8;
+    transform: translateY(-2px);
+    box-shadow: 0 24px 48px -24px rgba(23, 21, 20, 0.14);
+    border-color: #e4dfd9;
   }
 
   /* Form controls */
@@ -109,7 +109,7 @@
   .field {
     height: 3rem;
     width: 100%;
-    border-radius: 0.875rem;
+    border-radius: 0.625rem;
     border: 1.5px solid var(--line);
     background: #ffffff;
     padding: 0 1rem;
@@ -130,17 +130,17 @@
   }
   .premium-input::placeholder,
   .field::placeholder {
-    color: #9c8da2;
+    color: #9a9289;
     font-weight: 400;
   }
   .premium-input:hover,
   .field:hover {
-    border-color: #e6dde8;
+    border-color: #e4dfd9;
   }
   .premium-input:focus,
   .field:focus {
     border-color: var(--berry);
-    box-shadow: 0 0 0 4px rgba(224, 48, 122, 0.14);
+    box-shadow: 0 0 0 4px rgba(159, 56, 80, 0.14);
   }
 
   .field-label {
@@ -183,10 +183,10 @@
   }
 
   .glass-header {
-    background: rgba(255, 250, 247, 0.82);
+    background: rgba(251, 249, 246, 0.9);
     backdrop-filter: saturate(1.6) blur(16px);
     -webkit-backdrop-filter: saturate(1.6) blur(16px);
-    border-bottom: 1px solid rgba(236, 228, 238, 0.9);
+    border-bottom: 1px solid rgba(232, 227, 221, 0.9);
   }
 
   .glass-line {
@@ -194,17 +194,11 @@
   }
 
   .bg-grain {
-    background-image:
-      radial-gradient(circle at 15% 20%, rgba(255, 148, 189, 0.35), transparent 45%),
-      radial-gradient(circle at 85% 10%, rgba(196, 177, 255, 0.4), transparent 40%),
-      radial-gradient(circle at 70% 90%, rgba(255, 213, 188, 0.45), transparent 45%);
+    background-image: none;
   }
 
   .text-gradient {
-    background: linear-gradient(100deg, #c21c63 0%, #e0307a 40%, #8b5cf6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--berry);
   }
 
   .no-scrollbar {
@@ -216,13 +210,13 @@
 
   /* Admin workspace: calmer, denser, same brand */
   .admin-theme {
-    background-color: #f8f6f9;
+    background-color: #f6f4f1;
     color: var(--ink);
   }
   .admin-theme .surface-card,
   .admin-theme .surface-strong {
     border-radius: 1rem;
-    box-shadow: 0 1px 2px rgba(27, 15, 31, 0.04);
+    box-shadow: 0 1px 2px rgba(23, 21, 20, 0.04);
   }
   .admin-theme .premium-input {
     height: 2.75rem;
@@ -242,5 +236,81 @@
   }
   .interactive-lift:hover {
     transform: none;
+  }
+}
+
+/* ───────── Native controls & toasts ───────── */
+@layer components {
+  select.premium-input,
+  select.field,
+  select.select {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23756e66' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.875rem center;
+    background-size: 1rem;
+  }
+  select option {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  input[type='checkbox']:not(.sr-only):not([hidden]) {
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-grid;
+    place-content: center;
+    flex-shrink: 0;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    cursor: pointer;
+    border: 1.5px solid #c8c1b9;
+    border-radius: 0.3125rem;
+    background: #fff;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease;
+  }
+  input[type='checkbox']:not(.sr-only):not([hidden]):hover {
+    border-color: var(--ink);
+  }
+  input[type='checkbox']:not(.sr-only):not([hidden]):checked {
+    background-color: var(--berry);
+    border-color: var(--berry);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.5 8.5 3 3 6-7'/%3E%3C/svg%3E");
+    background-size: 100% 100%;
+  }
+  input[type='date'].field,
+  input[type='date'].premium-input {
+    min-height: 3rem;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.55;
+  }
+  input[type='date']::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+  }
+  /* Toasts (sonner) */
+  .app-toast {
+    border: 1px solid var(--line) !important;
+    border-radius: 0.75rem !important;
+    background: #ffffff !important;
+    color: var(--ink) !important;
+    box-shadow: 0 10px 30px -12px rgba(23, 21, 20, 0.22) !important;
+    font-family: inherit !important;
+    font-size: 0.875rem !important;
+  }
+  .app-toast-title {
+    font-weight: 600;
+  }
+  [data-sonner-toast][data-type='success'] [data-icon] {
+    color: #4f6a07;
+  }
+  [data-sonner-toast][data-type='error'] [data-icon] {
+    color: #be123c;
   }
 }

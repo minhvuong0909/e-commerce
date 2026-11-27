@@ -5,6 +5,7 @@ import { SAVED_ADDRESSES_QUERY_KEY, useSavedAddresses } from '../../hooks/useSav
 import { deleteSavedAddressApi, updateSavedAddressApi, type SavedAddress } from '../../services/user_addresses.services'
 import { getApiErrorMessage } from '../../utils/apiError'
 import cn from '../../utils/cn'
+import { useConfirm } from '../ui/ConfirmDialog'
 
 type SavedAddressesPanelProps = {
   onSelect?: (address: SavedAddress) => void
@@ -15,6 +16,7 @@ type SavedAddressesPanelProps = {
 }
 
 export default function SavedAddressesPanel({ onSelect, selectable = false, selectedId = null }: SavedAddressesPanelProps) {
+  const confirm = useConfirm()
   const queryClient = useQueryClient()
   const { data: addresses = [], isLoading, isError } = useSavedAddresses()
 
@@ -29,7 +31,7 @@ export default function SavedAddressesPanel({ onSelect, selectable = false, sele
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Xóa địa chỉ này?')) return
+    if (!(await confirm('Xóa địa chỉ này?'))) return
     try {
       await deleteSavedAddressApi(id)
       toast.success('Đã xóa địa chỉ')
@@ -84,15 +86,15 @@ export default function SavedAddressesPanel({ onSelect, selectable = false, sele
               onClick={() => onSelect?.(address)}
               aria-pressed={isSelected}
               className={cn(
-                'relative cursor-pointer rounded-3xl border-[1.5px] p-4 pr-12 text-left transition',
-                isSelected ? 'border-ink-950 bg-white' : 'border-ink-100 bg-white hover:border-ink-300'
+                'relative cursor-pointer rounded-3xl border p-4 pr-12 text-left transition',
+                isSelected ? 'border-berry-500 bg-white' : 'border-ink-100 bg-white hover:border-ink-300'
               )}
             >
               {body}
               <span
                 className={cn(
-                  'absolute right-4 top-4 grid h-6 w-6 place-items-center rounded-full border-[1.5px]',
-                  isSelected ? 'border-ink-950 bg-ink-950 text-white' : 'border-ink-300 text-transparent'
+                  'absolute right-4 top-4 grid h-6 w-6 place-items-center rounded-full border',
+                  isSelected ? 'border-berry-600 bg-berry-600 text-white' : 'border-ink-300 text-transparent'
                 )}
               >
                 <Check size={13} strokeWidth={3} />
@@ -109,7 +111,7 @@ export default function SavedAddressesPanel({ onSelect, selectable = false, sele
                 <button
                   type='button'
                   onClick={() => handleSetDefault(address)}
-                  className='inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] border-ink-200 px-3.5 text-xs font-semibold hover:border-ink-950'
+                  className='inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-ink-200 px-3.5 text-xs font-semibold hover:border-berry-300'
                 >
                   <Star size={13} /> Mặc định
                 </button>

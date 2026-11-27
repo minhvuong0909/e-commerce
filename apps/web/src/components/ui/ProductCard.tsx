@@ -18,10 +18,10 @@ interface ProductCardProps {
 }
 
 const TINTS = {
-  blush: 'bg-berry-50',
-  lilac: 'bg-lilac-50',
-  peach: 'bg-peach-50',
-  mist: 'bg-ink-50'
+  blush: 'bg-ink-100',
+  lilac: 'bg-ink-100',
+  peach: 'bg-ink-100',
+  mist: 'bg-ink-100'
 } as const
 
 export const CARD_TINTS = Object.keys(TINTS) as Array<keyof typeof TINTS>
@@ -29,6 +29,10 @@ export const CARD_TINTS = Object.keys(TINTS) as Array<keyof typeof TINTS>
 export default function ProductCard({ product, tint = 'blush' }: ProductCardProps) {
   const firstMedia = product.medias?.[0]
   const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
+  const secondMedia = product.medias?.[1]
+  const hoverImage = secondMedia
+    ? formatImageUrl(typeof secondMedia === 'string' ? secondMedia : secondMedia?.url)
+    : undefined
   const outOfStock = product.quantity <= 0
   const badges = getProductBadges(product)
   const rating = Math.max(0, Math.min(5, product.rating_number || 0))
@@ -48,19 +52,32 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
   return (
     <>
       <article className='group relative flex h-full flex-col'>
-        <div className={cn('relative overflow-hidden rounded-3xl', TINTS[tint])}>
+        <div className={cn('relative overflow-hidden rounded-2xl', TINTS[tint])}>
           <Link to={href} className='block aspect-[4/5] focus-visible:outline-none' aria-label={product.name}>
             {image ? (
-              <img
-                src={image}
-                alt=''
-                referrerPolicy='no-referrer'
-                loading='lazy'
-                className={cn(
-                  'h-full w-full object-contain p-6 mix-blend-multiply transition-transform duration-500 ease-out group-hover:scale-[1.06]',
-                  outOfStock && 'opacity-50 grayscale'
-                )}
-              />
+              <div className='relative h-full w-full'>
+                <img
+                  src={image}
+                  alt=''
+                  referrerPolicy='no-referrer'
+                  loading='lazy'
+                  className={cn(
+                    'h-full w-full object-contain p-6 mix-blend-multiply transition duration-500 ease-out',
+                    outOfStock && 'opacity-50 grayscale',
+                    hoverImage && '[@media(hover:hover)]:group-hover:opacity-0'
+                  )}
+                />
+                {hoverImage ? (
+                  <img
+                    src={hoverImage}
+                    alt=''
+                    aria-hidden
+                    referrerPolicy='no-referrer'
+                    loading='lazy'
+                    className='absolute inset-0 h-full w-full object-contain p-6 opacity-0 mix-blend-multiply transition duration-500 [@media(hover:hover)]:group-hover:opacity-100'
+                  />
+                ) : null}
+              </div>
             ) : (
               <div className='grid h-full place-items-center text-xs text-ink-500'>Chưa có ảnh</div>
             )}
@@ -69,7 +86,10 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
           {badges.length > 0 ? (
             <div className='pointer-events-none absolute left-3 top-3 flex flex-wrap gap-1.5'>
               {badges.map((badge) => (
-                <span key={badge} className={cn('rounded-full px-2.5 py-1 text-[11px] font-bold', BADGE_STYLES[badge])}>
+                <span
+                  key={badge}
+                  className={cn('rounded-md px-2 py-0.5 text-[11px] font-semibold', BADGE_STYLES[badge])}
+                >
                   {BADGE_LABELS[badge]}
                 </span>
               ))}
@@ -85,7 +105,7 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
             aria-label={favorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
             aria-pressed={favorited}
             className={cn(
-              'absolute right-3 top-3 grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-white/90 text-ink-700 backdrop-blur transition hover:scale-105 hover:text-berry-600',
+              'absolute right-3 top-3 grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-white text-ink-700 transition hover:text-berry-600',
               favorited && 'text-berry-600'
             )}
           >
@@ -100,7 +120,7 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
                 stop(e)
                 setQuickViewOpen(true)
               }}
-              className='hidden h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-full bg-white/95 text-[13px] font-semibold text-ink-950 shadow-soft backdrop-blur transition hover:bg-white sm:inline-flex'
+              className='hidden h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-white text-[13px] font-semibold text-ink-950 shadow-soft transition hover:bg-ink-50 sm:inline-flex'
             >
               <Eye size={16} /> Xem nhanh
             </button>
@@ -113,7 +133,7 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
                 }}
                 disabled={isAddingThis}
                 aria-label={`Thêm ${product.name} vào giỏ`}
-                className='ml-auto grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-ink-950 text-white shadow-soft transition hover:bg-berry-600 disabled:opacity-60'
+                className='ml-auto grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg bg-berry-600 text-white shadow-soft transition hover:bg-berry-700 disabled:opacity-60'
               >
                 {isAddingThis ? (
                   <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
@@ -136,11 +156,11 @@ export default function ProductCard({ product, tint = 'blush' }: ProductCardProp
               </span>
             ) : null}
           </div>
-          <h3 className='mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-ink-950 decoration-berry-300 decoration-2 underline-offset-4 group-hover:underline'>
+          <h3 className='mt-1 line-clamp-2 text-[15px] font-medium leading-snug text-ink-950 group-hover:text-berry-700'>
             {product.name}
           </h3>
           <div className='mt-auto flex items-baseline gap-2 pt-2'>
-            <span className='font-display text-lg font-bold text-ink-950'>{money(product.price)}</span>
+            <span className='text-base font-semibold text-ink-950'>{money(product.price)}</span>
             {(product.soldNumber ?? 0) > 0 ? (
               <span className='text-xs text-ink-500'>· đã bán {product.soldNumber}</span>
             ) : null}

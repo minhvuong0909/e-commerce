@@ -4,13 +4,9 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
-  ArrowUpRight,
-  CreditCard,
   Droplet,
-  Heart,
   PackageSearch,
   SearchX,
-  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Sun,
@@ -24,6 +20,7 @@ import SectionHeader from '../../components/ui/SectionHeader'
 import PaginationBar from '../../components/ui/PaginationBar'
 import EmptyState from '../../components/ui/EmptyState'
 import Button from '../../components/ui/Button'
+import Reveal from '../../components/ui/Reveal'
 import { fadeUpItem, staggerContainer } from '../../constants/motion'
 import { useProducts } from '../../hooks/useProducts'
 import { useStorefrontCategories } from '../../hooks/useStorefrontCategories'
@@ -40,13 +37,6 @@ const SORTS: Array<{ value: Sort; label: string }> = [
   { value: 'best_selling', label: 'Bán chạy' },
   { value: 'price_asc', label: 'Giá thấp → cao' },
   { value: 'price_desc', label: 'Giá cao → thấp' }
-]
-
-const TILE_STYLES = [
-  { bg: 'bg-berry-100', img: '/images/serum-routine-essentials.png' },
-  { bg: 'bg-lilac-100', img: '/images/cleanser-routine-essentials.jpg' },
-  { bg: 'bg-peach-100', img: '/images/spf-routine-essentials.png' },
-  { bg: 'bg-lime-200', img: '/images/lip-routine-essentials.png' }
 ]
 
 const searchHref = (q: string) => `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(q)}#shop`
@@ -67,9 +57,9 @@ export default function HomePage() {
   return (
     <div>
       <HomeHero />
-      <CategoryTiles />
-      <BestSellerRail />
-      <RoutineSection />
+      
+      <Reveal><BestSellerRail /></Reveal>
+      <Reveal><RoutineSection /></Reveal>
       <ShopSection
         search={search}
         categoryId={categoryId}
@@ -78,59 +68,8 @@ export default function HomePage() {
         onSort={(s) => updateParams({ sort: s === 'newest' ? null : s })}
         onClearSearch={() => updateParams({ search: null })}
       />
-      <PromiseStrip />
-      <JoinBand />
+      <Reveal><JoinBand /></Reveal>
     </div>
-  )
-}
-
-/* ───────── Categories as colourful tiles ───────── */
-function CategoryTiles() {
-  const { data: categories = [], isLoading } = useStorefrontCategories(8)
-  if (!isLoading && categories.length === 0) return null
-
-  return (
-    <section className='px-4 pt-16 md:px-6 md:pt-24'>
-      <div className='mx-auto max-w-[1320px]'>
-        <SectionHeader eyebrow='Khám phá' title='Mua theo danh mục' />
-        <div
-          className={cn(
-            'no-scrollbar -mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 md:mx-0 md:grid md:gap-4 md:overflow-visible md:px-0',
-            categories.length % 3 === 0 ? 'md:grid-cols-3' : 'md:grid-cols-4'
-          )}
-        >
-          {isLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className='h-48 w-56 shrink-0 animate-pulse rounded-4xl bg-ink-100 md:w-auto' />
-              ))
-            : categories.map((c, i) => {
-                const style = TILE_STYLES[i % TILE_STYLES.length]
-                return (
-                  <a
-                    key={c.id}
-                    href={`${ROUTE_PATHS.USER_HOME}?category=${encodeURIComponent(c.id)}#shop`}
-                    className={cn(
-                      'group relative flex h-48 w-56 shrink-0 snap-start flex-col justify-between overflow-hidden rounded-4xl p-5 transition hover:-translate-y-1 md:h-56 md:w-auto',
-                      style.bg
-                    )}
-                  >
-                    <span className='relative z-10 font-display text-xl font-bold leading-tight text-ink-950 md:text-2xl'>{c.name}</span>
-                    <img
-                      src={style.img}
-                      alt=''
-                      aria-hidden
-                      loading='lazy'
-                      className='absolute -bottom-4 -right-4 h-32 w-32 rounded-3xl object-cover mix-blend-multiply transition duration-500 group-hover:scale-110 group-hover:-rotate-3 md:h-40 md:w-40'
-                    />
-                    <span className='relative z-10 grid h-10 w-10 place-items-center rounded-full bg-white text-ink-950 transition group-hover:bg-ink-950 group-hover:text-white'>
-                      <ArrowUpRight size={18} aria-hidden />
-                    </span>
-                  </a>
-                )
-              })}
-        </div>
-      </div>
-    </section>
   )
 }
 
@@ -148,10 +87,10 @@ function BestSellerRail() {
   if (!isLoading && products.length === 0) return null
 
   return (
-    <section className='pt-16 md:pt-24' aria-label='Sản phẩm bán chạy'>
+    <section className='pt-14 md:pt-20' aria-label='Sản phẩm bán chạy'>
       <div className='mx-auto max-w-[1320px] px-4 md:px-6'>
         <SectionHeader
-          eyebrow='Đang hot'
+          eyebrow='Bán chạy'
           title='Được chọn nhiều nhất'
           desc='Những sản phẩm khách hàng Vibrant Mart mua nhiều nhất thời gian gần đây.'
           action={
@@ -160,7 +99,7 @@ function BestSellerRail() {
                 type='button'
                 onClick={() => scroll(-1)}
                 aria-label='Cuộn trái'
-                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full border-[1.5px] border-ink-200 transition hover:border-ink-950'
+                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full border border-ink-200 bg-white transition hover:border-berry-300'
               >
                 <ArrowLeft size={18} />
               </button>
@@ -168,7 +107,7 @@ function BestSellerRail() {
                 type='button'
                 onClick={() => scroll(1)}
                 aria-label='Cuộn phải'
-                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-ink-950 text-white transition hover:bg-berry-600'
+                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-berry-600 text-white transition hover:bg-berry-700'
               >
                 <ArrowRight size={18} />
               </button>
@@ -193,22 +132,22 @@ function BestSellerRail() {
 /* ───────── Routine education ───────── */
 function RoutineSection() {
   const steps = [
-    { n: '01', title: 'Làm sạch', desc: 'Tẩy trang & sữa rửa mặt, gỡ bụi bẩn và dầu thừa.', q: 'sữa rửa mặt', icon: Waves, bg: 'bg-lilac-100' },
-    { n: '02', title: 'Serum', desc: 'Hoạt chất tập trung cho mối quan tâm riêng của da.', q: 'serum', icon: Droplet, bg: 'bg-berry-100' },
-    { n: '03', title: 'Dưỡng ẩm', desc: 'Khóa ẩm, giữ hàng rào da khỏe và mềm mịn.', q: 'kem dưỡng', icon: Sparkles, bg: 'bg-peach-100' },
-    { n: '04', title: 'Chống nắng', desc: 'Bước cuối buổi sáng — đừng bao giờ bỏ qua.', q: 'chống nắng', icon: Sun, bg: 'bg-lime-200' }
+    { n: '01', title: 'Làm sạch', desc: 'Tẩy trang & sữa rửa mặt, gỡ bụi bẩn và dầu thừa.', q: 'sữa rửa mặt', icon: Waves, bg: 'bg-ink-100' },
+    { n: '02', title: 'Serum', desc: 'Hoạt chất tập trung cho mối quan tâm riêng của da.', q: 'serum', icon: Droplet, bg: 'bg-ink-100' },
+    { n: '03', title: 'Dưỡng ẩm', desc: 'Khóa ẩm, giữ hàng rào da khỏe và mềm mịn.', q: 'kem dưỡng', icon: Sparkles, bg: 'bg-ink-100' },
+    { n: '04', title: 'Chống nắng', desc: 'Bước cuối cùng của buổi sáng, không nên bỏ qua.', q: 'chống nắng', icon: Sun, bg: 'bg-ink-100' }
   ]
 
   return (
-    <section id='routine' className='scroll-mt-32 px-4 pt-16 md:px-6 md:pt-24'>
-      <div className='mx-auto max-w-[1320px] overflow-hidden rounded-4xl bg-white p-6 ring-1 ring-ink-100 sm:p-10 lg:p-14'>
+    <section id='routine' className='scroll-mt-32 px-4 pt-14 md:px-6 md:pt-20'>
+      <div className='mx-auto max-w-[1320px] overflow-hidden rounded-4xl bg-white p-6 ring-1 ring-ink-200 sm:p-10 lg:p-12'>
         <div className='grid gap-10 lg:grid-cols-[0.9fr_1.6fr] lg:gap-14'>
           <div>
             <p className='eyebrow'>
-              <span aria-hidden className='h-1.5 w-1.5 rounded-full bg-berry-500' /> Routine cơ bản
+              Routine cơ bản
             </p>
-            <h2 className='mt-3 font-display text-4xl font-bold leading-[1.05] md:text-5xl'>
-              4 bước cho làn da <span className='text-gradient'>khỏe & sáng</span>
+            <h2 className='mt-3 font-display text-3xl font-semibold leading-tight md:text-4xl'>
+              4 bước cho làn da khỏe và sáng
             </h2>
             <p className='mt-4 text-[15px] leading-relaxed text-ink-600'>
               Không cần 10 bước. Bắt đầu từ nền tảng đúng, rồi thêm sản phẩm theo nhu cầu. Chọn một bước để xem sản phẩm phù hợp.
@@ -217,7 +156,7 @@ function RoutineSection() {
               src='/images/login_skincare_lifestyle.jpg'
               alt='Sản phẩm skincare trên bàn trang điểm'
               loading='lazy'
-              className='mt-8 hidden aspect-[4/3] w-full rounded-3xl object-cover lg:block'
+              className='mt-8 hidden aspect-[4/3] w-full rounded-2xl object-cover lg:block'
             />
           </div>
           <ol className='grid gap-3 sm:grid-cols-2'>
@@ -225,15 +164,15 @@ function RoutineSection() {
               <li key={n}>
                 <a
                   href={searchHref(q)}
-                  className={cn('group flex h-full min-h-[14rem] flex-col rounded-3xl p-6 transition hover:-translate-y-1', bg)}
+                  className={cn('group flex h-full min-h-[13rem] flex-col rounded-2xl p-6 transition hover:bg-ink-200', bg)}
                 >
                   <div className='flex items-start justify-between'>
-                    <span className='font-display text-5xl font-extrabold text-ink-950/15'>{n}</span>
-                    <span className='grid h-12 w-12 place-items-center rounded-2xl bg-white text-ink-950'>
+                    <span className='font-display text-3xl font-semibold text-ink-400'>{n}</span>
+                    <span className='grid h-11 w-11 place-items-center rounded-xl bg-white text-ink-950'>
                       <Icon size={22} aria-hidden />
                     </span>
                   </div>
-                  <h3 className='mt-auto font-display text-2xl font-bold text-ink-950'>{title}</h3>
+                  <h3 className='mt-auto font-display text-xl font-semibold text-ink-950'>{title}</h3>
                   <p className='mt-1.5 text-sm leading-relaxed text-ink-700'>{desc}</p>
                   <span className='mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-950'>
                     Xem sản phẩm <ArrowRight size={15} className='transition group-hover:translate-x-1' aria-hidden />
@@ -289,12 +228,12 @@ function ShopSection({
 
   const chip = (active: boolean) =>
     cn(
-      'chip h-10 cursor-pointer border-[1.5px] px-4 transition',
-      active ? 'border-ink-950 bg-ink-950 text-white' : 'border-ink-200 bg-white text-ink-700 hover:border-ink-950'
+      'chip h-10 cursor-pointer border px-4 transition',
+      active ? 'border-berry-200 bg-berry-50 text-berry-700' : 'border-ink-200 bg-white text-ink-700 hover:border-berry-300'
     )
 
   return (
-    <section id='shop' className='scroll-mt-32 px-4 pt-16 md:px-6 md:pt-24'>
+    <section id='shop' className='scroll-mt-32 px-4 pt-14 md:px-6 md:pt-20'>
       <div className='mx-auto max-w-[1320px]'>
         <SectionHeader
           eyebrow={search ? 'Kết quả tìm kiếm' : 'Cửa hàng'}
@@ -337,7 +276,7 @@ function ShopSection({
               <select
                 value={sort}
                 onChange={(e) => onSort(e.target.value as Sort)}
-                className='h-10 cursor-pointer appearance-none rounded-full border-[1.5px] border-ink-200 bg-white pl-10 pr-9 text-sm font-semibold text-ink-950 outline-none transition hover:border-ink-950 focus:border-ink-950'
+                className='h-10 cursor-pointer appearance-none rounded-full border border-ink-200 bg-white pl-10 pr-9 text-sm font-semibold text-ink-950 outline-none transition hover:border-berry-300 focus:border-berry-500'
               >
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -413,56 +352,26 @@ function ShopSection({
   )
 }
 
-/* ───────── Honest service promises ───────── */
-function PromiseStrip() {
-  const items = [
-    { icon: ShieldCheck, title: 'Rõ nguồn gốc', desc: 'Xuất xứ hiển thị trên từng sản phẩm.' },
-    { icon: CreditCard, title: 'Thanh toán linh hoạt', desc: 'COD, PayOS hoặc MoMo khi đăng nhập.' },
-    { icon: PackageSearch, title: 'Theo dõi đơn', desc: 'Cập nhật trạng thái từng bước giao hàng.' },
-    { icon: Heart, title: 'Lưu yêu thích', desc: 'Đánh dấu sản phẩm để mua sau.' }
-  ]
-  return (
-    <section className='px-4 pt-16 md:px-6 md:pt-24' aria-label='Cam kết dịch vụ'>
-      <div className='mx-auto grid max-w-[1320px] gap-3 sm:grid-cols-2 lg:grid-cols-4'>
-        {items.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className='flex items-start gap-4 rounded-3xl bg-white p-5 ring-1 ring-ink-100'>
-            <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-ink-950 text-lime-300'>
-              <Icon size={22} aria-hidden />
-            </span>
-            <div>
-              <h3 className='font-display text-lg font-bold'>{title}</h3>
-              <p className='mt-0.5 text-sm text-ink-600'>{desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function JoinBand() {
   const hasToken = Boolean(getToken())
+  if (hasToken) return null
   return (
-    <section className='px-4 pt-16 md:px-6 md:pt-24'>
-      <div className='relative mx-auto max-w-[1320px] overflow-hidden rounded-4xl bg-berry-600 px-6 py-12 text-white sm:px-12 md:py-16'>
-        <div aria-hidden className='pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-lilac-500/50 blur-3xl' />
-        <div aria-hidden className='pointer-events-none absolute -bottom-24 left-1/3 h-64 w-64 rounded-full bg-peach-300/40 blur-3xl' />
+    <section className='px-4 pt-14 md:px-6 md:pt-20'>
+      <div className='relative mx-auto max-w-[1320px] overflow-hidden rounded-4xl border border-berry-100 bg-berry-50 px-6 py-12 text-ink-950 sm:px-12 md:py-16'>
         <div className='relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between'>
           <div className='max-w-xl'>
-            <h2 className='font-display text-4xl font-bold leading-[1.05] md:text-5xl'>
-              {hasToken ? 'Đơn hàng của bạn, rõ ràng từng bước.' : 'Tạo tài khoản, mua nhanh hơn lần sau.'}
+            <h2 className='font-display text-3xl font-semibold leading-tight md:text-4xl'>
+              Tạo tài khoản, mua nhanh hơn lần sau.
             </h2>
-            <p className='mt-4 text-berry-100'>
-              {hasToken
-                ? 'Xem trạng thái giao hàng, lịch sử mua và địa chỉ đã lưu ở một nơi.'
-                : 'Lưu địa chỉ, thanh toán online và theo dõi mọi đơn hàng trong một tài khoản.'}
+            <p className='mt-4 text-ink-600'>
+              Lưu địa chỉ, thanh toán online và theo dõi mọi đơn hàng trong một tài khoản.
             </p>
           </div>
           <Link
-            to={hasToken ? ROUTE_PATHS.USER_ORDERS : ROUTE_PATHS.AUTH_REGISTER}
-            className='inline-flex h-14 shrink-0 items-center gap-2 self-start rounded-full bg-white px-8 font-semibold text-ink-950 transition hover:bg-lime-300 md:self-auto'
+            to={ROUTE_PATHS.AUTH_REGISTER}
+            className='inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-lg bg-berry-600 px-7 font-semibold text-white transition hover:bg-berry-700 md:self-auto'
           >
-            {hasToken ? 'Xem đơn hàng' : 'Đăng ký miễn phí'} <ArrowRight size={18} aria-hidden />
+            Đăng ký miễn phí <ArrowRight size={18} aria-hidden />
           </Link>
         </div>
       </div>

@@ -31,7 +31,7 @@ function MiniProgress({ rawStatus }: { rawStatus: number }) {
   return (
     <div className='flex gap-1' aria-hidden>
       {[0, 1, 2, 3].map((i) => (
-        <span key={i} className={cn('h-1.5 flex-1 rounded-full', i <= idx ? 'bg-ink-950' : 'bg-ink-100')} />
+        <span key={i} className={cn('h-1.5 flex-1 rounded-full', i <= idx ? 'bg-berry-500' : 'bg-ink-100')} />
       ))}
     </div>
   )
@@ -97,8 +97,8 @@ export default function MyOrdersPage() {
               to={`${ROUTE_PATHS.USER_ORDERS}${tab.value === 'all' ? '' : `?status=${tab.value}`}`}
               aria-current={active ? 'page' : undefined}
               className={cn(
-                'chip h-10 shrink-0 border-[1.5px] px-4 transition',
-                active ? 'border-ink-950 bg-ink-950 text-white' : 'border-ink-200 bg-white text-ink-700 hover:border-ink-950'
+                'chip h-10 shrink-0 border px-4 transition',
+                active ? 'border-berry-200 bg-berry-50 text-berry-700' : 'border-ink-200 bg-white text-ink-700 hover:border-berry-300'
               )}
             >
               {tab.label}
@@ -127,7 +127,7 @@ export default function MyOrdersPage() {
                 type='button'
                 onClick={() => refetch()}
                 disabled={isFetching}
-                className='inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-ink-950 px-6 font-semibold text-white disabled:opacity-50'
+                className='inline-flex h-11 cursor-pointer items-center gap-2 rounded-lg bg-berry-600 px-6 font-semibold text-white hover:bg-berry-700 disabled:opacity-50'
               >
                 <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} /> Thử lại
               </button>
@@ -141,7 +141,7 @@ export default function MyOrdersPage() {
             action={
               <Link
                 to={ROUTE_PATHS.USER_HOME}
-                className='inline-flex h-12 items-center gap-2 rounded-full bg-ink-950 px-7 font-semibold text-white hover:bg-berry-600'
+                className='inline-flex h-12 items-center gap-2 rounded-lg bg-berry-600 px-7 font-semibold text-white hover:bg-berry-700'
               >
                 Khám phá sản phẩm <ArrowRight size={18} />
               </Link>

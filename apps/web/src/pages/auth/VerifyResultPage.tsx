@@ -37,14 +37,14 @@ export default function VerifyResultPage() {
         {isSuccess ? (
           <Link
             to={ROUTE_PATHS.USER_HOME}
-            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-berry-600 px-5 text-sm font-bold text-white shadow-card transition hover:bg-berry-700'
           >
             Về trang chủ
           </Link>
         ) : (
           <Link
             to={ROUTE_PATHS.AUTH_RESEND_VERIFY}
-            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-berry-600 px-5 text-sm font-bold text-white shadow-card transition hover:bg-berry-700'
           >
             Gửi lại email xác minh
           </Link>

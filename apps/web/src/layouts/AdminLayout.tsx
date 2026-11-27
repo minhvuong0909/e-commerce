@@ -60,11 +60,11 @@ export default function AdminLayout() {
     <div className='admin-theme min-h-screen'>
       <div className='flex min-h-screen'>
         {/* sidebar */}
-        <aside className='sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col bg-ink-950 p-4 text-white md:flex'>
+        <aside className='sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col border-r border-ink-200 bg-white p-4 text-ink-950 md:flex'>
           <Link to={ROUTE_PATHS.ADMIN} className='flex items-center gap-2 rounded-2xl px-2 py-2'>
-            <BrandMark tone='light' />
+            <BrandMark />
           </Link>
-          <p className='mt-1 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-400'>Workspace</p>
+          <p className='mt-1 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-500'>Workspace</p>
 
           <nav aria-label='Quản trị' className='mt-6 space-y-1'>
             {nav.map(({ to, label, icon: Icon, end }) => (
@@ -75,7 +75,7 @@ export default function AdminLayout() {
                 className={({ isActive }) =>
                   cn(
                     'flex h-11 items-center gap-3 rounded-2xl px-3.5 text-sm font-medium transition',
-                    isActive ? 'bg-white text-ink-950' : 'text-ink-300 hover:bg-white/10 hover:text-white'
+                    isActive ? 'bg-berry-50 text-berry-700' : 'text-ink-600 hover:bg-ink-100 hover:text-ink-950'
                   )
                 }
               >
@@ -94,24 +94,24 @@ export default function AdminLayout() {
               to={ROUTE_PATHS.USER_HOME}
               target='_blank'
               rel='noreferrer'
-              className='flex h-11 items-center gap-3 rounded-2xl px-3.5 text-sm font-medium text-ink-300 transition hover:bg-white/10 hover:text-white'
+              className='flex h-11 items-center gap-3 rounded-2xl px-3.5 text-sm font-medium text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
             >
               <ExternalLink size={17} aria-hidden /> Xem cửa hàng
             </Link>
-            <div className='flex items-center gap-3 rounded-3xl bg-white/5 p-3'>
-              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-berry-300 font-display font-bold text-ink-950'>
+            <div className='flex items-center gap-3 rounded-3xl bg-ink-50 p-3'>
+              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-berry-100 font-display font-bold text-berry-700'>
                 {initials}
               </span>
               <div className='min-w-0 flex-1 leading-tight'>
                 <p className='truncate text-sm font-semibold'>{displayName}</p>
-                <p className='text-xs text-lime-300'>{displayRole}</p>
+                <p className='text-xs text-berry-700'>{displayRole}</p>
               </div>
               <button
                 type='button'
                 onClick={handleLogout}
                 aria-label='Đăng xuất'
                 title='Đăng xuất'
-                className='grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-xl text-ink-300 transition hover:bg-rose-500/20 hover:text-rose-300'
+                className='grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-xl text-ink-600 transition hover:bg-rose-50 hover:text-rose-600'
               >
                 <LogOut size={16} />
               </button>
@@ -147,7 +147,7 @@ export default function AdminLayout() {
                   className={({ isActive }) =>
                     cn(
                       'chip h-9 shrink-0 transition',
-                      isActive ? 'bg-ink-950 text-white' : 'text-ink-600 hover:bg-ink-100'
+                      isActive ? 'bg-berry-50 text-berry-700' : 'text-ink-600 hover:bg-ink-100'
                     )
                   }
                 >

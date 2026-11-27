@@ -83,7 +83,7 @@ export default function AdminSettingsPage() {
         </div>
       </div>
 
-      <Button onClick={save} loading={loading} className='!rounded-md !bg-ink-950 hover:!bg-ink-950'>
+      <Button onClick={save} loading={loading} className='!rounded-md'>
         Lưu cài đặt
       </Button>
     </div>

@@ -62,7 +62,7 @@ export default function ResendVerifyEmailPage() {
           />
           <Link
             to={ROUTE_PATHS.AUTH_LOGIN}
-            className='mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+            className='mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-berry-600 px-5 text-sm font-bold text-white shadow-card transition hover:bg-berry-700'
           >
             Đăng nhập
           </Link>

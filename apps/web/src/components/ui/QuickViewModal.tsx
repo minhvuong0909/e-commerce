@@ -88,7 +88,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
                     aria-current={selectedImageIndex === idx}
                     className={cn(
                       'h-14 w-14 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-white ring-2 transition',
-                      selectedImageIndex === idx ? 'ring-ink-950' : 'ring-transparent opacity-70 hover:opacity-100'
+                      selectedImageIndex === idx ? 'ring-berry-500' : 'ring-transparent opacity-70 hover:opacity-100'
                     )}
                   >
                     <img src={formatImageUrl(img)} alt='' className='h-full w-full object-cover' />
@@ -123,7 +123,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
 
             <div className='mt-auto flex items-center gap-3 pt-8'>
               {!outOfStock ? (
-                <div className='flex h-12 items-center rounded-full border-[1.5px] border-ink-200 px-1'>
+                <div className='flex h-12 items-center rounded-lg border border-ink-200 px-1'>
                   <button
                     type='button'
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}

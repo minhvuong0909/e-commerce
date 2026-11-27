@@ -15,13 +15,11 @@ export default function AuthLayout() {
     <div className='min-h-screen bg-canvas text-ink-950'>
       <div className='mx-auto grid min-h-screen max-w-[1440px] lg:grid-cols-[1.05fr_1fr]'>
         {/* brand side */}
-        <section className='relative m-3 hidden overflow-hidden rounded-4xl bg-ink-950 text-white lg:flex lg:flex-col'>
-          <div aria-hidden className='pointer-events-none absolute -left-24 top-10 h-96 w-96 rounded-full bg-berry-500/40 blur-3xl' />
-          <div aria-hidden className='pointer-events-none absolute -bottom-24 right-0 h-96 w-96 rounded-full bg-lilac-500/35 blur-3xl' />
+        <section className='relative m-3 hidden overflow-hidden rounded-4xl border border-berry-100 bg-berry-50 text-ink-950 lg:flex lg:flex-col'>
 
           <div className='relative flex flex-1 flex-col p-12 xl:p-16'>
             <Link to={ROUTE_PATHS.USER_HOME} aria-label='Vibrant Mart'>
-              <BrandMark tone='light' />
+              <BrandMark />
             </Link>
 
             <div className='mt-12 grid max-w-[22rem] grid-cols-2 gap-4 [@media(max-height:860px)]:max-w-[16rem]' aria-hidden>
@@ -33,15 +31,15 @@ export default function AuthLayout() {
             </div>
 
             <div className='mt-auto pt-16'>
-              <span className='chip bg-white/10 text-lime-200'>
+              <span className='chip border border-berry-200 bg-white text-berry-700'>
                 <Sparkles size={13} aria-hidden /> Vibrant Mart
               </span>
               <h1 className='mt-5 font-display text-5xl font-extrabold leading-[0.98] xl:text-6xl'>
                 Routine đẹp
                 <br />
-                bắt đầu từ <span className='text-berry-300'>đây.</span>
+                bắt đầu từ <span className='text-berry-600'>đây.</span>
               </h1>
-              <p className='mt-5 max-w-md text-ink-300'>
+              <p className='mt-5 max-w-md text-ink-600'>
                 Một tài khoản để lưu địa chỉ, thanh toán online và theo dõi mọi đơn hàng của bạn.
               </p>
             </div>
@@ -56,7 +54,7 @@ export default function AuthLayout() {
             </Link>
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='ml-auto inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
+              className='ml-auto inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
             >
               <ArrowLeft size={16} /> Về cửa hàng
             </Link>

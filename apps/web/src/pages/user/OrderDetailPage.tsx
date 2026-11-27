@@ -16,6 +16,7 @@ import money from '../../utils/money'
 import { getApiErrorMessage } from '../../utils/apiError'
 import { formatImageUrl } from '../../utils/formatImageUrl'
 import cn from '../../utils/cn'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 
 type MomoPayment = {
   payUrl?: string
@@ -103,14 +104,14 @@ function OrderTimeline({ rawStatus }: { rawStatus: number }) {
                   aria-hidden
                   className={cn(
                     'absolute left-[calc(50%+1.75rem)] right-[calc(-50%+1.75rem)] top-6 h-[3px] rounded-full',
-                    state === 'done' ? 'bg-ink-950' : 'bg-ink-100'
+                    state === 'done' ? 'bg-berry-400' : 'bg-ink-100'
                   )}
                 />
               ) : null}
               <span
                 className={cn(
                   'relative z-10 grid h-12 w-12 place-items-center rounded-2xl transition',
-                  state === 'done' && 'bg-ink-950 text-lime-300',
+                  state === 'done' && 'bg-berry-600 text-white',
                   state === 'current' && 'bg-berry-100 text-berry-700 ring-4 ring-berry-50',
                   state === 'upcoming' && 'bg-ink-50 text-ink-400',
                   state === 'cancelled' && 'bg-ink-50 text-ink-300'
@@ -151,6 +152,7 @@ function DetailSkeleton() {
 }
 
 export default function OrderDetailPage() {
+  const confirm = useConfirm()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [order, setOrder] = useState<OrderUI | null>(null)
@@ -286,7 +288,7 @@ export default function OrderDetailPage() {
 
   const handleCancelOrder = async () => {
     if (!order?.id) return
-    const confirmed = window.confirm('Bạn có chắc muốn hủy đơn hàng này? Hành động không thể hoàn tác.')
+    const confirmed = await confirm('Bạn có chắc muốn hủy đơn hàng này? Hành động không thể hoàn tác.')
     if (!confirmed) return
     try {
       setCancelling(true)
@@ -371,7 +373,7 @@ export default function OrderDetailPage() {
               <p className='text-sm text-ink-700'>Hoàn tất thanh toán để shop bắt đầu chuẩn bị hàng.</p>
             </div>
           </div>
-          <a href='#pay' className='inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-ink-950 px-6 text-sm font-semibold text-white hover:bg-ink-800'>
+          <a href='#pay' className='inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-berry-600 px-6 text-sm font-semibold text-white hover:bg-berry-700'>
             Thanh toán ngay
           </a>
         </div>
@@ -455,20 +457,20 @@ export default function OrderDetailPage() {
         </div>
 
         <div className='space-y-4'>
-          <aside id='pay' className='scroll-mt-36 rounded-4xl bg-ink-950 p-6 text-white lg:sticky lg:top-36 sm:p-7'>
+          <aside id='pay' className='scroll-mt-36 rounded-4xl border border-ink-200 bg-white p-6 text-ink-950 shadow-soft lg:sticky lg:top-36 sm:p-7'>
             <h2 className='font-display text-xl font-bold'>Tổng thanh toán</h2>
             <dl className='mt-5 space-y-2.5 text-sm'>
               <div className='flex justify-between'>
-                <dt className='text-ink-300'>Tạm tính</dt>
+                <dt className='text-ink-600'>Tạm tính</dt>
                 <dd className='font-semibold'>{money(order.subtotal)}</dd>
               </div>
               <div className='flex justify-between'>
-                <dt className='text-ink-300'>Vận chuyển</dt>
+                <dt className='text-ink-600'>Vận chuyển</dt>
                 <dd className='font-semibold'>{money(order.shippingFee)}</dd>
               </div>
             </dl>
-            <div className='mt-5 flex items-end justify-between border-t border-white/10 pt-5'>
-              <span className='text-ink-300'>Tổng</span>
+            <div className='mt-5 flex items-end justify-between border-t border-ink-200 pt-5'>
+              <span className='text-ink-600'>Tổng</span>
               <span className='font-display text-3xl font-bold'>{money(order.total)}</span>
             </div>
 
@@ -484,7 +486,7 @@ export default function OrderDetailPage() {
                 </Button>
               ) : null}
               {canPayPaypal ? (
-                <Button full size='lg' className='!bg-white !text-ink-950 hover:!bg-lime-300' onClick={handlePayPalPayment} loading={paying}>
+                <Button full size='lg' variant='secondary' onClick={handlePayPalPayment} loading={paying}>
                   Thanh toán qua PayPal
                 </Button>
               ) : null}
@@ -510,7 +512,7 @@ export default function OrderDetailPage() {
 
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='mt-4 flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-white/20 text-sm font-semibold hover:border-white'
+              className='mt-4 flex h-11 items-center justify-center gap-2 rounded-full border border-ink-200 text-sm font-semibold hover:border-berry-300'
             >
               <ShoppingBag size={16} /> Tiếp tục mua sắm
             </Link>

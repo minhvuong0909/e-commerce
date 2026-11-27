@@ -72,28 +72,28 @@ export default function OrderResultPage() {
       title: 'Đặt hàng thành công!',
       desc: 'Shop sẽ xác nhận và liên hệ qua số điện thoại bạn đã nhập trước khi giao.',
       tone: 'bg-lime-300 text-ink-950',
-      band: 'from-lime-200 via-lilac-100 to-berry-100'
+      band: 'bg-lime-100'
     },
     success: {
       icon: CheckCircle2,
       title: 'Thanh toán thành công!',
       desc: 'Cảm ơn bạn. Đơn hàng đã được ghi nhận và đang được chuẩn bị.',
       tone: 'bg-lime-300 text-ink-950',
-      band: 'from-lime-200 via-lilac-100 to-berry-100'
+      band: 'bg-lime-100'
     },
     failed: {
       icon: XCircle,
       title: 'Thanh toán chưa hoàn tất',
       desc: friendlyError,
       tone: 'bg-rose-500 text-white',
-      band: 'from-rose-100 via-berry-50 to-peach-100'
+      band: 'bg-rose-50'
     },
     pending: {
       icon: Clock,
       title: 'Đang xác nhận thanh toán',
       desc: 'Nếu tài khoản đã bị trừ tiền, trạng thái đơn sẽ tự cập nhật sau ít phút.',
       tone: 'bg-peach-300 text-ink-950',
-      band: 'from-peach-100 via-lilac-50 to-berry-50'
+      band: 'bg-peach-100'
     }
   }[status]
   const Icon = config.icon
@@ -107,7 +107,7 @@ export default function OrderResultPage() {
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className='overflow-hidden rounded-4xl bg-white ring-1 ring-ink-100'
       >
-        <div className={cn('relative flex flex-col items-center bg-gradient-to-br px-6 pb-10 pt-12 text-center', config.band)}>
+        <div className={cn('relative flex flex-col items-center px-6 pb-10 pt-12 text-center', config.band)}>
           <motion.span
             initial={reduce ? false : { scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
@@ -168,7 +168,7 @@ export default function OrderResultPage() {
                 onClick={() => navigate(orderDetailPath)}
                 className={cn(
                   'flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full font-semibold',
-                  positive || status === 'pending' ? 'bg-ink-950 text-white hover:bg-ink-800' : 'border-[1.5px] border-ink-200 hover:border-ink-950'
+                  positive || status === 'pending' ? 'bg-berry-600 text-white hover:bg-berry-700' : 'border border-ink-200 hover:border-berry-300'
                 )}
               >
                 <ShoppingBag size={17} /> Xem đơn hàng
@@ -176,7 +176,7 @@ export default function OrderResultPage() {
             ) : (
               <Link
                 to={ROUTE_PATHS.AUTH_REGISTER}
-                className='flex h-12 w-full items-center justify-center gap-2 rounded-full bg-ink-950 font-semibold text-white hover:bg-ink-800'
+                className='flex h-12 w-full items-center justify-center gap-2 rounded-full bg-berry-600 font-semibold text-white hover:bg-berry-700'
               >
                 Tạo tài khoản
               </Link>
@@ -184,7 +184,7 @@ export default function OrderResultPage() {
             {status === 'failed' ? (
               <Link
                 to={ROUTE_PATHS.USER_CART}
-                className='flex h-12 w-full items-center justify-center rounded-full border-[1.5px] border-ink-200 font-semibold hover:border-ink-950'
+                className='flex h-12 w-full items-center justify-center rounded-full border border-ink-200 font-semibold hover:border-berry-300'
               >
                 Quay lại giỏ hàng
               </Link>

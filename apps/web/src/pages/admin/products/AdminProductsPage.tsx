@@ -15,6 +15,7 @@ import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
 import money from '../../../utils/money'
 import { formatImageUrl } from '../../../utils/formatImageUrl'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 const getStockType = (q: number) => (q <= 0 ? 'stock' : q <= 5 ? 'low' : 'active')
 
@@ -56,6 +57,7 @@ function SkeletonRow() {
 }
 
 export default function AdminProductsPage() {
+  const confirm = useConfirm()
   const [search, setSearch] = useState('')
   const [stockFilter, setStockFilter] = useState('all')
   const [page, setPage] = useState(1)
@@ -93,7 +95,7 @@ export default function AdminProductsPage() {
   const error = isError ? 'Không tải được danh sách sản phẩm' : ''
 
   const handleDelete = async (productId: string) => {
-    if (!window.confirm('Xóa sản phẩm này? Hành động không thể hoàn tác.')) return
+    if (!(await confirm('Xóa sản phẩm này? Hành động không thể hoàn tác.'))) return
     try {
       setDeletingId(productId)
       await deleteProductApi(productId)

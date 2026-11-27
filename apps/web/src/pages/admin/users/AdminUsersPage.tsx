@@ -10,6 +10,7 @@ import { banUserApi, getUsersApi, unbanUserApi, type AdminUser } from '../../../
 import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 const VERIFY_LABELS: Record<number, { label: string; tone: string }> = {
   0: { label: 'Chưa xác thực', tone: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -30,6 +31,7 @@ function SkeletonRow() {
 }
 
 export default function AdminUsersPage() {
+  const confirm = useConfirm()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -64,7 +66,7 @@ export default function AdminUsersPage() {
   const handleBanToggle = async (user: AdminUser) => {
     const isBanned = user.verify_status === 2
     const action = isBanned ? 'mở khóa' : 'khóa'
-    if (!window.confirm(`${isBanned ? 'Mở khóa' : 'Khóa'} tài khoản ${user.email}?`)) return
+    if (!(await confirm(`${isBanned ? 'Mở khóa' : 'Khóa'} tài khoản ${user.email}?`))) return
 
     try {
       setActionId(user._id)

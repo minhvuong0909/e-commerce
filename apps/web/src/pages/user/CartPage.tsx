@@ -18,6 +18,7 @@ import cn from '../../utils/cn'
 import { formatImageUrl } from '../../utils/formatImageUrl'
 import { validateVoucherApi, type VoucherValidationResult } from '../../services/vouchers.services'
 import { ROUTE_PATHS } from '../../routes/route.paths'
+import { useConfirm } from '../../components/ui/ConfirmDialog'
 
 const imageOf = (p: Product) => {
   const first = p.medias?.[0]
@@ -55,7 +56,7 @@ function CartAddOns({ cartProductIds }: { cartProductIds: Set<string> }) {
                 onClick={() => addToCart({ product_id: product._id, quantity: 1, redirect: false })}
                 disabled={loading}
                 aria-label={`Thêm ${product.name}`}
-                className='grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-ink-950 text-white transition hover:bg-berry-600 disabled:opacity-50'
+                className='grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-berry-600 text-white transition hover:bg-berry-700 disabled:opacity-50'
               >
                 {loading ? <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' /> : <Plus size={18} />}
               </button>
@@ -68,6 +69,7 @@ function CartAddOns({ cartProductIds }: { cartProductIds: Set<string> }) {
 }
 
 export default function CartPage() {
+  const confirm = useConfirm()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: cartItems = [], isLoading, isFetching } = useCart()
@@ -121,7 +123,7 @@ export default function CartPage() {
   }
 
   const handleClearCart = async () => {
-    if (!window.confirm('Xóa toàn bộ sản phẩm trong giỏ?')) return
+    if (!(await confirm('Xóa toàn bộ sản phẩm trong giỏ?'))) return
     try {
       setClearing(true)
       await clearCartApi()
@@ -195,7 +197,7 @@ export default function CartPage() {
           action={
             <Link
               to={ROUTE_PATHS.USER_HOME}
-              className='inline-flex h-12 items-center gap-2 rounded-full bg-ink-950 px-7 font-semibold text-white transition hover:bg-berry-600'
+              className='inline-flex h-12 items-center gap-2 rounded-lg bg-berry-600 px-7 font-semibold text-white transition hover:bg-berry-700'
             >
               Bắt đầu mua sắm <ArrowRight size={18} />
             </Link>
@@ -253,8 +255,8 @@ export default function CartPage() {
                       aria-label={`Chọn ${product.name}`}
                       onClick={() => toggleItem(item._id)}
                       className={cn(
-                        'mt-1 grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-lg border-[1.5px] transition',
-                        selected ? 'border-ink-950 bg-ink-950 text-white' : 'border-ink-300 bg-white text-transparent hover:border-ink-950'
+                        'mt-1 grid h-6 w-6 shrink-0 cursor-pointer place-items-center rounded-lg border transition',
+                        selected ? 'border-berry-600 bg-berry-600 text-white' : 'border-ink-300 bg-white text-transparent hover:border-berry-300'
                       )}
                     >
                       <Check size={14} strokeWidth={3} />
@@ -280,7 +282,7 @@ export default function CartPage() {
                       </div>
 
                       <div className='mt-auto flex items-center justify-between pt-3'>
-                        <div className='inline-flex h-10 items-center rounded-full border-[1.5px] border-ink-200 px-0.5'>
+                        <div className='inline-flex h-10 items-center rounded-lg border border-ink-200 px-0.5'>
                           <button
                             type='button'
                             aria-label='Giảm số lượng'
@@ -325,59 +327,59 @@ export default function CartPage() {
           <CartAddOns cartProductIds={cartProductIds} />
         </div>
 
-        <aside className='h-fit rounded-4xl bg-ink-950 p-6 text-white lg:sticky lg:top-36 sm:p-8'>
+        <aside className='h-fit rounded-4xl border border-ink-200 bg-white p-6 text-ink-950 shadow-soft lg:sticky lg:top-36 sm:p-8'>
           <h2 className='font-display text-2xl font-bold'>Tóm tắt</h2>
-          <p className='mt-1 text-sm text-ink-400'>{selectedItems.length} sản phẩm được chọn</p>
+          <p className='mt-1 text-sm text-ink-500'>{selectedItems.length} sản phẩm được chọn</p>
 
           <form onSubmit={handleApplyPromo} className='mt-6'>
-            <label htmlFor='promo' className='text-sm text-ink-300'>
+            <label htmlFor='promo' className='text-sm text-ink-600'>
               Mã giảm giá
             </label>
             <div className='mt-2 flex gap-2'>
               <div className='relative min-w-0 flex-1'>
-                <Tag size={16} className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-400' aria-hidden />
+                <Tag size={16} className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-500' aria-hidden />
                 <input
                   id='promo'
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                   placeholder='VD: GLOW10'
-                  className='h-12 w-full rounded-full border-[1.5px] border-white/15 bg-white/5 pl-10 pr-4 text-sm font-semibold uppercase tracking-wider text-white outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-400 focus:border-lime-300'
+                  className='h-12 w-full rounded-full border border-ink-200 bg-ink-50 pl-10 pr-4 text-sm font-semibold uppercase tracking-wider text-ink-950 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-ink-400 focus:border-berry-500'
                 />
               </div>
               <button
                 type='submit'
                 disabled={voucherLoading || subtotal <= 0}
-                className='h-12 shrink-0 cursor-pointer rounded-full bg-white px-5 text-sm font-semibold text-ink-950 transition hover:bg-lime-300 disabled:opacity-40'
+                className='h-12 shrink-0 cursor-pointer rounded-lg border border-ink-200 bg-white px-5 text-sm font-semibold text-ink-950 transition hover:bg-ink-100 disabled:opacity-40'
               >
                 {voucherLoading ? '…' : 'Áp dụng'}
               </button>
             </div>
             {voucher ? (
-              <p className='mt-2 text-sm font-semibold text-lime-300'>
+              <p className='mt-2 text-sm font-semibold text-emerald-700'>
                 ✓ Mã {voucher.voucher.code}: giảm {money(discount)}
               </p>
             ) : null}
           </form>
 
-          <dl className='mt-6 space-y-3 border-t border-white/10 pt-6 text-sm'>
+          <dl className='mt-6 space-y-3 border-t border-ink-200 pt-6 text-sm'>
             <div className='flex justify-between'>
-              <dt className='text-ink-300'>Tạm tính</dt>
+              <dt className='text-ink-600'>Tạm tính</dt>
               <dd className='font-semibold'>{money(subtotal)}</dd>
             </div>
             {discount > 0 ? (
-              <div className='flex justify-between text-lime-300'>
+              <div className='flex justify-between text-emerald-700'>
                 <dt>Giảm giá</dt>
                 <dd className='font-semibold'>−{money(discount)}</dd>
               </div>
             ) : null}
             <div className='flex justify-between'>
-              <dt className='text-ink-300'>Vận chuyển</dt>
-              <dd className='text-ink-300'>Tính ở bước sau</dd>
+              <dt className='text-ink-600'>Vận chuyển</dt>
+              <dd className='text-ink-600'>Tính ở bước sau</dd>
             </div>
           </dl>
 
-          <div className='mt-6 flex items-end justify-between border-t border-white/10 pt-6'>
-            <span className='text-ink-300'>Tổng tạm tính</span>
+          <div className='mt-6 flex items-end justify-between border-t border-ink-200 pt-6'>
+            <span className='text-ink-600'>Tổng tạm tính</span>
             <span className='font-display text-3xl font-bold'>{money(estimatedTotal)}</span>
           </div>
 
@@ -385,11 +387,11 @@ export default function CartPage() {
             type='button'
             disabled={isLoading || selectedItems.length === 0 || stockFail}
             onClick={handleCheckout}
-            className='mt-6 flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-full bg-berry-500 font-semibold text-white shadow-glow transition hover:bg-berry-400 disabled:pointer-events-none disabled:opacity-40'
+            className='mt-6 flex h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-berry-600 font-semibold text-white transition hover:bg-berry-700 disabled:pointer-events-none disabled:opacity-40'
           >
             Thanh toán <ArrowRight size={18} />
           </button>
-          <p className='mt-4 flex items-center justify-center gap-1.5 text-xs text-ink-400'>
+          <p className='mt-4 flex items-center justify-center gap-1.5 text-xs text-ink-500'>
             <Lock size={12} aria-hidden /> Thanh toán qua cổng PayOS / MoMo hoặc COD
           </p>
         </aside>

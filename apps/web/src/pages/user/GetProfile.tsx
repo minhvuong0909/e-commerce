@@ -69,7 +69,7 @@ function RecentOrderCard({ order }: { order: OrderUI }) {
   return (
     <Link
       to={ROUTE_PATHS.USER_ORDER_DETAIL(order.id)}
-      className='group flex items-center justify-between gap-3 rounded-3xl p-4 ring-1 ring-ink-100 transition hover:ring-ink-950'
+      className='group flex items-center justify-between gap-3 rounded-3xl p-4 ring-1 ring-ink-100 transition hover:ring-berry-300'
     >
       <div className='min-w-0'>
         <p className='font-semibold'>Đơn {order.code}</p>
@@ -197,18 +197,17 @@ export default function ProfilePage() {
       <div className='grid gap-6 lg:grid-cols-[300px_1fr]'>
         {/* identity + nav */}
         <aside className='h-fit space-y-3 lg:sticky lg:top-36'>
-          <div className='relative overflow-hidden rounded-4xl bg-ink-950 p-6 text-white'>
-            <div aria-hidden className='pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-berry-500/40 blur-3xl' />
+          <div className='relative overflow-hidden rounded-4xl border border-berry-100 bg-berry-50 p-6 text-ink-950'>
             <div className='relative'>
-              <div className='h-20 w-20 overflow-hidden rounded-[1.75rem] bg-berry-300 ring-4 ring-white/10'>
+              <div className='h-20 w-20 overflow-hidden rounded-[1.75rem] bg-berry-200 ring-4 ring-white'>
                 {displayUser.avatar ? (
                   <img src={displayUser.avatar} alt='' className='h-full w-full object-cover' />
                 ) : (
-                  <div className='grid h-full place-items-center font-display text-3xl font-bold text-ink-950'>{initials}</div>
+                  <div className='grid h-full place-items-center font-display text-3xl font-bold text-berry-800'>{initials}</div>
                 )}
               </div>
               <h1 className='mt-4 font-display text-2xl font-bold leading-tight'>{displayUser.name}</h1>
-              <p className='text-sm text-ink-300'>@{displayUser.username}</p>
+              <p className='text-sm text-ink-600'>@{displayUser.username}</p>
               {user.verify_status === 1 ? (
                 <span className='chip mt-3 bg-lime-300 px-2.5 py-1 text-xs text-ink-950'>
                   <BadgeCheck size={13} aria-hidden /> Đã xác thực
@@ -230,7 +229,7 @@ export default function ProfilePage() {
                 aria-current={activeTab === id ? 'page' : undefined}
                 className={cn(
                   'flex shrink-0 cursor-pointer items-center gap-3 rounded-3xl px-4 py-3 text-left text-sm font-semibold transition',
-                  activeTab === id ? 'bg-ink-950 text-white' : 'text-ink-700 hover:bg-ink-50'
+                  activeTab === id ? 'bg-berry-50 text-berry-700' : 'text-ink-700 hover:bg-ink-50'
                 )}
               >
                 <Icon size={18} aria-hidden />
@@ -321,7 +320,7 @@ export default function ProfilePage() {
                   <div className='rounded-3xl border border-dashed border-ink-200 px-5 py-10 text-center'>
                     <Package size={26} className='mx-auto text-ink-300' aria-hidden />
                     <p className='mt-3 font-semibold'>Chưa có đơn hàng</p>
-                    <Link to={ROUTE_PATHS.USER_HOME} className='mt-4 inline-flex h-10 items-center rounded-full bg-ink-950 px-5 text-sm font-semibold text-white'>
+                    <Link to={ROUTE_PATHS.USER_HOME} className='mt-4 inline-flex h-10 items-center rounded-lg bg-berry-600 px-5 text-sm font-semibold text-white hover:bg-berry-700'>
                       Khám phá sản phẩm
                     </Link>
                   </div>

@@ -10,6 +10,7 @@ import money from '../../../utils/money'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import { getRole, USER_ROLE } from '../../../utils/authSession'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 type Product = {
   name: string
@@ -58,6 +59,7 @@ function getPaymentStatusLabel(status: number) {
 }
 
 export default function AdminOrderDetailPage() {
+  const confirm = useConfirm()
   const { id } = useParams<{ id: string }>()
   const [updating, setUpdating] = useState(false)
   const [refunding, setRefunding] = useState(false)
@@ -96,7 +98,7 @@ export default function AdminOrderDetailPage() {
 
   const handleRefund = async () => {
     if (!id) return
-    if (!window.confirm('Hoàn tiền cho đơn này? Tồn kho sẽ được cộng lại và đơn chuyển sang trạng thái đã hủy.')) return
+    if (!(await confirm('Hoàn tiền cho đơn này? Tồn kho sẽ được cộng lại và đơn chuyển sang trạng thái đã hủy.'))) return
     try {
       setRefunding(true)
       await refundOrderApi(id)

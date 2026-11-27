@@ -21,6 +21,7 @@ import { generateProductDescriptionApi } from '../../../services/ai.services'
 import type { Product } from '../../../models/ProductRequests'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import { ROUTE_PATHS } from '../../../routes/route.paths'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 type MediaPreview = {
   id: string
@@ -152,6 +153,7 @@ export default function AdminProductEditPage() {
 }
 
 function ProductEditForm({ productId, product }: { productId: string; product: Product }) {
+  const confirm = useConfirm()
   const nav = useNavigate()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -280,7 +282,7 @@ function ProductEditForm({ productId, product }: { productId: string; product: P
   }
 
   const handleDelete = async () => {
-    if (!window.confirm('Xóa sản phẩm này? Hành động không thể hoàn tác.')) return
+    if (!(await confirm('Xóa sản phẩm này? Hành động không thể hoàn tác.'))) return
     try {
       setDeleting(true)
       await deleteProductApi(productId)

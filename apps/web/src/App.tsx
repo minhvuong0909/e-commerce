@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, BrowserRouter, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { ConfirmProvider } from './components/ui/ConfirmDialog'
 import AuthLayout from './layouts/AuthLayout'
 import UserLayout from './layouts/UserLayout'
 import HomePage from './pages/user/HomePage'
@@ -98,10 +99,11 @@ function PageLoadingFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+    <ConfirmProvider>
       <ScrollToTop />
       <AuthBootstrap />
       <AuthNoticeListener />
-      <Toaster richColors position='top-center' toastOptions={{ style: { borderRadius: '1rem', fontFamily: 'inherit' } }} />
+      <Toaster position='top-center' toastOptions={{ unstyled: false, classNames: { toast: 'app-toast', title: 'app-toast-title', description: 'app-toast-desc' } }} />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
@@ -281,6 +283,7 @@ export default function App() {
           <Route path='*' element={<Navigate to={ROUTE_PATHS.USER} replace />} />
         </Routes>
       </Suspense>
+    </ConfirmProvider>
     </BrowserRouter>
   )
 }

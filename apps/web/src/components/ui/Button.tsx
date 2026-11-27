@@ -13,11 +13,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-ink-950 text-white hover:bg-ink-800 shadow-xs',
-  accent: 'bg-berry-600 text-white hover:bg-berry-700 shadow-glow',
-  gradient: 'bg-gradient-to-r from-berry-600 via-berry-500 to-lilac-500 text-white shadow-glow hover:brightness-110',
-  secondary: 'border-[1.5px] border-ink-200 bg-white text-ink-950 hover:border-ink-950',
-  outline: 'border-[1.5px] border-ink-950 bg-transparent text-ink-950 hover:bg-ink-950 hover:text-white',
+  primary: 'bg-berry-600 text-white hover:bg-berry-700 shadow-xs',
+  accent: 'bg-berry-600 text-white hover:bg-berry-700',
+  gradient: 'bg-berry-600 text-white hover:bg-berry-700',
+  secondary: 'border border-ink-200 bg-white text-ink-950 hover:border-berry-300',
+  outline: 'border border-berry-600 bg-transparent text-berry-700 hover:bg-berry-50',
   ghost: 'bg-transparent text-ink-700 hover:bg-ink-100 hover:text-ink-950',
   danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs'
 }
@@ -47,7 +47,7 @@ export default function Button({
       disabled={isDisabled}
       aria-busy={loading || undefined}
       className={cn(
-        'inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-berry-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        'inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-lg font-semibold transition duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-berry-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         variants[variant],
         sizes[size],
         full && 'w-full',

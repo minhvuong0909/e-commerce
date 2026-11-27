@@ -94,7 +94,7 @@ export default function ChangePasswordPage() {
   if (profileLoading) {
     return (
       <div className='mx-auto max-w-xl px-4 py-16 text-center' aria-busy='true'>
-        <span className='inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-ink-950 border-t-transparent' />
+        <span className='inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-berry-500 border-t-transparent' />
         <p className='mt-3 text-sm text-ink-500'>Đang kiểm tra tài khoản…</p>
       </div>
     )

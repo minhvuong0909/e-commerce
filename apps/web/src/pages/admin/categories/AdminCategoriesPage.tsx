@@ -9,6 +9,7 @@ import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
 import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { deleteCategoryApi, getCategoriesApi } from '../../../services/categories.services'
 import { getApiErrorMessage } from '../../../utils/apiError'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 type Category = {
   _id?: string
@@ -21,6 +22,7 @@ type Category = {
 }
 
 export default function AdminCategoriesPage() {
+  const confirm = useConfirm()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -48,7 +50,7 @@ export default function AdminCategoriesPage() {
   const error = isError ? 'Không tải được danh sách danh mục' : ''
 
   const handleDelete = async (categoryId: string) => {
-    if (!window.confirm('Xóa danh mục này? Hành động không thể hoàn tác.')) return
+    if (!(await confirm('Xóa danh mục này? Hành động không thể hoàn tác.'))) return
     try {
       setDeletingId(categoryId)
       await deleteCategoryApi(categoryId)

@@ -8,7 +8,6 @@ import {
   Package,
   Search,
   ShoppingBag,
-  Sparkles,
   UserRound,
   X
 } from 'lucide-react'
@@ -112,7 +111,7 @@ function HeaderSearch({
           onChange={(e) => setValue(e.target.value)}
           placeholder='Tìm serum, kem chống nắng, son…'
           aria-label='Tìm kiếm sản phẩm'
-          className='h-12 w-full rounded-full border-[1.5px] border-transparent bg-ink-100/70 pl-11 pr-12 text-[15px] text-ink-950 outline-none transition placeholder:text-ink-500 hover:bg-ink-100 focus:border-ink-950 focus:bg-white'
+          className='h-12 w-full rounded-full border border-transparent bg-ink-100/70 pl-11 pr-12 text-[15px] text-ink-950 outline-none transition placeholder:text-ink-500 hover:bg-ink-100 focus:border-berry-500 focus:bg-white'
         />
         <kbd className='pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-ink-500 shadow-xs lg:block'>
           /
@@ -249,31 +248,29 @@ export default function UserLayout() {
   const navLinkCls = (active: boolean) =>
     cn(
       'relative shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition',
-      active ? 'bg-ink-950 text-white' : 'text-ink-700 hover:bg-ink-100 hover:text-ink-950'
+      active ? 'bg-berry-50 text-berry-700' : 'text-ink-700 hover:bg-ink-100 hover:text-ink-950'
     )
 
   return (
     <div className='min-h-screen bg-canvas text-ink-950'>
       <a
         href='#main'
-        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-ink-950 focus:px-4 focus:py-2 focus:text-white'
+        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-berry-600 focus:px-4 focus:py-2 focus:text-white'
       >
         Bỏ qua tới nội dung
       </a>
 
-      {/* ticker */}
-      <div className='overflow-hidden bg-ink-950 text-white' aria-label='Thông tin nổi bật'>
-        <div className='flex w-max animate-marquee gap-10 py-2 text-[13px] font-medium motion-reduce:animate-none'>
-          {[...TICKER, ...TICKER].map((t, i) => (
-            <span key={i} className='inline-flex items-center gap-10' aria-hidden={i >= TICKER.length}>
+      {/* announcement */}
+      <div className='border-b border-berry-100 bg-berry-50 text-berry-800'>
+        <div className='mx-auto flex max-w-[1320px] flex-wrap items-center justify-center gap-x-8 gap-y-1 px-4 py-2 text-[13px] text-berry-800 md:px-6'>
+          {TICKER.map((t, i) => (
+            <span key={i} className={i > 1 ? 'hidden md:inline' : undefined}>
               {t}
-              <Sparkles size={12} className='text-lime-300' aria-hidden />
             </span>
           ))}
         </div>
       </div>
-
-      <header className='glass-header sticky top-0 z-50'>
+<header className='glass-header sticky top-0 z-50'>
         <div className='mx-auto flex max-w-[1320px] items-center gap-3 px-4 py-3 md:gap-6 md:px-6'>
           <button
             type='button'
@@ -346,14 +343,14 @@ export default function UserLayout() {
                       <Link
                         role='menuitem'
                         to={ROUTE_PATHS.AUTH_LOGIN}
-                        className='mt-4 flex h-11 items-center justify-center rounded-full bg-ink-950 text-sm font-semibold text-white hover:bg-ink-800'
+                        className='mt-4 flex h-11 items-center justify-center rounded-full bg-berry-600 text-sm font-semibold text-white hover:bg-berry-700'
                       >
                         Đăng nhập
                       </Link>
                       <Link
                         role='menuitem'
                         to={ROUTE_PATHS.AUTH_REGISTER}
-                        className='mt-2 flex h-11 items-center justify-center rounded-full border-[1.5px] border-ink-200 text-sm font-semibold hover:border-ink-950'
+                        className='mt-2 flex h-11 items-center justify-center rounded-full border border-ink-200 text-sm font-semibold hover:border-berry-300'
                       >
                         Tạo tài khoản
                       </Link>
@@ -366,7 +363,7 @@ export default function UserLayout() {
             <Link
               to={ROUTE_PATHS.USER_CART}
               aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
-              className='ml-1 inline-flex h-11 items-center gap-2 rounded-full bg-ink-950 pl-4 pr-1.5 text-sm font-semibold text-white transition hover:bg-berry-600'
+              className='ml-1 inline-flex h-11 items-center gap-2 rounded-full bg-berry-600 pl-4 pr-1.5 text-sm font-semibold text-white transition hover:bg-berry-700'
             >
               <ShoppingBag size={18} aria-hidden />
               <span className='hidden sm:inline'>Giỏ</span>
@@ -436,7 +433,7 @@ export default function UserLayout() {
               {!hasToken ? (
                 <Link
                   to={ROUTE_PATHS.AUTH_LOGIN}
-                  className='mt-8 flex h-12 items-center justify-center gap-2 rounded-full bg-ink-950 font-semibold text-white'
+                  className='mt-8 flex h-12 items-center justify-center gap-2 rounded-full bg-berry-600 font-semibold text-white hover:bg-berry-700'
                 >
                   <LogIn size={18} /> Đăng nhập
                 </Link>
@@ -451,51 +448,51 @@ export default function UserLayout() {
       </main>
 
       {/* footer */}
-      <footer className='mt-24 bg-ink-950 text-white'>
+      <footer className='mt-24 border-t border-ink-200 bg-white text-ink-950'>
         <div className='mx-auto max-w-[1320px] px-4 pb-28 pt-16 md:px-6 lg:pb-12'>
           <div className='grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]'>
             <div>
-              <BrandMark tone='light' />
-              <p className='mt-5 max-w-sm text-sm leading-relaxed text-ink-300'>
+              <BrandMark />
+              <p className='mt-5 max-w-sm text-sm leading-relaxed text-ink-600'>
                 Mỹ phẩm và skincare chọn lọc cho routine hằng ngày. Mua sắm dễ, thanh toán linh hoạt, theo dõi đơn rõ ràng.
               </p>
               <Link
                 to={ROUTE_PATHS.USER_HOME}
-                className='mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-lime-300 px-5 text-sm font-semibold text-ink-950 transition hover:bg-lime-200'
+                className='mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-berry-600 px-5 text-sm font-semibold text-white transition hover:bg-berry-700'
               >
                 Mua sắm ngay <ArrowUpRight size={16} />
               </Link>
             </div>
             <div>
-              <h4 className='text-sm font-semibold text-ink-400'>Danh mục</h4>
+              <h4 className='text-sm font-semibold text-ink-950'>Danh mục</h4>
               <ul className='mt-4 space-y-2.5 text-sm'>
                 {(categories.length ? categories.slice(0, 5) : []).map((c) => (
                   <li key={c.id}>
-                    <a href={categoryHref(c.id)} className='text-ink-200 transition hover:text-white'>
+                    <a href={categoryHref(c.id)} className='text-ink-600 transition hover:text-berry-700'>
                       {c.name}
                     </a>
                   </li>
                 ))}
                 <li>
-                  <a href={categoryHref()} className='text-ink-200 transition hover:text-white'>
+                  <a href={categoryHref()} className='text-ink-600 transition hover:text-berry-700'>
                     Tất cả sản phẩm
                   </a>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className='text-sm font-semibold text-ink-400'>Tài khoản</h4>
+              <h4 className='text-sm font-semibold text-ink-950'>Tài khoản</h4>
               <ul className='mt-4 space-y-2.5 text-sm'>
-                <li><Link to={ROUTE_PATHS.USER_PROFILE} className='text-ink-200 transition hover:text-white'>Hồ sơ</Link></li>
-                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-200 transition hover:text-white'>Tra cứu đơn hàng</Link></li>
-                <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-200 transition hover:text-white'>Giỏ hàng</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_PROFILE} className='text-ink-600 transition hover:text-berry-700'>Hồ sơ</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn hàng</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-600 transition hover:text-berry-700'>Giỏ hàng</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className='text-sm font-semibold text-ink-400'>Thanh toán</h4>
+              <h4 className='text-sm font-semibold text-ink-950'>Thanh toán</h4>
               <div className='mt-4 flex flex-wrap gap-2'>
                 {['COD', 'PayOS', 'MoMo'].map((m) => (
-                  <span key={m} className='chip bg-white/10 text-white'>
+                  <span key={m} className='chip border border-ink-200 bg-ink-50 text-ink-700'>
                     {m}
                   </span>
                 ))}
@@ -503,10 +500,10 @@ export default function UserLayout() {
             </div>
           </div>
 
-          <div aria-hidden className='mt-16 select-none font-display text-[18vw] font-extrabold leading-[0.8] tracking-tighter text-white/[0.06] lg:text-[13rem]'>
+          <div aria-hidden className='mt-16 select-none font-display text-[18vw] font-extrabold leading-[0.8] tracking-tighter text-berry-50 lg:text-[13rem]'>
             vibrant.
           </div>
-          <div className='mt-6 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs text-ink-400 sm:flex-row sm:justify-between'>
+          <div className='mt-6 flex flex-col gap-2 border-t border-ink-200 pt-6 text-xs text-ink-500 sm:flex-row sm:justify-between'>
             <span>© {new Date().getFullYear()} Vibrant Mart</span>
             <span>Made for glowing skin ✦</span>
           </div>
@@ -518,7 +515,7 @@ export default function UserLayout() {
       {/* mobile dock */}
       <nav
         aria-label='Điều hướng nhanh'
-        className='fixed inset-x-3 bottom-3 z-50 rounded-full bg-ink-950/95 p-1.5 shadow-lift backdrop-blur lg:hidden'
+        className='fixed inset-x-3 bottom-3 z-50 rounded-full border border-ink-200 bg-white/95 p-1.5 shadow-lift backdrop-blur lg:hidden'
       >
         <div className='grid grid-cols-4'>
           {[
@@ -533,7 +530,7 @@ export default function UserLayout() {
               className={({ isActive }) =>
                 cn(
                   'relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition',
-                  isActive ? 'bg-white text-ink-950' : 'text-ink-300 hover:text-white'
+                  isActive ? 'bg-berry-50 text-berry-700' : 'text-ink-500 hover:text-ink-950'
                 )
               }
             >

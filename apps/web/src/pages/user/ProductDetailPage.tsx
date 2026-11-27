@@ -193,7 +193,7 @@ export default function ProductDetailPage() {
                   aria-pressed={activeImageIndex === index}
                   className={cn(
                     'h-20 w-20 shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-berry-50 ring-2 transition',
-                    activeImageIndex === index ? 'ring-ink-950' : 'ring-transparent opacity-60 hover:opacity-100'
+                    activeImageIndex === index ? 'ring-berry-500' : 'ring-transparent opacity-60 hover:opacity-100'
                   )}
                 >
                   <img src={url} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover mix-blend-multiply' loading='lazy' />
@@ -250,7 +250,7 @@ export default function ProductDetailPage() {
           {!isOutOfStock ? (
             <div className='mt-8'>
               <span className='field-label'>Số lượng</span>
-              <div className='inline-flex h-12 items-center rounded-full border-[1.5px] border-ink-200 bg-white px-1'>
+              <div className='inline-flex h-12 items-center rounded-lg border border-ink-200 bg-white px-1'>
                 <button
                   type='button'
                   onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -289,8 +289,8 @@ export default function ProductDetailPage() {
               aria-label={isFavorited ? 'Bỏ yêu thích' : 'Lưu vào yêu thích'}
               aria-pressed={isFavorited}
               className={cn(
-                'grid h-[3.25rem] w-[3.25rem] shrink-0 cursor-pointer place-items-center rounded-full border-[1.5px] transition',
-                isFavorited ? 'border-berry-300 bg-berry-50 text-berry-600' : 'border-ink-200 text-ink-700 hover:border-ink-950'
+                'grid h-[3.25rem] w-[3.25rem] shrink-0 cursor-pointer place-items-center rounded-full border transition',
+                isFavorited ? 'border-berry-300 bg-berry-50 text-berry-600' : 'border-ink-200 text-ink-700 hover:border-berry-300'
               )}
             >
               <Heart size={20} className={cn(isFavorited && 'fill-current')} />
@@ -381,12 +381,12 @@ export default function ProductDetailPage() {
             )}
           </div>
 
-          <div className='h-fit rounded-3xl bg-ink-950 p-6 text-white'>
+          <div className='h-fit rounded-3xl border border-berry-100 bg-berry-50 p-6 text-ink-950'>
             <h3 className='font-display text-xl font-bold'>Viết đánh giá</h3>
             {getToken() ? (
               <div className='mt-4 space-y-4'>
                 <fieldset>
-                  <legend className='text-sm text-ink-300'>Bạn chấm mấy sao?</legend>
+                  <legend className='text-sm text-ink-600'>Bạn chấm mấy sao?</legend>
                   <div className='mt-2 flex items-center gap-1' onMouseLeave={() => setHoverRating(null)}>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <button
@@ -398,21 +398,21 @@ export default function ProductDetailPage() {
                         aria-pressed={reviewRating === n}
                         className='cursor-pointer p-1 transition hover:scale-110'
                       >
-                        <Star size={26} className={n <= activeStarCount ? 'fill-peach-300 text-peach-300' : 'fill-white/15 text-white/15'} />
+                        <Star size={26} className={n <= activeStarCount ? 'fill-peach-500 text-peach-500' : 'fill-ink-200 text-ink-200'} />
                       </button>
                     ))}
-                    <span className='ml-2 text-sm font-semibold text-peach-200'>{RATING_LABELS[activeStarCount]}</span>
+                    <span className='ml-2 text-sm font-semibold text-peach-700'>{RATING_LABELS[activeStarCount]}</span>
                   </div>
                 </fieldset>
                 <label className='block'>
-                  <span className='text-sm text-ink-300'>Cảm nhận của bạn</span>
+                  <span className='text-sm text-ink-600'>Cảm nhận của bạn</span>
                   <textarea
                     value={reviewComment}
                     onChange={(e) => setReviewComment(e.target.value)}
                     rows={4}
                     maxLength={1000}
                     placeholder='Kết cấu, mùi hương, hiệu quả sau khi dùng…'
-                    className='mt-2 w-full rounded-2xl border-[1.5px] border-white/15 bg-white/5 p-3.5 text-sm text-white outline-none placeholder:text-ink-400 focus:border-berry-300'
+                    className='mt-2 w-full rounded-2xl border border-ink-200 bg-ink-50 p-3.5 text-sm text-ink-950 outline-none placeholder:text-ink-400 focus:border-berry-500'
                   />
                 </label>
                 <Button variant='accent' full loading={reviewLoading} disabled={!reviewComment.trim()} onClick={handleSubmitReview}>
@@ -420,8 +420,8 @@ export default function ProductDetailPage() {
                 </Button>
               </div>
             ) : (
-              <p className='mt-3 text-sm leading-relaxed text-ink-300'>
-                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-semibold text-lime-300 hover:underline'>
+              <p className='mt-3 text-sm leading-relaxed text-ink-600'>
+                <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-semibold text-emerald-700 hover:underline'>
                   Đăng nhập
                 </Link>{' '}
                 để chia sẻ trải nghiệm về sản phẩm này.

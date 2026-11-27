@@ -15,7 +15,7 @@ export default function BrandMark({ className, tone = 'dark', compact = false }:
         aria-hidden
         className={cn(
           'relative grid h-10 w-10 shrink-0 place-items-center rounded-[0.9rem]',
-          light ? 'bg-white text-ink-950' : 'bg-ink-950 text-berry-300'
+          light ? 'bg-white text-ink-950' : 'bg-berry-600 text-white'
         )}
       >
         <svg viewBox='0 0 24 24' className='h-5 w-5' fill='currentColor'>

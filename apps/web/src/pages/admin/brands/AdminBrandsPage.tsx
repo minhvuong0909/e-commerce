@@ -11,6 +11,7 @@ import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { deleteBrandApi, getBrandsApi } from '../../../services/brands.services'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 function SkeletonRow() {
   return (
@@ -25,6 +26,7 @@ function SkeletonRow() {
 }
 
 export default function AdminBrandsPage() {
+  const confirm = useConfirm()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -52,7 +54,7 @@ export default function AdminBrandsPage() {
   const error = isError ? 'Không tải được danh sách thương hiệu' : ''
 
   const handleDelete = async (brandId: string) => {
-    if (!window.confirm('Xóa thương hiệu này? Hành động không thể hoàn tác.')) return
+    if (!(await confirm('Xóa thương hiệu này? Hành động không thể hoàn tác.'))) return
     try {
       setDeletingId(brandId)
       await deleteBrandApi(brandId)

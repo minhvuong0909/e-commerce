@@ -158,7 +158,7 @@ export default function AdminDashboardPage() {
         <button
           type='button'
           onClick={() => void summary.refetch()}
-          className='inline-flex h-10 cursor-pointer items-center gap-2 rounded-full bg-rose-600 px-5 text-sm font-semibold text-white hover:bg-rose-700'
+          className='inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-rose-600 px-5 text-sm font-semibold text-white hover:bg-rose-700'
         >
           <RefreshCw size={15} /> Thử lại
         </button>
@@ -186,8 +186,8 @@ export default function AdminDashboardPage() {
                 aria-selected={presetId === p.id}
                 onClick={() => setPresetId(p.id)}
                 className={cn(
-                  'h-9 cursor-pointer rounded-full px-4 text-sm font-semibold transition',
-                  presetId === p.id ? 'bg-ink-950 text-white' : 'text-ink-600 hover:text-ink-950'
+                  'h-9 cursor-pointer rounded-lg px-4 text-sm font-semibold transition',
+                  presetId === p.id ? 'bg-berry-50 text-berry-700' : 'text-ink-600 hover:text-ink-950'
                 )}
               >
                 {p.label}
@@ -306,7 +306,7 @@ export default function AdminDashboardPage() {
                       className={cn('w-full rounded-t-md transition', b.revenue ? 'bg-berry-500 group-hover:bg-berry-600' : 'bg-ink-100')}
                       style={{ height: `${b.revenue ? Math.max(4, (b.revenue / maxRevenue) * 100) : 2}%` }}
                     />
-                    {b.orders ? <span className='absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-ink-950' aria-hidden /> : null}
+                    {b.orders ? <span className='absolute -top-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-berry-700' aria-hidden /> : null}
                     <div className='pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-xl bg-ink-950 px-3 py-2 text-xs text-white group-hover:block'>
                       <p className='font-semibold'>{b.title}</p>
                       <p>{money(b.revenue)}</p>

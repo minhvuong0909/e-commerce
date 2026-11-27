@@ -70,7 +70,7 @@ function Step({ n, title, done, children, aside }: { n: number; title: string; d
         <span
           className={cn(
             'grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-bold transition',
-            done ? 'bg-lime-300 text-ink-950' : 'bg-ink-950 text-white'
+            done ? 'bg-lime-300 text-ink-950' : 'bg-berry-600 text-white'
           )}
         >
           {done ? <Check size={16} strokeWidth={3} aria-label='Đã xong' /> : n}
@@ -85,8 +85,8 @@ function Step({ n, title, done, children, aside }: { n: number; title: string; d
 
 const optionCls = (selected: boolean) =>
   cn(
-    'relative flex cursor-pointer items-start gap-3 rounded-3xl border-[1.5px] p-4 transition',
-    selected ? 'border-ink-950 bg-white shadow-soft' : 'border-ink-100 bg-white hover:border-ink-300'
+    'relative flex cursor-pointer items-start gap-3 rounded-3xl border p-4 transition',
+    selected ? 'border-berry-500 bg-white shadow-soft' : 'border-ink-100 bg-white hover:border-ink-300'
   )
 
 function Radio({ checked }: { checked: boolean }) {
@@ -94,11 +94,11 @@ function Radio({ checked }: { checked: boolean }) {
     <span
       aria-hidden
       className={cn(
-        'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border-[1.5px] transition',
-        checked ? 'border-ink-950' : 'border-ink-300'
+        'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition',
+        checked ? 'border-berry-500' : 'border-ink-300'
       )}
     >
-      <span className={cn('h-2.5 w-2.5 rounded-full transition', checked ? 'bg-ink-950' : 'bg-transparent')} />
+      <span className={cn('h-2.5 w-2.5 rounded-full transition', checked ? 'bg-berry-600' : 'bg-transparent')} />
     </span>
   )
 }
@@ -475,7 +475,7 @@ export default function CheckoutPage() {
                     if (tab.id === 'manual') setCoords(null)
                   }}
                   className={cn(
-                    'inline-flex h-10 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-semibold transition',
+                    'inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg px-4 text-sm font-semibold transition',
                     addressMode === tab.id ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-950'
                   )}
                 >
@@ -656,7 +656,7 @@ export default function CheckoutPage() {
                       {image ? (
                         <img src={image} alt='' referrerPolicy='no-referrer' className='h-full w-full rounded-2xl object-contain p-1 mix-blend-multiply' />
                       ) : null}
-                      <span className='absolute -right-1.5 -top-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-ink-950 px-1 text-xs font-bold text-white'>
+                      <span className='absolute -right-1.5 -top-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-berry-600 px-1 text-xs font-bold text-white'>
                         {item.quantity}
                       </span>
                     </span>

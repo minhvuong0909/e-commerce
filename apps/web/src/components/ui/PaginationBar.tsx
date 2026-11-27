@@ -24,7 +24,7 @@ function pageWindow(current: number, total: number): Array<number | 'gap'> {
 }
 
 const navBtn =
-  'grid h-10 w-10 cursor-pointer place-items-center rounded-full border-[1.5px] border-ink-200 bg-white text-ink-950 transition hover:border-ink-950 disabled:pointer-events-none disabled:opacity-40'
+  'grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-ink-200 bg-white text-ink-950 transition hover:border-berry-300 disabled:pointer-events-none disabled:opacity-40'
 
 export default function PaginationBar({
   pagination,
@@ -67,7 +67,7 @@ export default function PaginationBar({
                 onClick={() => onPageChange(p)}
                 className={cn(
                   'h-10 min-w-10 cursor-pointer rounded-full px-3 text-sm font-semibold transition',
-                  p === page ? 'bg-ink-950 text-white' : 'text-ink-700 hover:bg-ink-100'
+                  p === page ? 'bg-berry-50 text-berry-700 ring-1 ring-berry-200' : 'text-ink-700 hover:bg-ink-100'
                 )}
               >
                 {p}

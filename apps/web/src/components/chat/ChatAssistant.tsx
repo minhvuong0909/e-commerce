@@ -108,13 +108,13 @@ export default function ChatAssistant() {
           onClick={() => setOpen(true)}
           aria-label='Mở trợ lý chăm sóc da'
           className={cn(
-            'group fixed bottom-[5.75rem] right-4 z-[60] h-14 cursor-pointer items-center gap-2 rounded-full bg-ink-950 pl-4 pr-5 text-white shadow-lift transition hover:bg-berry-600 lg:bottom-6 lg:right-6',
+            'group fixed bottom-[5.75rem] right-4 z-[60] h-14 cursor-pointer items-center gap-2 rounded-full bg-berry-600 pl-4 pr-5 text-white shadow-lift transition hover:bg-berry-700 lg:bottom-6 lg:right-6',
             hideOnMobile ? 'hidden lg:inline-flex' : 'inline-flex'
           )}
         >
-          <span className='relative grid h-8 w-8 place-items-center rounded-full bg-berry-500 transition group-hover:bg-white group-hover:text-berry-600'>
+          <span className='relative grid h-8 w-8 place-items-center rounded-full bg-white/20 transition'>
             <MessageCircleHeart size={18} aria-hidden />
-            <span className='absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-lime-300 ring-2 ring-ink-950 group-hover:ring-berry-600' />
+            <span className='absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-lime-300 ring-2 ring-berry-600 group-hover:ring-berry-700' />
           </span>
           <span className='text-sm font-semibold'>Hỏi trợ lý da</span>
         </button>
@@ -128,16 +128,15 @@ export default function ChatAssistant() {
           className='fixed inset-x-0 bottom-0 z-[95] flex h-[85vh] flex-col overflow-hidden rounded-t-4xl bg-canvas shadow-lift ring-1 ring-ink-100 animate-fade-up sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[640px] sm:max-h-[calc(100vh-3rem)] sm:w-[400px] sm:rounded-4xl'
         >
           {/* header */}
-          <div className='relative overflow-hidden bg-ink-950 px-5 pb-5 pt-4 text-white'>
-            <div aria-hidden className='pointer-events-none absolute -right-10 -top-16 h-40 w-40 rounded-full bg-berry-500/50 blur-3xl' />
+          <div className='relative overflow-hidden border-b border-ink-200 bg-white px-5 pb-4 pt-4 text-ink-950'>
             <div className='relative flex items-center gap-3'>
-              <span className='grid h-11 w-11 place-items-center rounded-2xl bg-berry-300 text-ink-950'>
+              <span className='grid h-11 w-11 place-items-center rounded-2xl bg-berry-50 text-berry-700'>
                 <Sparkles size={20} aria-hidden />
               </span>
               <div className='min-w-0 flex-1'>
                 <p className='font-display text-lg font-bold leading-tight'>Trợ lý da Vibrant</p>
-                <p className='flex items-center gap-1.5 text-xs text-ink-300'>
-                  <span className='h-1.5 w-1.5 rounded-full bg-lime-300' aria-hidden /> Gợi ý từ sản phẩm đang có hàng
+                <p className='flex items-center gap-1.5 text-xs text-ink-600'>
+                  <span className='h-1.5 w-1.5 rounded-full bg-emerald-500' aria-hidden /> Gợi ý từ sản phẩm đang có hàng
                 </p>
               </div>
               <button
@@ -145,7 +144,7 @@ export default function ChatAssistant() {
                 onClick={reset}
                 aria-label='Bắt đầu cuộc trò chuyện mới'
                 title='Trò chuyện mới'
-                className='grid h-9 w-9 cursor-pointer place-items-center rounded-full text-ink-300 transition hover:bg-white/10 hover:text-white'
+                className='grid h-9 w-9 cursor-pointer place-items-center rounded-full text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
               >
                 <RotateCcw size={16} />
               </button>
@@ -153,7 +152,7 @@ export default function ChatAssistant() {
                 type='button'
                 onClick={() => setOpen(false)}
                 aria-label='Đóng trợ lý'
-                className='grid h-9 w-9 cursor-pointer place-items-center rounded-full text-ink-300 transition hover:bg-white/10 hover:text-white'
+                className='grid h-9 w-9 cursor-pointer place-items-center rounded-full text-ink-600 transition hover:bg-ink-100 hover:text-ink-950'
               >
                 <X size={18} />
               </button>
@@ -168,7 +167,7 @@ export default function ChatAssistant() {
                   className={cn(
                     'max-w-[85%] whitespace-pre-line rounded-3xl px-4 py-2.5 text-[14px] leading-relaxed',
                     m.role === 'user'
-                      ? 'rounded-br-lg bg-ink-950 text-white'
+                      ? 'rounded-br-lg bg-berry-600 text-white'
                       : m.error
                         ? 'rounded-bl-lg bg-rose-50 text-rose-700'
                         : 'rounded-bl-lg bg-white text-ink-900 ring-1 ring-ink-100'
@@ -185,7 +184,7 @@ export default function ChatAssistant() {
                           key={p._id}
                           to={ROUTE_PATHS.USER_PRODUCT_DETAIL(p._id)}
                           onClick={() => setOpen(false)}
-                          className='flex w-44 shrink-0 items-center gap-2 rounded-2xl bg-white p-2 ring-1 ring-ink-100 transition hover:ring-ink-950'
+                          className='flex w-44 shrink-0 items-center gap-2 rounded-2xl bg-white p-2 ring-1 ring-ink-100 transition hover:ring-berry-300'
                         >
                           <span className='h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-berry-50'>
                             {img ? <img src={img} alt='' className='h-full w-full object-contain p-0.5 mix-blend-multiply' /> : null}
@@ -217,7 +216,7 @@ export default function ChatAssistant() {
                     key={q}
                     type='button'
                     onClick={() => void send(q)}
-                    className='chip cursor-pointer border-[1.5px] border-ink-200 bg-white text-left text-ink-800 transition hover:border-ink-950'
+                    className='chip cursor-pointer border border-ink-200 bg-white text-left text-ink-800 transition hover:border-berry-300'
                   >
                     {q}
                   </button>
@@ -228,7 +227,7 @@ export default function ChatAssistant() {
 
           {/* composer */}
           <form onSubmit={onSubmit} className='border-t border-ink-100 bg-white px-3 pb-3 pt-3'>
-            <div className='flex items-end gap-2 rounded-3xl bg-ink-50 p-1.5 pl-4 ring-1 ring-transparent focus-within:bg-white focus-within:ring-ink-950'>
+            <div className='flex items-end gap-2 rounded-3xl bg-ink-50 p-1.5 pl-4 ring-1 ring-transparent focus-within:bg-white focus-within:ring-berry-400'>
               <label htmlFor='chat-input' className='sr-only'>
                 Câu hỏi của bạn
               </label>
