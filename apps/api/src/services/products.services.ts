@@ -4,7 +4,7 @@ import Product from '~/models/schemas/Products.schema'
 import databaseService from './database.service'
 import { ObjectId } from 'mongodb'
 import { ErrorWithStatus } from '~/models/Errors'
-import { BRANDS_MESSAGES, CATEGORY_MESSAGES, PRODUCT_MESSAGES, USERS_MESSAGES } from '~/constants/messages'
+import { BRANDS_MESSAGES, CATEGORY_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import ProductMedia from '~/models/schemas/ProductImages.schema'
 import { Request } from 'express'
@@ -49,7 +49,6 @@ class ProductServices {
         status: payload.status || PRODUCT_STATUS.Active
       })
     )
-    result.insertedId
     // sau đó lưu medias vào productmedia
     // biến đổi từng media thành các product
     const mediasToSave = medias.map((media) => ({
@@ -57,7 +56,7 @@ class ProductServices {
       media
     })) as ProductMedia[]
     // lưu vào db product media
-    const mediaResult = await databaseService.product_media.insertMany(mediasToSave)
+    await databaseService.product_media.insertMany(mediasToSave)
     return result
   }
   // update

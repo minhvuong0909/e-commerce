@@ -1,12 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { ObjectId } from 'mongodb'
 import { PRODUCT_STATUS } from '~/constants/enums'
-import {
-  buildProductMatchStage,
-  buildProductSortStage,
-  escapeRegex,
-  parsePagination
-} from '~/utils/productQuery'
+import { buildProductMatchStage, buildProductSortStage, escapeRegex, parsePagination } from '~/utils/productQuery'
 
 describe('escapeRegex', () => {
   it('escapes regex special characters', () => {
@@ -31,14 +26,13 @@ describe('buildProductMatchStage', () => {
   it('converts valid category_id and brand_id to ObjectId', () => {
     const id = new ObjectId().toHexString()
     const match = buildProductMatchStage({ category_id: id, brand_id: id })
-    expect(match.category_id).toBeInstanceOf(ObjectId)
-    expect(match.brand_id).toBeInstanceOf(ObjectId)
-    expect(match.category_id.toHexString()).toBe(id)
+    expect(match.category_id.$in).toEqual([new ObjectId(id), id])
+    expect(match.brand_id.$in).toEqual([new ObjectId(id), id])
   })
 
-  it('ignores invalid ObjectId values', () => {
+  it('keeps category slugs for the service resolver', () => {
     const match = buildProductMatchStage({ category_id: 'not-an-id' })
-    expect(match.category_id).toBeUndefined()
+    expect(match.category_id).toBe('not-an-id')
   })
 
   it('builds a price range with both bounds', () => {

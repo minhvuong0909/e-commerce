@@ -24,6 +24,7 @@ export const handleUploadImage = async (req: Request) => {
   const form = formidable({
     uploadDir: UPLOAD_IMAGE_TEMP_DIR,
     maxFields: 4, // tối đa 1 file
+    maxFiles: 4,
     maxFileSize: 300 * 1024, // 300KB
     maxTotalFileSize: 1200 * 1024, // 1,2MB
     keepExtensions: true, // giữ lại đuôi file khi req upload

@@ -4,7 +4,6 @@ import fs from 'fs'
 import { getNameFormFullNameFile, handleUploadImage, handleUploadVideo } from '~/utils/file'
 import sharp from 'sharp'
 import { Media } from '~/models/Other'
-import { isProduction } from '~/config/config'
 import { MediaType } from '~/constants/enums'
 import { cleanupTempFolder } from '~/utils/cleanupTemp'
 class MediaServices {
@@ -40,7 +39,7 @@ class MediaServices {
         const newFilename = getNameFormFullNameFile(file.newFilename) + '.jpg'
         const newPath = UPLOAD_IMAGE_DIR + '/' + newFilename
         // gọi sharp để nén
-        const infor = await sharp(file.filepath).rotate().jpeg().toFile(newPath)
+        await sharp(file.filepath).rotate().jpeg().toFile(newPath)
 
         // Dọn dẹp file tạm sau khi xử lý xong (không dùng setInterval trong vòng lặp để tránh memory leak)
         cleanupTempFolder()
@@ -53,13 +52,18 @@ class MediaServices {
         // console.log('Deleted: ' + Boolean(isDel))
 
         // return ra url cho ngta truy cập ảnh
-        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
-        const cloudinaryUrl = await this.uploadToCloudinary(newPath, process.env.CLOUDINARY_FOLDER || 'vibrant-mart/products').catch(
-          (err) => {
-            console.error('Cloudinary upload error:', err?.message || err)
-            return null
-          }
-        )
+        const apiBase = (
+          process.env.API_URL ||
+          process.env.HOST ||
+          `http://localhost:${process.env.PORT || 3000}`
+        ).replace(/\/+$/, '')
+        const cloudinaryUrl = await this.uploadToCloudinary(
+          newPath,
+          process.env.CLOUDINARY_FOLDER || 'vibrant-mart/products'
+        ).catch((err) => {
+          console.error('Cloudinary upload error:', err?.message || err)
+          return null
+        })
         const url: Media = {
           url: cloudinaryUrl || `${apiBase}/static/image/${newFilename}`,
           type: MediaType.Image
@@ -75,7 +79,11 @@ class MediaServices {
     const result = await Promise.all(
       files.map(async (file) => {
         // trả ra link
-        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+        const apiBase = (
+          process.env.API_URL ||
+          process.env.HOST ||
+          `http://localhost:${process.env.PORT || 3000}`
+        ).replace(/\/+$/, '')
         const url: Media = {
           url: `${apiBase}/static/video/${file.newFilename}`,
           type: MediaType.Video
