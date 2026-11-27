@@ -20,12 +20,12 @@ import shopSettingsRouter from './routes/shop_settings.routers'
 import vouchersRouter from './routes/vouchers.routers'
 import reviewsRouter from './routes/reviews.routers'
 import aiRouter from './routes/ai.routers'
+import { initializeServer } from './utils/serverStartup'
 
 dotenv.config()
 
-const app = express() //dùng express tạo 1 server
-const port = process.env.PORT || 3000 //server sẽ chạy trên cổng port 3000
-//
+const app = express()
+const port = Number(process.env.PORT || 3000)
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 const splitOrigins = (value?: string) =>
@@ -52,8 +52,8 @@ const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]))
 
 app.use(
   cors({
-    origin: (origin: any, callback: any) => {
-      // Cho phép request không có origin 
+    origin: (origin, callback) => {
+      // Cho phép request không có origin
       if (!origin) return callback(null, true)
       if (allowedOrigins.indexOf(origin) === -1) {
         const msg = 'CORS policy does not allow access from the specified Origin.'
@@ -66,13 +66,7 @@ app.use(
   })
 )
 
-
-// kết nối db
-databaseService.connect()
-// seed delivery methods
-seedDeliverysController()
-app.use(express.json()) // cho server xài middleware biến đổi json khi sử dụng post()
-// gọi server dùng router để tạo
+app.use(express.json())
 app.use('/users', userRouter)
 
 app.use('/products', productRouter)
@@ -107,8 +101,15 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 // error handler tập trung
 app.use(defaultErrorHandler)
 
-app.listen(Number(port), '0.0.0.0', () => {
-  console.log(`Server backend đang chạy trên port ${port}`)
+initializeServer({
+  connect: () => databaseService.connect(),
+  initialize: () => seedDeliverysController(),
+  listen: () =>
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Server backend đang chạy trên port ${port}`)
+    })
+}).catch(async () => {
+  console.error('Không thể khởi động backend. Kiểm tra DATABASE_URL, DNS và quyền kết nối MongoDB.')
+  await databaseService.close().catch(() => undefined)
+  process.exitCode = 1
 })
-
-// Trigger nodemon server restart for /ai/chat route

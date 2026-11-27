@@ -1,4 +1,4 @@
-import { Collection, Db, MongoClient } from 'mongodb'
+import { ClientSession, Collection, Db, MongoClient } from 'mongodb'
 import dotenv from 'dotenv'
 import User from '~/models/schemas/Users.schema'
 import RefreshToken from '~/models/schemas/Refresh_Tokens.schema'
@@ -33,13 +33,24 @@ class DatabaseService {
   }
 
   async connect() {
+    await this.client.connect()
+    await this.db.command({ ping: 1 })
+    console.log('MongoDB connected successfully!')
+  }
+
+  async close() {
+    await this.client.close()
+  }
+  /** Fail closed on standalone MongoDB: never fall back to partial order writes. */
+  async withTransaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
+    const session = this.client.startSession()
     try {
-      await this.client.connect()
-      await this.db.command({ ping: 1 })
-      console.log('MongoDB connected successfully!')
-    } catch (err) {
-      console.error('MongoDB connection error:', err)
-      throw err
+      return (await session.withTransaction(() => work(session), {
+        readConcern: { level: 'snapshot' },
+        writeConcern: { w: 'majority' }
+      })) as T
+    } finally {
+      await session.endSession()
     }
   }
   // lấy instance của users
@@ -104,7 +115,7 @@ class DatabaseService {
   }
 
   get user_addresses(): Collection<UserAddress> {
-    return this.db.collection(process.env.DB_USER_ADDRESSES_COLLECTION as string || 'user_addresses')
+    return this.db.collection((process.env.DB_USER_ADDRESSES_COLLECTION as string) || 'user_addresses')
   }
 
   get shop_settings(): Collection<ShopSettings> {
