@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -24,6 +25,8 @@ import Reveal from '../../components/ui/Reveal'
 import { fadeUpItem, staggerContainer } from '../../constants/motion'
 import { useProducts } from '../../hooks/useProducts'
 import { useStorefrontCategories } from '../../hooks/useStorefrontCategories'
+import { getBrandsApi } from '../../services/brands.services'
+import money from '../../utils/money'
 import type { ProductFilters } from '../../services/products.services'
 import { getToken } from '../../utils/authSession'
 import { ROUTE_PATHS } from '../../routes/route.paths'
@@ -39,6 +42,30 @@ const SORTS: Array<{ value: Sort; label: string }> = [
   { value: 'price_desc', label: 'Giá cao → thấp' }
 ]
 
+type PriceRange = { min?: number; max?: number }
+
+const PRICE_PRESETS: Array<{ id: string; label: string } & PriceRange> = [
+  { id: 'lt200', label: 'Dưới 200.000đ', max: 200_000 },
+  { id: '200-500', label: '200.000đ – 500.000đ', min: 200_000, max: 500_000 },
+  { id: '500-1m', label: '500.000đ – 1.000.000đ', min: 500_000, max: 1_000_000 },
+  { id: 'gt1m', label: 'Trên 1.000.000đ', min: 1_000_000 }
+]
+
+/** Non-negative whole VND from the URL; anything else is ignored. */
+const readPrice = (raw: string | null) => {
+  if (!raw) return undefined
+  const n = Number(raw)
+  return Number.isSafeInteger(n) && n >= 0 ? n : undefined
+}
+
+const priceLabel = ({ min, max }: PriceRange) =>
+  PRICE_PRESETS.find((p) => p.min === min && p.max === max)?.label ??
+  (min !== undefined && max !== undefined
+    ? `${money(min)} – ${money(max)}`
+    : min !== undefined
+      ? `Từ ${money(min)}`
+      : `Đến ${money(max ?? 0)}`)
+
 const searchHref = (q: string) => `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(q)}#shop`
 
 export default function HomePage() {
@@ -47,6 +74,10 @@ export default function HomePage() {
   const categoryId = searchParams.get('category') ?? ''
   const sortParam = searchParams.get('sort') as Sort | null
   const sort: Sort = SORTS.some((s) => s.value === sortParam) ? (sortParam as Sort) : 'newest'
+  const brandId = searchParams.get('brand') ?? ''
+  let minPrice = readPrice(searchParams.get('min'))
+  let maxPrice = readPrice(searchParams.get('max'))
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) [minPrice, maxPrice] = [maxPrice, minPrice]
 
   const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams)
@@ -67,6 +98,13 @@ export default function HomePage() {
         onCategory={(id) => updateParams({ category: id || null })}
         onSort={(s) => updateParams({ sort: s === 'newest' ? null : s })}
         onClearSearch={() => updateParams({ search: null })}
+        brandId={brandId}
+        price={{ min: minPrice, max: maxPrice }}
+        onBrand={(id) => updateParams({ brand: id || null })}
+        onPrice={({ min, max }) =>
+          updateParams({ min: min !== undefined ? String(min) : null, max: max !== undefined ? String(max) : null })
+        }
+        onClearAll={() => updateParams({ search: null, category: null, brand: null, min: null, max: null })}
       />
       <Reveal><JoinBand /></Reveal>
     </div>
@@ -194,7 +232,12 @@ function ShopSection({
   sort,
   onCategory,
   onSort,
-  onClearSearch
+  onClearSearch,
+  brandId,
+  price,
+  onBrand,
+  onPrice,
+  onClearAll
 }: {
   search: string
   categoryId: string
@@ -202,8 +245,13 @@ function ShopSection({
   onCategory: (id: string) => void
   onSort: (s: Sort) => void
   onClearSearch: () => void
+  brandId: string
+  price: PriceRange
+  onBrand: (id: string) => void
+  onPrice: (range: PriceRange) => void
+  onClearAll: () => void
 }) {
-  const key = `${search}|${categoryId}|${sort}`
+  const key = `${search}|${categoryId}|${sort}|${brandId}|${price.min ?? ''}|${price.max ?? ''}`
   const [page, setPage] = useState(1)
   const [prevKey, setPrevKey] = useState(key)
   if (prevKey !== key) {
@@ -212,10 +260,46 @@ function ShopSection({
   }
 
   const { data: categories = [] } = useStorefrontCategories(12)
+  const { data: brands = [] } = useQuery({
+    queryKey: ['storefront-brands'],
+    staleTime: 5 * 60_000,
+    queryFn: async () =>
+      ((await getBrandsApi(1, 100)).data.data ?? [])
+        .map((b) => ({ id: b._id, name: b.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
+  })
   const filters = useMemo<ProductFilters>(
-    () => ({ sort, search: search || undefined, category_id: categoryId || undefined }),
-    [sort, search, categoryId]
+    () => ({
+      sort,
+      search: search || undefined,
+      category_id: categoryId || undefined,
+      brand_id: brandId || undefined,
+      minPrice: price.min,
+      maxPrice: price.max
+    }),
+    [sort, search, categoryId, brandId, price.min, price.max]
   )
+  const activeBrand = brands.find((b) => b.id === brandId)
+  const hasPrice = price.min !== undefined || price.max !== undefined
+  const presetId =
+    PRICE_PRESETS.find((p) => p.min === price.min && p.max === price.max)?.id ?? (hasPrice ? 'custom' : '')
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customMin, setCustomMin] = useState('')
+  const [customMax, setCustomMax] = useState('')
+  const anyFilter = Boolean(search || categoryId || brandId || hasPrice)
+  const selectCls = (active: boolean) =>
+    cn(
+      'h-10 w-full min-w-0 cursor-pointer appearance-none truncate rounded-full border bg-white pl-4 pr-9 text-sm font-semibold outline-none transition hover:border-berry-300 focus:border-berry-500 sm:w-auto',
+      active ? 'border-berry-200 text-berry-700' : 'border-ink-200 text-ink-700'
+    )
+  const applyCustom = () => {
+    const parse = (v: string) => (v.trim() ? Math.max(0, Math.round(Number(v))) : undefined)
+    const min = parse(customMin)
+    const max = parse(customMax)
+    if ((min !== undefined && Number.isNaN(min)) || (max !== undefined && Number.isNaN(max))) return
+    onPrice(min !== undefined && max !== undefined && min > max ? { min: max, max: min } : { min, max })
+    setCustomOpen(false)
+  }
   const { data, isLoading, isError, refetch, isFetching } = useProducts(page, GRID_LIMIT, filters)
   const products = data?.products ?? []
   const pagination = data?.pagination
@@ -246,7 +330,7 @@ function ShopSection({
         />
 
         {/* filter bar */}
-        <div className='sticky top-[4.5rem] z-30 -mx-4 mt-6 bg-canvas/90 px-4 py-3 backdrop-blur md:static md:mx-0 md:bg-transparent md:px-0 md:backdrop-blur-none lg:top-[7.25rem]'>
+        <div className='mt-6'>
           <div className='flex flex-col gap-3 md:flex-row md:items-center'>
             <div className='no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto'>
               {search ? (
@@ -276,7 +360,7 @@ function ShopSection({
               <select
                 value={sort}
                 onChange={(e) => onSort(e.target.value as Sort)}
-                className='h-10 cursor-pointer appearance-none rounded-full border border-ink-200 bg-white pl-10 pr-9 text-sm font-semibold text-ink-950 outline-none transition hover:border-berry-300 focus:border-berry-500'
+                className='h-10 w-full cursor-pointer appearance-none rounded-full border border-ink-200 bg-white pl-10 pr-9 text-sm font-semibold text-ink-950 outline-none transition hover:border-berry-300 focus:border-berry-500 md:w-auto'
               >
                 {SORTS.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -288,6 +372,129 @@ function ShopSection({
                 ▾
               </span>
             </label>
+          </div>
+
+          <div className='mt-3 grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap'>
+            <label className='relative flex w-full items-center sm:inline-flex sm:w-auto'>
+              <span className='sr-only'>Thương hiệu</span>
+              <select value={brandId} onChange={(e) => onBrand(e.target.value)} className={selectCls(Boolean(brandId))}>
+                <option value=''>Tất cả thương hiệu</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden className='pointer-events-none absolute right-4 text-xs text-ink-500'>
+                ▾
+              </span>
+            </label>
+            <label className='relative flex w-full items-center sm:inline-flex sm:w-auto'>
+              <span className='sr-only'>Khoảng giá</span>
+              <select
+                value={customOpen ? 'custom' : presetId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === 'custom') {
+                    setCustomMin(price.min !== undefined ? String(price.min) : '')
+                    setCustomMax(price.max !== undefined ? String(price.max) : '')
+                    setCustomOpen(true)
+                    return
+                  }
+                  setCustomOpen(false)
+                  const preset = PRICE_PRESETS.find((p) => p.id === v)
+                  onPrice(preset ? { min: preset.min, max: preset.max } : {})
+                }}
+                className={selectCls(hasPrice)}
+              >
+                <option value=''>Mọi mức giá</option>
+                {PRICE_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+                <option value='custom'>{presetId === 'custom' && !customOpen ? priceLabel(price) : 'Khoảng giá khác…'}</option>
+              </select>
+              <span aria-hidden className='pointer-events-none absolute right-4 text-xs text-ink-500'>
+                ▾
+              </span>
+            </label>
+
+            {customOpen ? (
+              <form
+                className='col-span-2 flex flex-wrap items-center gap-2'
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  applyCustom()
+                }}
+              >
+                <input
+                  type='number'
+                  inputMode='numeric'
+                  min={0}
+                  step={10000}
+                  value={customMin}
+                  onChange={(e) => setCustomMin(e.target.value)}
+                  placeholder='Từ (đ)'
+                  aria-label='Giá từ'
+                  className='h-10 w-32 rounded-full border border-ink-200 bg-white px-4 text-sm outline-none focus:border-berry-500'
+                />
+                <span aria-hidden className='text-ink-400'>
+                  –
+                </span>
+                <input
+                  type='number'
+                  inputMode='numeric'
+                  min={0}
+                  step={10000}
+                  value={customMax}
+                  onChange={(e) => setCustomMax(e.target.value)}
+                  placeholder='Đến (đ)'
+                  aria-label='Giá đến'
+                  className='h-10 w-32 rounded-full border border-ink-200 bg-white px-4 text-sm outline-none focus:border-berry-500'
+                />
+                <Button type='submit' size='sm' className='h-10'>
+                  Áp dụng
+                </Button>
+                <button
+                  type='button'
+                  onClick={() => setCustomOpen(false)}
+                  className='h-10 px-2 text-sm font-semibold text-ink-500 hover:text-ink-950'
+                >
+                  Hủy
+                </button>
+              </form>
+            ) : null}
+
+            {activeBrand ? (
+              <button
+                type='button'
+                onClick={() => onBrand('')}
+                className='chip hidden h-10 cursor-pointer bg-berry-50 px-4 text-berry-700 hover:bg-berry-100 sm:inline-flex'
+              >
+                {activeBrand.name} <X size={14} aria-hidden />
+                <span className='sr-only'>Bỏ lọc thương hiệu</span>
+              </button>
+            ) : null}
+            {hasPrice && !customOpen ? (
+              <button
+                type='button'
+                onClick={() => onPrice({})}
+                className='chip hidden h-10 cursor-pointer bg-berry-50 px-4 text-berry-700 hover:bg-berry-100 sm:inline-flex'
+              >
+                {priceLabel(price)} <X size={14} aria-hidden />
+                <span className='sr-only'>Bỏ lọc giá</span>
+              </button>
+            ) : null}
+            {anyFilter ? (
+              <button
+                type='button'
+                onClick={onClearAll}
+                className='col-span-2 h-10 justify-self-start px-2 text-sm font-semibold text-ink-500 underline-offset-4 hover:text-ink-950 hover:underline'
+              >
+                Xóa tất cả
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -313,15 +520,15 @@ function ShopSection({
             <EmptyState
               icon={<SearchX size={28} />}
               title='Chưa có sản phẩm phù hợp'
-              desc={search ? `Không tìm thấy sản phẩm cho “${search}”. Thử từ khóa khác hoặc bỏ bớt bộ lọc.` : 'Danh mục này đang được cập nhật.'}
+              desc={
+                search
+                  ? `Không tìm thấy sản phẩm cho “${search}”. Thử từ khóa khác hoặc bỏ bớt bộ lọc.`
+                  : brandId || hasPrice
+                    ? 'Không có sản phẩm khớp thương hiệu hoặc khoảng giá đã chọn.'
+                    : 'Danh mục này đang được cập nhật.'
+              }
               action={
-                <Button
-                  variant='secondary'
-                  onClick={() => {
-                    onClearSearch()
-                    onCategory('')
-                  }}
-                >
+                <Button variant='secondary' onClick={onClearAll}>
                   Xóa bộ lọc
                 </Button>
               }
