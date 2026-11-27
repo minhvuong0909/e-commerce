@@ -4,9 +4,10 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { ORDER_MESSAGES } from '~/constants/messages'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import ordersService from '~/services/orders.services'
+import { getParam } from '~/utils/params'
 
 export const createOrderController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -23,7 +24,7 @@ export const createOrderController = async (
 }
 
 export const createGuestOrderController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -36,14 +37,14 @@ export const createGuestOrderController = async (
 
 // cập nhật trạng thái đơn hàng
 export const updateOrderController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
   const { user_id } = req.decode_authorization as TokenPayload
   const order = await ordersService.updateOrderStatus({
     user_id: user_id,
-    order_id: (req.params as any).id as string,
+    order_id: getParam(req, 'id'),
     status: Number(req.body.status)
   })
   res.status(HTTP_STATUS.OK).json({
@@ -53,14 +54,14 @@ export const updateOrderController = async (
 }
 
 export const deleteOrderController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
   const { user_id } = req.decode_authorization as TokenPayload
   await ordersService.deleteOrder({
     user_id: user_id,
-    order_id: (req.params as any).id as string
+    order_id: getParam(req, 'id')
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.DELETE_ORDER_SUCCESS
@@ -68,14 +69,14 @@ export const deleteOrderController = async (
 }
 
 export const getOrderByIdController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
   const { user_id } = req.decode_authorization as TokenPayload
   const order = await ordersService.getOrderById({
     user_id: user_id,
-    order_id: (req.params as any).id as string
+    order_id: getParam(req, 'id')
   })
   res.status(HTTP_STATUS.OK).json({
     message: ORDER_MESSAGES.GET_ORDER_SUCCESS,
@@ -84,7 +85,7 @@ export const getOrderByIdController = async (
 }
 
 export const getAllMyOrdersController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -97,7 +98,7 @@ export const getAllMyOrdersController = async (
 }
 
 export const getAllOrdersController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -110,7 +111,7 @@ export const getAllOrdersController = async (
 }
 
 export const refundOrderController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {

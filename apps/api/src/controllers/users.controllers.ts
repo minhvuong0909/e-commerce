@@ -19,9 +19,10 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { USER_ROLE, UserVerifyStatus } from '~/constants/enums'
 import { ParamsDictionary } from 'express-serve-static-core'
 import databaseService from '~/services/database.service'
+import { getParam } from '~/utils/params'
 
 export const loginController = async (
-  req: Request<ParamsDictionary, any, LoginRequestBody>,
+  req: Request<ParamsDictionary, unknown, LoginRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -59,7 +60,7 @@ export const loginWithGoogleController = async (req: Request, res: Response, nex
   })
 }
 export const registerController = async (
-  req: Request<ParamsDictionary, any, RegisterRequestBody>,
+  req: Request<ParamsDictionary, unknown, RegisterRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -83,7 +84,7 @@ export const registerController = async (
 }
 
 export const verifyEmailController = async (
-  req: Request<ParamsDictionary, any, any, EmailVerifyReqQuery>,
+  req: Request<ParamsDictionary, unknown, any, EmailVerifyReqQuery>,
   res: Response,
   next: NextFunction
 ) => {
@@ -108,7 +109,7 @@ export const verifyEmailController = async (
 
 // logout
 export const logoutController = async (
-  req: Request<ParamsDictionary, any, LogoutRequestBody>,
+  req: Request<ParamsDictionary, unknown, LogoutRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -143,7 +144,7 @@ export const logoutController = async (
 
 // resendEmailVerifyToken
 export const resendEmailVerifyController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -171,7 +172,7 @@ export const resendEmailVerifyController = async (
 
 // hàm forgot password
 export const forgotPasswordController = async (
-  req: Request<ParamsDictionary, any, ForgotPasswordRequestBody>,
+  req: Request<ParamsDictionary, unknown, ForgotPasswordRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -196,7 +197,7 @@ export const forgotPasswordController = async (
 
 // hàm verify forgot password token
 export const verifyForgotPasswordTokenController = async (
-  req: Request<ParamsDictionary, any, VerifyForgotPasswordRequestBody>,
+  req: Request<ParamsDictionary, unknown, VerifyForgotPasswordRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -230,7 +231,7 @@ export const verifyForgotPasswordTokenController = async (
 
 // hàm reset password
 export const resetPasswordController = async (
-  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  req: Request<ParamsDictionary, unknown, ResetPasswordReqBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -261,7 +262,7 @@ export const resetPasswordController = async (
 
 // hàm getMeController
 export const getProfileController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -275,7 +276,7 @@ export const getProfileController = async (
 
 // hàm update profile controller
 export const updateProfileController = async (
-  req: Request<ParamsDictionary, any, UpdateProfileRequestBody>,
+  req: Request<ParamsDictionary, unknown, UpdateProfileRequestBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -298,7 +299,7 @@ export const updateProfileController = async (
 
 // hàm change password
 export const changePasswordController = async (
-  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  req: Request<ParamsDictionary, unknown, ChangePasswordReqBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -313,7 +314,7 @@ export const changePasswordController = async (
 
 // hàm refresh token
 export const refreshTokenController = async (
-  req: Request<ParamsDictionary, any, RefreshTokenReqBody>,
+  req: Request<ParamsDictionary, unknown, RefreshTokenReqBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -330,7 +331,7 @@ export const refreshTokenController = async (
 }
 
 // hàm getUsers
-export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
+export const getUsers = async (req: Request<ParamsDictionary, unknown, any>, res: Response, next: NextFunction) => {
   const page = Number(req.query.page) || 1
   const limit = Number(req.query.limit) || 10
   const search = typeof req.query.search === 'string' ? req.query.search : undefined
@@ -345,11 +346,11 @@ export const getUsers = async (req: Request<ParamsDictionary, any, any>, res: Re
 }
 
 export const banUserController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
-  const user_id = req.params.user_id as string
+  const user_id = getParam(req, 'user_id')
   const result = await usersService.setUserBanned(user_id, true)
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.BAN_USER_SUCCESS,
@@ -358,11 +359,11 @@ export const banUserController = async (
 }
 
 export const unbanUserController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
-  const user_id = req.params.user_id as string
+  const user_id = getParam(req, 'user_id')
   const result = await usersService.setUserBanned(user_id, false)
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.UNBAN_USER_SUCCESS,

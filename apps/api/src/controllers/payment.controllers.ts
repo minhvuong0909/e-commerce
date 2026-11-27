@@ -5,11 +5,15 @@ import { PAYMENT_MESSAGES } from '~/constants/messages'
 import paymentService from '~/services/payment.services'
 import paypalService from '~/services/paypal.services'
 import databaseService from '~/services/database.service'
+import { getParam } from '~/utils/params'
+import { getErrorMessage } from '~/utils/errorMessage'
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 const CLIENT_URL = stripEnv(process.env.CLIENT_URL) || 'http://localhost:5173'
 
-const getPayPalCaptureId = (captureResult: any, fallbackId: string) =>
+type PayPalCaptureResult = { purchase_units?: Array<{ payments?: { captures?: Array<{ id?: string }> } }> }
+
+const getPayPalCaptureId = (captureResult: PayPalCaptureResult | undefined, fallbackId: string) =>
   captureResult?.purchase_units?.[0]?.payments?.captures?.[0]?.id || fallbackId
 
 const redirectToOrderResult = (res: Response, params: Record<string, string>) => {
@@ -18,7 +22,7 @@ const redirectToOrderResult = (res: Response, params: Record<string, string>) =>
 }
 
 export const createMoMoPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const momoResponse = await paymentService.createMoMoPaymentUrl(((req.params as any).order_id as string))
+  const momoResponse = await paymentService.createMoMoPaymentUrl(getParam(req, 'order_id'))
 
   res.status(HTTP_STATUS.OK).json({
     message: PAYMENT_MESSAGES.CREATE_MOMO_PAYMENT_SUCCESS,
@@ -47,18 +51,18 @@ export const momoReturnController = async (req: Request, res: Response) => {
       message: result.gatewayMessage,
       paymentMethod: 'MOMO'
     })
-  } catch (error: any) {
-    console.error('MoMo return error:', error?.message || error)
+  } catch (error: unknown) {
+    console.error('MoMo return error:', getErrorMessage(error, String(error)))
     return redirectToOrderResult(res, {
       resultCode: '1',
-      message: error?.message || 'Xac thuc thanh toan MoMo that bai.',
+      message: getErrorMessage(error, 'Xac thuc thanh toan MoMo that bai.'),
       paymentMethod: 'MOMO'
     })
   }
 }
 
 export const createPayPalPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const approveUrl = await paypalService.createPayPalOrder(((req.params as any).order_id as string))
+  const approveUrl = await paypalService.createPayPalOrder(getParam(req, 'order_id'))
 
   res.status(HTTP_STATUS.OK).json({
     message: 'Tao don hang PayPal thanh cong!',
@@ -92,7 +96,7 @@ export const paypalSuccessController = async (req: Request, res: Response) => {
 }
 
 export const mockMoMoPaymentSuccessController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const result = await paymentService.mockPaymentSuccess(((req.params as any).order_id as string))
+  const result = await paymentService.mockPaymentSuccess(getParam(req, 'order_id'))
 
   res.status(HTTP_STATUS.OK).json({
     message: result.message,
@@ -103,7 +107,7 @@ export const mockMoMoPaymentSuccessController = async (req: Request<ParamsDictio
 }
 
 export const createPayOSPaymentController = async (req: Request<ParamsDictionary>, res: Response) => {
-  const payosResponse = await paymentService.createPayOSPaymentUrl(((req.params as any).order_id as string))
+  const payosResponse = await paymentService.createPayOSPaymentUrl(getParam(req, 'order_id'))
 
   res.status(HTTP_STATUS.OK).json({
     message: 'Tạo liên kết thanh toán PayOS thành công!',
@@ -130,11 +134,11 @@ export const payosReturnController = async (req: Request, res: Response) => {
       message: result.gatewayMessage,
       paymentMethod: 'PAYOS'
     })
-  } catch (error: any) {
-    console.error('PayOS return error:', error?.message || error)
+  } catch (error: unknown) {
+    console.error('PayOS return error:', getErrorMessage(error, String(error)))
     return redirectToOrderResult(res, {
       resultCode: '1',
-      message: error?.message || 'Xác thực thanh toán PayOS thất bại.',
+      message: getErrorMessage(error, 'Xác thực thanh toán PayOS thất bại.'),
       paymentMethod: 'PAYOS'
     })
   }

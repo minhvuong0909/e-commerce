@@ -8,9 +8,10 @@ import { CreateBrandReqBody } from '~/models/requests/Brands.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import brandsService from '~/services/brands.services'
 import usersService from '~/services/users.services'
+import { getParam } from '~/utils/params'
 
 export const createBrandController = async (
-  req: Request<ParamsDictionary, any, CreateBrandReqBody>,
+  req: Request<ParamsDictionary, unknown, CreateBrandReqBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -32,11 +33,11 @@ export const createBrandController = async (
 }
 
 export const updateBrandController = async (
-  req: Request<ParamsDictionary, any, CreateBrandReqBody>,
+  req: Request<ParamsDictionary, unknown, CreateBrandReqBody>,
   res: Response,
   next: NextFunction
 ) => {
-  const brand_id = ((req.params as any).brand_id as string) as string
+  const brand_id = getParam(req, 'brand_id')
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
   // admin || staff
@@ -55,11 +56,11 @@ export const updateBrandController = async (
 }
 
 export const deleteBrandController = async (
-  req: Request<ParamsDictionary, any, CreateBrandReqBody>,
+  req: Request<ParamsDictionary, unknown, CreateBrandReqBody>,
   res: Response,
   next: NextFunction
 ) => {
-  const brand_id = ((req.params as any).brand_id as string) as string
+  const brand_id = getParam(req, 'brand_id')
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
   // admin || staff
@@ -77,7 +78,7 @@ export const deleteBrandController = async (
 }
 
 export const getBrandController = async (req: Request<ParamsDictionary>, res: Response, next: NextFunction) => {
-  const brand_id = ((req.params as any).brand_id as string) as string
+  const brand_id = getParam(req, 'brand_id')
   const brand = await brandsService.getBrandById(brand_id)
   return res.status(HTTP_STATUS.OK).json({
     message: BRANDS_MESSAGES.GET_BRAND_SUCCESS,

@@ -7,11 +7,12 @@ import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
 import HTTP_STATUS from '~/constants/httpStatus'
 import mime from 'mime-types'
 import fs from 'fs'
+import { getParam } from '~/utils/params'
 
 export const serveImageController = (req: Request, res: Response, next: NextFunction) => {
   // lấy ra filename từ req params
   // vd: http://localhost:3000/static/:filename
-  const { filename } = (req.params as any)
+  const filename = getParam(req, 'filename')
   res.sendFile(path.resolve(UPLOAD_IMAGE_DIR, filename), (error) => {
     if (error) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -22,7 +23,7 @@ export const serveImageController = (req: Request, res: Response, next: NextFunc
 }
 
 export const serveVideoController = (req: Request, res: Response) => {
-  const { filename } = (req.params as any)
+  const filename = getParam(req, 'filename')
 
   if (!filename) {
     return res.status(400).json({

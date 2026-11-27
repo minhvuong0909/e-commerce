@@ -6,6 +6,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { UserAddressInput } from '~/models/requests/UserAddresses.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import userAddressService from '~/services/user_addresses.services'
+import { getParam } from '~/utils/params'
 
 function validateAddressPayload(body: UserAddressInput, partial = false) {
   if (!partial || body.recipient_name !== undefined) {
@@ -71,7 +72,7 @@ export const updateSavedAddressController = async (
   res: Response
 ) => {
   const { user_id } = req.decode_authorization as TokenPayload
-  const address_id = req.params.id as string
+  const address_id = getParam(req, 'id')
   validateAddressPayload(req.body as UserAddressInput, true)
   const address = await userAddressService.update(user_id, address_id, req.body)
   res.status(HTTP_STATUS.OK).json({
@@ -82,7 +83,7 @@ export const updateSavedAddressController = async (
 
 export const deleteSavedAddressController = async (req: Request, res: Response) => {
   const { user_id } = req.decode_authorization as TokenPayload
-  const address_id = req.params.id as string
+  const address_id = getParam(req, 'id')
   await userAddressService.delete(user_id, address_id)
   res.status(HTTP_STATUS.OK).json({
     message: ADDRESS_MESSAGES.DELETE_ADDRESS_SUCCESS
