@@ -7,6 +7,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { BRANDS_MESSAGES, CATEGORY_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { normalizeProductMedias, productMediaStages } from '~/utils/productMedia'
+import { cleanupRemovedMedia, productMediaUrls } from '~/utils/mediaCleanup'
 import { Request } from 'express'
 import {
   buildProductMatchStage,
@@ -64,8 +65,12 @@ class ProductServices {
       set.medias = medias
       if (!payload.thumbnail) set.thumbnail = thumbnail || ''
     }
+    const touchesMedia = payload.medias !== undefined || payload.thumbnail !== undefined
+    const _id = new ObjectId(product_id)
+    // media cũ (kể cả bảng legacy) để biết file nào bị admin bỏ
+    const mediaBefore = touchesMedia ? await this.mediaUrlsOf(_id) : []
     const product = await databaseService.products.findOneAndUpdate(
-      { _id: new ObjectId(product_id) },
+      { _id },
       { $set: { ...set, updated_at: new Date() } },
       { returnDocument: 'after' }
     )
@@ -77,19 +82,32 @@ class ProductServices {
     }
     // danh sách media mới thay hoàn toàn bản cũ: bỏ bản legacy để không bị đọc ngược lại
     if (payload.medias) await databaseService.product_media.deleteMany({ product_id: product._id })
+    // dọn file ảnh/video bị bỏ ở nền — không làm chậm hay hỏng thao tác lưu
+    if (touchesMedia) void cleanupRemovedMedia(mediaBefore, productMediaUrls(product))
     return product
+  }
+
+  /** URL media hiện tại của sản phẩm: products.medias + thumbnail + bảng product_medias cũ. */
+  private async mediaUrlsOf(_id: ObjectId) {
+    const [product, legacy] = await Promise.all([
+      databaseService.products.findOne({ _id }, { projection: { medias: 1, thumbnail: 1 } }),
+      databaseService.product_media.find({ product_id: _id }, { projection: { media: 1 } }).toArray()
+    ])
+    return [...productMediaUrls(product), ...legacy.map((l) => l.media?.url).filter((u): u is string => !!u)]
   }
   // delete
   async deleteProduct(product_id: string) {
-    const product = await databaseService.products.findOneAndDelete({
-      _id: new ObjectId(product_id)
-    })
+    const _id = new ObjectId(product_id)
+    const mediaBefore = await this.mediaUrlsOf(_id)
+    const product = await databaseService.products.findOneAndDelete({ _id })
     if (!product) {
       throw new ErrorWithStatus({
         message: PRODUCT_MESSAGES.PRODUCT_NOT_FOUND,
         status: HTTP_STATUS.UNPROCESSABLE_ENTITY
       })
     }
+    await databaseService.product_media.deleteMany({ product_id: _id })
+    void cleanupRemovedMedia(mediaBefore, [])
   }
 
   // get product by id
