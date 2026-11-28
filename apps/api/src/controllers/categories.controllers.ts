@@ -8,9 +8,10 @@ import { CreateCategoryReqBody } from '~/models/requests/Categories.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import categoryServices from '~/services/categories.services'
 import usersService from '~/services/users.services'
+import { getParam } from '~/utils/params'
 
 export const createCategoryController = async (
-  req: Request<ParamsDictionary, any, CreateCategoryReqBody>,
+  req: Request<ParamsDictionary, unknown, CreateCategoryReqBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -33,11 +34,11 @@ export const createCategoryController = async (
 }
 
 export const updateCategoryController = async (
-  req: Request<ParamsDictionary, any, CreateCategoryReqBody>,
+  req: Request<ParamsDictionary, unknown, CreateCategoryReqBody>,
   res: Response,
   next: NextFunction
 ) => {
-  const { category_id } = (req.params as any)
+  const category_id = getParam(req, 'category_id')
   // check user
   const { user_id } = req.decode_authorization as TokenPayload
   const user = await usersService.checkRole(user_id)
@@ -57,7 +58,7 @@ export const updateCategoryController = async (
 }
 
 export const deleteCategoryController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -71,7 +72,7 @@ export const deleteCategoryController = async (
       status: HTTP_STATUS.FORBIDDEN
     })
   }
-  const { category_id } = (req.params as any)
+  const category_id = getParam(req, 'category_id')
   await categoryServices.deleteCategory(category_id)
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.DELETE_CATEGORY_SUCCESS
@@ -79,7 +80,7 @@ export const deleteCategoryController = async (
 }
 
 export const getCategoryController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -92,7 +93,7 @@ export const getCategoryController = async (
       status: HTTP_STATUS.FORBIDDEN
     })
   }
-  const { category_id } = (req.params as any)
+  const category_id = getParam(req, 'category_id')
   const category = await categoryServices.getCategoryById(category_id)
   res.status(HTTP_STATUS.OK).json({
     message: CATEGORY_MESSAGES.GET_CATEGORY_SUCCESS,
@@ -102,7 +103,7 @@ export const getCategoryController = async (
 
 // get category phân trang
 export const getCategoriesController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {

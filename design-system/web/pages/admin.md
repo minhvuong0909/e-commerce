@@ -1,3 +1,5 @@
+> ⚠️ Superseded by the "Vibrant Glow" redesign — see ../MASTER.md. Kept for history; colours/trust-badge rules below are outdated.
+
 # Page Override: Admin Hub
 
 > Overrides `design-system/web/MASTER.md` for the Admin & Staff Workspace (`/admin/*`).

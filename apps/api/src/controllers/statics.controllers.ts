@@ -7,12 +7,15 @@ import { UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR } from '~/constants/dir'
 import HTTP_STATUS from '~/constants/httpStatus'
 import mime from 'mime-types'
 import fs from 'fs'
+import { getParam } from '~/utils/params'
 
 export const serveImageController = (req: Request, res: Response, next: NextFunction) => {
   // lấy ra filename từ req params
   // vd: http://localhost:3000/static/:filename
-  const { filename } = (req.params as any)
-  res.sendFile(path.resolve(UPLOAD_IMAGE_DIR, filename), (error) => {
+  // basename + root: tên như "..%2F..%2F.env" không thể thoát khỏi thư mục ảnh
+  const filename = path.basename(getParam(req, 'filename'))
+  // tên file sinh ngẫu nhiên và không bao giờ bị ghi đè → cache dài hạn được
+  res.sendFile(filename, { root: UPLOAD_IMAGE_DIR, maxAge: '365d', immutable: true, dotfiles: 'deny' }, (error) => {
     if (error) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         message: 'File not found'
@@ -22,7 +25,7 @@ export const serveImageController = (req: Request, res: Response, next: NextFunc
 }
 
 export const serveVideoController = (req: Request, res: Response) => {
-  const { filename } = (req.params as any)
+  const filename = getParam(req, 'filename')
 
   if (!filename) {
     return res.status(400).json({
@@ -55,7 +58,7 @@ export const serveVideoController = (req: Request, res: Response) => {
   // Xác định Content-Type
   const ext = path.extname(sanitizedName).toLowerCase()
   const contentType =
-    ext === '.mp4' ? 'video/mp4' : ext === '.webm' ? 'video/webm' : ext === '.ogg' ? 'video/ogg' : 'video/mp4'
+    ext === '.webm' ? 'video/webm' : ext === '.mov' ? 'video/quicktime' : ext === '.ogg' ? 'video/ogg' : 'video/mp4'
 
   // CORS headers
   const corsHeaders = {

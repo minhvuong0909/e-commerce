@@ -1,5 +1,6 @@
-import { ObjectId } from 'mongodb'
-import { CartStatus, OrderStatus, PaymentMethod, PaymentStatus, USER_ROLE } from '~/constants/enums'
+import { ClientSession, ObjectId } from 'mongodb'
+import { CartStatus, OrderStatus, PaymentMethod, PaymentStatus, PRODUCT_STATUS, USER_ROLE } from '~/constants/enums'
+import { badRequest, normalizeOrderItems } from '~/utils/security'
 import databaseService from './database.service'
 import { ErrorWithStatus } from '~/models/Errors'
 import { CART_MESSAGES, ORDER_MESSAGES, PRODUCT_MESSAGES } from '~/constants/messages'
@@ -15,6 +16,7 @@ import { createMailTransporter } from '~/config/mail'
 import { payos } from '~/config/payment'
 import voucherService from './vouchers.services'
 import telegramService from './telegram.services'
+import { buildIdempotencyKey, orderFingerprint } from '~/utils/idempotency'
 
 const mailTransporter = createMailTransporter()
 
@@ -25,18 +27,54 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   [PaymentMethod.PAYOS]: 'Chuyển khoản (PayOS)',
   [PaymentMethod.CREDIT_CARD]: 'Thẻ tín dụng'
 }
+type CreatedOrder = { acknowledged: boolean; insertedId: ObjectId; replayed?: boolean }
+
 class OrdersService {
+  /** Order already created for this idempotency key → same response, no new stock/notification side effects. */
+  private async findReplay(idempotency_key: string): Promise<CreatedOrder | null> {
+    const existing = await databaseService.orders.findOne({ idempotency_key }, { projection: { _id: 1 } })
+    return existing ? { acknowledged: true, insertedId: existing._id, replayed: true } : null
+  }
+
   private async finalizeOrder({
     user_id,
     guest_customer,
     items,
-    payload
+    payload,
+    selectedCartItems,
+    idempotency_key
   }: {
     user_id?: string
     guest_customer?: { name: string; phone: string; email?: string }
     items: GuestOrderItemInput[]
     payload: CreateOrderReqBody | CreateGuestOrderReqBody
-  }) {
+    selectedCartItems?: ObjectId[]
+    idempotency_key: string
+  }): Promise<CreatedOrder> {
+    items = normalizeOrderItems(items)
+    for (const [key, max] of [
+      ['recipient_name', 120],
+      ['phone', 30],
+      ['address_line', 500],
+      ['city', 120],
+      ['district', 120],
+      ['note', 1000],
+      ['email', 254],
+      ['voucher_code', 64]
+    ] as const) {
+      const value = (payload as unknown as Record<string, unknown>)[key]
+      if (value !== undefined && (typeof value !== 'string' || value.length > max))
+        badRequest(`Thông tin ${key} không hợp lệ.`)
+    }
+    if (!ObjectId.isValid(String(payload.delivery_method_id))) badRequest('Phương thức giao hàng không hợp lệ.')
+    if (
+      !Object.values(PaymentMethod).includes(payload.payment_method) ||
+      payload.payment_method === PaymentMethod.CREDIT_CARD
+    )
+      badRequest('Phương thức thanh toán không được hỗ trợ.')
+    // Guest online payments need a signed guest-session capability, not public access to order IDs.
+    if (!user_id && payload.payment_method !== PaymentMethod.CASH_ON_DELIVERY)
+      badRequest('Khách vãng lai vui lòng chọn thanh toán khi nhận hàng hoặc đăng nhập để thanh toán trực tuyến.')
     const delivery_method = await databaseService.delivery_methods.findOne({
       _id: new ObjectId(payload.delivery_method_id)
     })
@@ -48,42 +86,16 @@ class OrdersService {
       })
     }
 
-    const productIds = items.map((item) => new ObjectId(item.product_id))
-    const products = await databaseService.products.find({ _id: { $in: productIds } }).toArray()
-    const productMap = new Map(products.map((product) => [product._id.toString(), product]))
-
-    let subtotal = 0
-    const orderItems: OrderItems[] = []
-    for (const item of items) {
-      const product = productMap.get(item.product_id)
-      const quantity = Math.max(1, Number(item.quantity || 0))
-      if (!product) {
-        throw new ErrorWithStatus({
-          message: PRODUCT_MESSAGES.PRODUCT_NOT_FOUND,
-          status: HTTP_STATUS.NOT_FOUND
-        })
-      }
-
-      if (quantity > product.quantity) {
-        throw new ErrorWithStatus({
-          message: PRODUCT_MESSAGES.INSUFFICIENT_PRODUCT_STOCK,
-          status: HTTP_STATUS.BAD_REQUEST
-        })
-      }
-      subtotal += quantity * product.price
-      orderItems.push(
-        new OrderItems({
-          order_id: new ObjectId(),
-          product_id: product._id!,
-          quantity,
-          price: product.price
-        })
-      )
-    }
-
     const lat = Number(payload.lat)
     const lng = Number(payload.lng)
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    if (
+      payload.lat == null ||
+      payload.lng == null ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      Math.abs(lat) > 90 ||
+      Math.abs(lng) > 180
+    ) {
       throw new ErrorWithStatus({
         message: ORDER_MESSAGES.SHIPPING_COORDINATES_REQUIRED,
         status: HTTP_STATUS.BAD_REQUEST
@@ -98,8 +110,6 @@ class OrdersService {
       lng,
       delivery_method_id: payload.delivery_method_id
     })
-    const shipping_fee = quote.shipping_fee
-
     const recipient_name = payload.recipient_name?.trim()
     const phone = payload.phone?.trim()
     const address_line = payload.address_line?.trim()
@@ -111,49 +121,30 @@ class OrdersService {
       })
     }
 
-    const voucherResult = payload.voucher_code
-      ? await voucherService.validate(payload.voucher_code, subtotal)
-      : undefined
-    const discount = voucherResult?.discount || 0
-
-    const order = await databaseService.orders.insertOne(
-      new Order({
-        user_id: user_id ? new ObjectId(user_id) : undefined,
+    let order: CreatedOrder
+    try {
+      order = await this.createInTransaction({
+        user_id,
         guest_customer,
-        total_price: subtotal - discount + shipping_fee,
-        payment_method: payload.payment_method,
-        payment_status: PaymentStatus.PENDING,
-        delivery_method_id: delivery_method._id,
-        shipping_fee,
-        status: OrderStatus.Pending,
-        shipping_address: {
-          recipient_name,
-          phone,
-          note: note || undefined,
-          address_line,
-          city: payload.city?.trim(),
-          district: payload.district?.trim(),
-          lat: quote.lat,
-          lng: quote.lng,
-          distance_km: quote.distance_km,
-          address_source: payload.address_source
-        }
-      } as any)
-    )
-
-    orderItems.forEach((orderItem) => {
-      orderItem.order_id = order.insertedId
-    })
-    await databaseService.order_items.insertMany(orderItems)
-    await databaseService.products.bulkWrite(
-      orderItems.map((orderItem) => ({
-        updateOne: {
-          filter: { _id: orderItem.product_id },
-          update: { $inc: { quantity: -orderItem.quantity, soldNumber: orderItem.quantity } }
-        }
-      }))
-    )
-    await voucherService.markUsed(voucherResult?.voucher?._id)
+        items,
+        payload,
+        selectedCartItems,
+        idempotency_key,
+        delivery_method,
+        quote,
+        recipient_name,
+        phone,
+        address_line,
+        note
+      })
+    } catch (error) {
+      // A concurrent submit with the same key may have won: either at the unique index (E11000) or
+      // earlier, e.g. it already consumed the cart items so this attempt failed "cart changed".
+      // This transaction rolled back, so if the winner exists, answer with it instead of an error.
+      const replay = await this.findReplay(idempotency_key)
+      if (replay) return replay
+      throw error
+    }
 
     this.sendOrderConfirmationEmail(order.insertedId.toString()).catch((err) =>
       console.error('Gửi email xác nhận đơn hàng thất bại:', err)
@@ -165,15 +156,139 @@ class OrdersService {
     return order
   }
 
+  private async createInTransaction({
+    user_id,
+    guest_customer,
+    items,
+    payload,
+    selectedCartItems,
+    idempotency_key,
+    delivery_method,
+    quote,
+    recipient_name,
+    phone,
+    address_line,
+    note
+  }: {
+    user_id?: string
+    guest_customer?: { name: string; phone: string; email?: string }
+    items: GuestOrderItemInput[]
+    payload: CreateOrderReqBody | CreateGuestOrderReqBody
+    selectedCartItems?: ObjectId[]
+    idempotency_key: string
+    delivery_method: { _id: ObjectId }
+    quote: { shipping_fee: number; lat: number; lng: number; distance_km: number }
+    recipient_name: string
+    phone: string
+    address_line: string
+    note?: string
+  }): Promise<CreatedOrder> {
+    const shipping_fee = quote.shipping_fee
+    return databaseService.withTransaction(async (session) => {
+      const products = await databaseService.products
+        .find({ _id: { $in: items.map((item) => new ObjectId(item.product_id)) } }, { session })
+        .toArray()
+      const productMap = new Map(products.map((product) => [product._id.toString(), product]))
+      let subtotal = 0
+      const orderItems: OrderItems[] = []
+      for (const item of items) {
+        const product = productMap.get(item.product_id)
+        if (
+          !product ||
+          product.status !== PRODUCT_STATUS.Active ||
+          !Number.isFinite(product.price) ||
+          product.price < 0
+        )
+          badRequest('Sản phẩm không còn được bán hoặc giá không hợp lệ.')
+        const reserved = await databaseService.products.updateOne(
+          { _id: product._id, quantity: { $gte: item.quantity }, status: PRODUCT_STATUS.Active },
+          { $inc: { quantity: -item.quantity, soldNumber: item.quantity } },
+          { session }
+        )
+        if (reserved.modifiedCount !== 1) badRequest(PRODUCT_MESSAGES.INSUFFICIENT_PRODUCT_STOCK)
+        subtotal += item.quantity * product.price
+        orderItems.push(
+          new OrderItems({
+            order_id: new ObjectId(),
+            product_id: product._id,
+            quantity: item.quantity,
+            price: product.price
+          })
+        )
+      }
+      if (selectedCartItems) {
+        const claimed = await databaseService.cart_items.deleteMany({ _id: { $in: selectedCartItems } }, { session })
+        if (claimed.deletedCount !== selectedCartItems.length)
+          badRequest('Giỏ hàng đã thay đổi hoặc đã được thanh toán. Vui lòng tải lại.')
+      }
+      const voucherResult = payload.voucher_code
+        ? await voucherService.validate(payload.voucher_code, subtotal, session)
+        : undefined
+      const discount = voucherResult?.discount || 0
+
+      const created = await databaseService.orders.insertOne(
+        new Order({
+          user_id: user_id ? new ObjectId(user_id) : undefined,
+          guest_customer,
+          total_price: subtotal - discount + shipping_fee,
+          payment_method: payload.payment_method,
+          payment_status: PaymentStatus.PENDING,
+          delivery_method_id: delivery_method._id,
+          shipping_fee,
+          status: OrderStatus.Pending,
+          shipping_address: {
+            recipient_name,
+            phone,
+            note: note || undefined,
+            address_line,
+            city: payload.city?.trim(),
+            district: payload.district?.trim(),
+            lat: quote.lat,
+            lng: quote.lng,
+            distance_km: quote.distance_km,
+            address_source: payload.address_source
+          },
+          idempotency_key
+        }),
+        { session }
+      )
+
+      orderItems.forEach((orderItem) => {
+        orderItem.order_id = created.insertedId
+      })
+      await databaseService.order_items.insertMany(orderItems, { session })
+      await voucherService.markUsed(voucherResult?.voucher?._id, session)
+      return { acknowledged: created.acknowledged, insertedId: created.insertedId }
+    })
+  }
+
   async createOrderItem({
     user_id,
     cart_item_id,
-    payload
+    payload,
+    client_key
   }: {
     user_id: string
     cart_item_id: string[]
     payload: CreateOrderReqBody
+    client_key?: string
   }) {
+    if (
+      !Array.isArray(cart_item_id) ||
+      !cart_item_id.length ||
+      cart_item_id.length > 100 ||
+      cart_item_id.some((id) => typeof id !== 'string' || !ObjectId.isValid(id)) ||
+      new Set(cart_item_id).size !== cart_item_id.length
+    )
+      badRequest('Danh sách giỏ hàng không hợp lệ.')
+    // Checked before reading the cart: a retried submit finds its cart items already consumed.
+    const idempotency_key = buildIdempotencyKey(
+      { user_id },
+      client_key,
+      orderFingerprint({ ...payload, items: cart_item_id.map((id) => ({ product_id: `cart:${id}`, quantity: 0 })) })
+    )
+    const replay = await this.findReplay(idempotency_key)
+    if (replay) return replay
     // get cart active
     const cart = await databaseService.carts.findOne({ user_id: new ObjectId(user_id), status: CartStatus.ACTIVE })
     if (!cart) {
@@ -190,7 +305,10 @@ class OrdersService {
       })
       .toArray()
     // nếu ko chọn
-    if (cartItems.length === 0) {
+    if (cartItems.length !== cart_item_id.length) {
+      // the cart may have just been consumed by a concurrent submit of this same checkout
+      const concurrent = await this.findReplay(idempotency_key)
+      if (concurrent) return concurrent
       throw new ErrorWithStatus({
         message: CART_MESSAGES.NO_SELECTED_CART_ITEMS,
         status: HTTP_STATUS.NOT_FOUND
@@ -199,24 +317,30 @@ class OrdersService {
     const order = await this.finalizeOrder({
       user_id,
       items: cartItems.map((item) => ({ product_id: item.product_id.toString(), quantity: item.quantity })),
-      payload
-    })
-    // xóa cart items đã đặt hàng
-    await databaseService.cart_items.deleteMany({
-      _id: { $in: cartItems.map((item) => item._id!) }
+      payload,
+      selectedCartItems: cartItems.map((item) => item._id!),
+      idempotency_key
     })
 
     return order
   }
 
-  async createGuestOrder(payload: CreateGuestOrderReqBody) {
+  async createGuestOrder(payload: CreateGuestOrderReqBody, client_key?: string) {
     if (!Array.isArray(payload.items) || payload.items.length === 0) {
       throw new ErrorWithStatus({
         message: CART_MESSAGES.NO_SELECTED_CART_ITEMS,
         status: HTTP_STATUS.BAD_REQUEST
       })
     }
+    const idempotency_key = buildIdempotencyKey(
+      { guest_phone: String(payload.phone ?? '') },
+      client_key,
+      orderFingerprint({ ...payload, items: normalizeOrderItems(payload.items) })
+    )
+    const replay = await this.findReplay(idempotency_key)
+    if (replay) return replay
     return this.finalizeOrder({
+      idempotency_key,
       guest_customer: {
         name: payload.recipient_name?.trim(),
         phone: payload.phone?.trim(),
@@ -292,9 +416,7 @@ class OrdersService {
     if (!telegramService.isEnabled()) return
     const order = await this.getOrderForNotification(order_id)
     if (!order) return
-    const items = order.items
-      .map((item: any) => `- ${item.product?.name || 'Sản phẩm'} x${item.quantity}`)
-      .join('\n')
+    const items = order.items.map((item: any) => `- ${item.product?.name || 'Sản phẩm'} x${item.quantity}`).join('\n')
     const address = order.shipping_address
     const customerName = order.customer?.name || order.guest_customer?.name || address?.recipient_name || 'Khách hàng'
     const text = [
@@ -312,47 +434,49 @@ class OrdersService {
   }
 
   private async getOrderForNotification(order_id: string) {
-    const orderList = await databaseService.orders.aggregate([
-      { $match: { _id: new ObjectId(order_id) } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user_id',
-          foreignField: '_id',
-          as: 'customer'
+    const orderList = await databaseService.orders
+      .aggregate([
+        { $match: { _id: new ObjectId(order_id) } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user_id',
+            foreignField: '_id',
+            as: 'customer'
+          }
+        },
+        { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'order_items',
+            localField: '_id',
+            foreignField: 'order_id',
+            as: 'items'
+          }
+        },
+        { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'items.product_id',
+            foreignField: '_id',
+            as: 'items.product'
+          }
+        },
+        { $unwind: { path: '$items.product', preserveNullAndEmptyArrays: true } },
+        {
+          $group: {
+            _id: '$_id',
+            total_price: { $first: '$total_price' },
+            payment_method: { $first: '$payment_method' },
+            shipping_address: { $first: '$shipping_address' },
+            guest_customer: { $first: '$guest_customer' },
+            customer: { $first: '$customer' },
+            items: { $push: '$items' }
+          }
         }
-      },
-      { $unwind: { path: '$customer', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'order_items',
-          localField: '_id',
-          foreignField: 'order_id',
-          as: 'items'
-        }
-      },
-      { $unwind: { path: '$items', preserveNullAndEmptyArrays: true } },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'items.product_id',
-          foreignField: '_id',
-          as: 'items.product'
-        }
-      },
-      { $unwind: { path: '$items.product', preserveNullAndEmptyArrays: true } },
-      {
-        $group: {
-          _id: '$_id',
-          total_price: { $first: '$total_price' },
-          payment_method: { $first: '$payment_method' },
-          shipping_address: { $first: '$shipping_address' },
-          guest_customer: { $first: '$guest_customer' },
-          customer: { $first: '$customer' },
-          items: { $push: '$items' }
-        }
-      }
-    ]).toArray()
+      ])
+      .toArray()
     return orderList[0]
   }
 
@@ -378,8 +502,8 @@ class OrdersService {
     })
   }
   // hoàn kho khi đơn bị hủy: cộng lại quantity và trừ soldNumber
-  private async restockOrderItems(order_id: ObjectId) {
-    const items = await databaseService.order_items.find({ order_id }).toArray()
+  private async restockOrderItems(order_id: ObjectId, session?: ClientSession) {
+    const items = await databaseService.order_items.find({ order_id }, { session }).toArray()
     if (items.length === 0) return
     await databaseService.products.bulkWrite(
       items.map((item) => ({
@@ -387,7 +511,8 @@ class OrdersService {
           filter: { _id: item.product_id },
           update: { $inc: { quantity: item.quantity, soldNumber: -item.quantity } }
         }
-      }))
+      })),
+      { session }
     )
   }
 
@@ -408,63 +533,71 @@ class OrdersService {
       filter.user_id = new ObjectId(user_id)
     }
 
-    const currentOrder = await databaseService.orders.findOne(filter)
-    if (!currentOrder) {
-      throw new ErrorWithStatus({
-        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
-    }
+    return databaseService.withTransaction(async (session) => {
+      const currentOrder = await databaseService.orders.findOne(filter, { session })
+      if (!currentOrder) {
+        throw new ErrorWithStatus({
+          message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
 
-    if (!canTransitionOrderStatus(currentOrder.status, status)) {
-      throw new ErrorWithStatus({
-        message: ORDER_MESSAGES.ORDER_STATUS_TRANSITION_INVALID,
-        status: HTTP_STATUS.BAD_REQUEST
-      })
-    }
+      if (currentOrder.refund_state === 'processing' || !canTransitionOrderStatus(currentOrder.status, status)) {
+        throw new ErrorWithStatus({
+          message: ORDER_MESSAGES.ORDER_STATUS_TRANSITION_INVALID,
+          status: HTTP_STATUS.BAD_REQUEST
+        })
+      }
 
-    // hủy đơn thì hoàn kho lại
-    if (status === OrderStatus.Cancelled) {
-      await this.restockOrderItems(currentOrder._id)
-    }
+      // hủy đơn thì hoàn kho lại
+      if (status === OrderStatus.Cancelled) {
+        if (currentOrder.payment_status === PaymentStatus.COMPLETED)
+          badRequest('Đơn đã thanh toán cần được hoàn tiền trước khi hủy.')
+        await this.restockOrderItems(currentOrder._id, session)
+      }
 
-    const order = await databaseService.orders.findOneAndUpdate(
-      { _id: currentOrder._id },
-      {
-        $set: {
-          status,
-          updated_at: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    )
-    return order
+      const order = await databaseService.orders.findOneAndUpdate(
+        { _id: currentOrder._id },
+        {
+          $set: {
+            status,
+            updated_at: new Date()
+          }
+        },
+        { returnDocument: 'after', session }
+      )
+      return order
+    })
   }
 
   async deleteOrder({ user_id, order_id }: { user_id: string; order_id: string }) {
-    const order = await databaseService.orders.findOneAndUpdate(
-      {
-        _id: new ObjectId(order_id),
-        user_id: new ObjectId(user_id),
-        status: OrderStatus.Pending
-      },
+    return databaseService.withTransaction(async (session) => {
+      const order = await databaseService.orders.findOneAndUpdate(
+        {
+          _id: new ObjectId(order_id),
+          user_id: new ObjectId(user_id),
+          status: OrderStatus.Pending,
+          payment_status: { $ne: PaymentStatus.COMPLETED },
+          refund_state: { $ne: 'processing' }
+        },
 
-      {
-        $set: {
-          status: OrderStatus.Cancelled,
-          updated_at: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    )
-    if (!order) {
-      throw new ErrorWithStatus({
-        message: ORDER_MESSAGES.ORDER_NOT_FOUND,
-        status: HTTP_STATUS.NOT_FOUND
-      })
-    }
-    // hoàn kho cho đơn vừa hủy
-    await this.restockOrderItems(order._id)
+        {
+          $set: {
+            status: OrderStatus.Cancelled,
+            updated_at: new Date()
+          }
+        },
+        { returnDocument: 'after', session }
+      )
+      if (!order) {
+        throw new ErrorWithStatus({
+          message: ORDER_MESSAGES.ORDER_NOT_FOUND,
+          status: HTTP_STATUS.NOT_FOUND
+        })
+      }
+      // hoàn kho cho đơn vừa hủy
+      await this.restockOrderItems(order._id, session)
+    })
   }
 
   async getOrderById({ user_id, order_id }: { user_id: string; order_id: string }) {
@@ -476,81 +609,83 @@ class OrdersService {
       filter.user_id = new ObjectId(user_id)
     }
 
-    const orderList = await databaseService.orders.aggregate([
-      { $match: filter },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'user_id',
-          foreignField: '_id',
-          as: 'customer'
-        }
-      },
-      {
-        $unwind: {
-          path: '$customer',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $lookup: {
-          from: 'order_items',
-          localField: '_id',
-          foreignField: 'order_id',
-          as: 'items'
-        }
-      },
-      {
-        $unwind: {
-          path: '$items',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $lookup: {
-          from: 'products',
-          localField: 'items.product_id',
-          foreignField: '_id',
-          as: 'items.product'
-        }
-      },
-      {
-        $unwind: {
-          path: '$items.product',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $group: {
-          _id: '$_id',
-          user_id: { $first: '$user_id' },
-          total_price: { $first: '$total_price' },
-          payment_method: { $first: '$payment_method' },
-          payment_status: { $first: '$payment_status' },
-          delivery_method_id: { $first: '$delivery_method_id' },
-          shipping_fee: { $first: '$shipping_fee' },
-          shipping_address: { $first: '$shipping_address' },
-          status: { $first: '$status' },
-          created_at: { $first: '$created_at' },
-          updated_at: { $first: '$updated_at' },
-          customer: {
-            $first: {
-              name: '$customer.name',
-              email: '$customer.email'
-            }
-          },
-          items: {
-            $push: {
-              _id: '$items._id',
-              product_id: '$items.product_id',
-              quantity: '$items.quantity',
-              price: '$items.price',
-              product: '$items.product'
+    const orderList = await databaseService.orders
+      .aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user_id',
+            foreignField: '_id',
+            as: 'customer'
+          }
+        },
+        {
+          $unwind: {
+            path: '$customer',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'order_items',
+            localField: '_id',
+            foreignField: 'order_id',
+            as: 'items'
+          }
+        },
+        {
+          $unwind: {
+            path: '$items',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: 'items.product_id',
+            foreignField: '_id',
+            as: 'items.product'
+          }
+        },
+        {
+          $unwind: {
+            path: '$items.product',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $group: {
+            _id: '$_id',
+            user_id: { $first: '$user_id' },
+            total_price: { $first: '$total_price' },
+            payment_method: { $first: '$payment_method' },
+            payment_status: { $first: '$payment_status' },
+            delivery_method_id: { $first: '$delivery_method_id' },
+            shipping_fee: { $first: '$shipping_fee' },
+            shipping_address: { $first: '$shipping_address' },
+            status: { $first: '$status' },
+            created_at: { $first: '$created_at' },
+            updated_at: { $first: '$updated_at' },
+            customer: {
+              $first: {
+                name: '$customer.name',
+                email: '$customer.email'
+              }
+            },
+            items: {
+              $push: {
+                _id: '$items._id',
+                product_id: '$items.product_id',
+                quantity: '$items.quantity',
+                price: '$items.price',
+                product: '$items.product'
+              }
             }
           }
         }
-      }
-    ]).toArray()
+      ])
+      .toArray()
 
     if (orderList.length === 0) {
       throw new ErrorWithStatus({
@@ -630,6 +765,16 @@ class OrdersService {
         status: HTTP_STATUS.BAD_REQUEST
       })
     }
+    if (order.payment_method !== PaymentMethod.PAYOS)
+      badRequest(
+        'Phương thức này chưa hỗ trợ hoàn tiền tự động. Cần đối soát và hoàn tiền thủ công; hệ thống chưa ghi nhận đã hoàn.'
+      )
+    const claim = await databaseService.orders.updateOne(
+      { _id: orderObjectId, payment_status: PaymentStatus.COMPLETED, refund_state: { $exists: false } },
+      { $set: { refund_state: 'processing', updated_at: new Date() } }
+    )
+    if (claim.modifiedCount !== 1)
+      badRequest('Yêu cầu hoàn tiền đang xử lý hoặc cần đối soát. Không gửi lại giao dịch.')
 
     if (order.payment_method === PaymentMethod.PAYOS) {
       const payment = await databaseService.payments.findOne({
@@ -648,20 +793,29 @@ class OrdersService {
         const payosPaymentLink = isNaN(Number(orderCodeStr))
           ? await payos.paymentRequests.get(orderCodeStr)
           : await payos.paymentRequests.get(Number(orderCodeStr))
-        const successTx = payosPaymentLink.transactions.find((tx) => tx.amount >= order.total_price) || payosPaymentLink.transactions[0]
-        
+        const successTx = payosPaymentLink.transactions.find((tx) => tx.amount >= order.total_price)
+
         if (!successTx || !successTx.counterAccountNumber || !successTx.counterAccountBankId) {
-          throw new Error('Không tìm thấy thông tin tài khoản ngân hàng của khách hàng từ giao dịch PayOS (thiếu số tài khoản hoặc ngân hàng). Vui lòng hoàn tiền thủ công.')
+          throw new Error(
+            'Không tìm thấy thông tin tài khoản ngân hàng của khách hàng từ giao dịch PayOS (thiếu số tài khoản hoặc ngân hàng). Vui lòng hoàn tiền thủ công.'
+          )
         }
 
         // Call PayOS Payout API to refund
-        await payos.payouts.create({
-          referenceId: `REFUND-${order_id}-${Date.now()}`.substring(0, 35),
+        const payout = await payos.payouts.create({
+          referenceId: `REFUND-${order_id}`,
           amount: order.total_price,
           description: `Hoan tien don hang ${order.total_price} VND`.substring(0, 25),
           toBin: successTx.counterAccountBankId,
           toAccountNumber: successTx.counterAccountNumber
         })
+        if (
+          payout.approvalState !== 'COMPLETED' ||
+          payout.transactions.length !== 1 ||
+          payout.transactions[0].state !== 'SUCCEEDED' ||
+          payout.transactions[0].amount !== order.total_price
+        )
+          throw new Error('Payout chưa được xác nhận thành công; cần đối soát trước khi cập nhật hoàn tiền.')
       } catch (err: any) {
         console.error('Lỗi hoàn tiền tự động PayOS:', err?.message || err)
         throw new ErrorWithStatus({
@@ -671,31 +825,36 @@ class OrdersService {
       }
     }
 
-    if (order.status !== OrderStatus.Cancelled) {
-      await this.restockOrderItems(orderObjectId)
-    }
+    const updated = await databaseService.withTransaction(async (session) => {
+      const current = await databaseService.orders.findOne({ _id: orderObjectId }, { session })
+      if (!current || current.refund_state !== 'processing')
+        badRequest('Trạng thái hoàn tiền đã thay đổi; cần đối soát.')
+      if (current.status !== OrderStatus.Cancelled) await this.restockOrderItems(orderObjectId, session)
+      const result = await databaseService.orders.findOneAndUpdate(
+        { _id: orderObjectId },
+        {
+          $set: {
+            payment_status: PaymentStatus.REFUNDED,
+            refund_state: 'completed',
+            status: OrderStatus.Cancelled,
+            updated_at: new Date()
+          }
+        },
+        { returnDocument: 'after', session }
+      )
 
-    const updated = await databaseService.orders.findOneAndUpdate(
-      { _id: orderObjectId },
-      {
-        $set: {
-          payment_status: PaymentStatus.REFUNDED,
-          status: OrderStatus.Cancelled,
-          updated_at: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-    )
-
-    await databaseService.payments.updateMany(
-      { order_id: orderObjectId },
-      {
-        $set: {
-          payment_status: PaymentStatus.REFUNDED,
-          updated_at: new Date()
-        }
-      }
-    )
+      await databaseService.payments.updateMany(
+        { order_id: orderObjectId },
+        {
+          $set: {
+            payment_status: PaymentStatus.REFUNDED,
+            updated_at: new Date()
+          }
+        },
+        { session }
+      )
+      return result
+    })
 
     this.sendRefundNotificationEmail(order_id, order.total_price).catch((err) =>
       console.error('Gửi email hoàn tiền thất bại:', err)

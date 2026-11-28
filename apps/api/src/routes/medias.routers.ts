@@ -1,8 +1,18 @@
 import { Router } from 'express'
 import { uploadImageController, uploadVideoController } from '~/controllers/medias.controllers'
 import { wrapAsync } from '~/utils/handlers'
+import { accessTokenValidator, checkPermissions, requireVerifiedEmail } from '~/middlewares/users.middlewares'
+import { USER_ROLE } from '~/constants/enums'
+import { uploadLimiter } from '~/middlewares/rateLimit.middlewares'
 
 const mediasRouter = Router()
+// Catalog uploads are administrative operations; validate before parsing large bodies.
+mediasRouter.use(
+  uploadLimiter,
+  accessTokenValidator,
+  checkPermissions(USER_ROLE.Admin, USER_ROLE.Staff),
+  requireVerifiedEmail
+)
 
 /**
  * POST /medias/upload-image

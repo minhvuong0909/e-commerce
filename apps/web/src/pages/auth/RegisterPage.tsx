@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -45,10 +45,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-5'>
-        <h2 className='font-display text-3xl font-extrabold tracking-tight text-[#1C1917]'>Tạo tài khoản</h2>
-        <p className='mt-2 text-xs leading-relaxed text-[#786C60]'>Lưu giỏ hàng, theo dõi đơn và nhận ưu đãi độc quyền dành riêng cho bạn.</p>
+        <h2 className='font-display text-4xl font-bold text-ink-950'>Tạo tài khoản</h2>
+        <p className='mt-2 text-[15px] leading-relaxed text-ink-600'>Lưu giỏ hàng, địa chỉ giao hàng và theo dõi mọi đơn của bạn.</p>
       </div>
 
       <Alert variant='info' title='Lưu ý xác minh email' desc='Sau khi đăng ký, bạn cần xác minh email để sử dụng đầy đủ tính năng.' />
@@ -83,17 +83,17 @@ export default function RegisterPage() {
           <PasswordStrength password={passwordValue} />
         </div>
 
-        <Button full variant='accent' type='submit' disabled={isSubmitting} loading={isSubmitting} className='!rounded-xl !py-3'>
+        <Button full variant='accent' type='submit' disabled={isSubmitting} loading={isSubmitting} size='lg'>
           Đăng ký tài khoản
         </Button>
 
-        <p className='text-center text-xs text-[#786C60]'>
+        <p className='text-center text-sm text-ink-600'>
           Đã có tài khoản?{' '}
-          <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-bold text-[#A16207] hover:underline'>
+          <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-bold text-berry-600 hover:underline'>
             Đăng nhập
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }

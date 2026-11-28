@@ -1,28 +1,30 @@
 import { Request } from 'express'
 import { UPLOAD_IMAGE_DIR } from '~/constants/dir'
 import fs from 'fs'
-import { getNameFormFullNameFile, handleUploadImage, handleUploadVideo } from '~/utils/file'
-import sharp from 'sharp'
+import path from 'path'
+import { getNameFormFullNameFile, handleUploadImage, handleUploadVideo, removeQuietly, uploadError } from '~/utils/file'
+import { optimizeImage } from '~/utils/imageOptimize'
 import { Media } from '~/models/Other'
-import { isProduction } from '~/config/config'
 import { MediaType } from '~/constants/enums'
 import { cleanupTempFolder } from '~/utils/cleanupTemp'
+import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 class MediaServices {
-  private async uploadToCloudinary(filePath: string, folder: string) {
+  private async uploadToCloudinary(filePath: string, folder: string, resource: 'image' | 'video' = 'image') {
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim()
     const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim()
     if (!cloudName || !uploadPreset) return null
 
     const form = new FormData()
     const bytes = await fs.promises.readFile(filePath)
-    form.append('file', new Blob([bytes]), 'image.jpg')
+    form.append('file', new Blob([bytes]), path.basename(filePath))
     form.append('upload_preset', uploadPreset)
     form.append('folder', folder)
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-      method: 'POST',
-      body: form
-    })
+    const res = await fetchWithTimeout(
+      `https://api.cloudinary.com/v1_1/${cloudName}/${resource}/upload`,
+      { method: 'POST', body: form },
+      { timeoutMs: resource === 'video' ? HTTP_TIMEOUTS.mediaUpload * 4 : HTTP_TIMEOUTS.mediaUpload, service: 'cloudinary' }
+    )
     if (!res.ok) {
       throw new Error(`Cloudinary upload failed: ${res.status}`)
     }
@@ -30,60 +32,64 @@ class MediaServices {
     return data.secure_url as string
   }
 
-  // sharp sẽ xử lý trong service
+  // ảnh: nén + thu nhỏ + WebP bằng sharp (utils/imageOptimize.ts), rồi đẩy Cloudinary nếu có cấu hình
   async hanleUploadImage(req: Request) {
-    // lấy file từ req đã lọc qua formidable
     const files = await handleUploadImage(req)
-    const result = await Promise.all(
-      files.map(async (file) => {
-        // upload file sau đó xóa đuôi + .jpg
-        const newFilename = getNameFormFullNameFile(file.newFilename) + '.jpg'
-        const newPath = UPLOAD_IMAGE_DIR + '/' + newFilename
-        // gọi sharp để nén
-        const infor = await sharp(file.filepath).rotate().jpeg().toFile(newPath)
-
-        // Dọn dẹp file tạm sau khi xử lý xong (không dùng setInterval trong vòng lặp để tránh memory leak)
-        cleanupTempFolder()
-        // console.log('File path: ' + file.filepath)
-
-        // console.log('image comprise: ' + infor)
-
-        // xóa file cũ
-        // const isDel = fs.unlinkSync(file.filepath)
-        // console.log('Deleted: ' + Boolean(isDel))
-
-        // return ra url cho ngta truy cập ảnh
-        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
-        const cloudinaryUrl = await this.uploadToCloudinary(newPath, process.env.CLOUDINARY_FOLDER || 'vibrant-mart/products').catch(
-          (err) => {
-            console.error('Cloudinary upload error:', err?.message || err)
-            return null
+    await fs.promises.mkdir(UPLOAD_IMAGE_DIR, { recursive: true })
+    const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+    try {
+      return await Promise.all(
+        files.map(async (file) => {
+          const newFilename = `${getNameFormFullNameFile(file.newFilename) || file.newFilename}.webp`
+          const newPath = path.join(UPLOAD_IMAGE_DIR, newFilename)
+          try {
+            // đọc vào buffer: sharp không giữ handle file gốc nên xóa file tạm được ngay (Windows)
+            await optimizeImage(await fs.promises.readFile(file.filepath), newPath)
+          } catch {
+            await removeQuietly(newPath)
+            throw uploadError('File không phải ảnh hợp lệ hoặc định dạng chưa hỗ trợ (dùng JPG, PNG, WebP).')
           }
-        )
-        const url: Media = {
-          url: cloudinaryUrl || `${apiBase}/static/image/${newFilename}`,
-          type: MediaType.Image
-        }
-        return url
-      })
-    )
-    return result
+          const cloudinaryUrl = await this.uploadToCloudinary(newPath, process.env.CLOUDINARY_FOLDER || 'vibrant-mart/products').catch(
+            (err) => {
+              console.error('Cloudinary upload error:', err?.message || err)
+              return null
+            }
+          )
+          const url: Media = {
+            url: cloudinaryUrl || `${apiBase}/static/image/${newFilename}`,
+            type: MediaType.Image
+          }
+          return url
+        })
+      )
+    } finally {
+      // ảnh gốc (có thể vài MB) chỉ cần trong lúc xử lý
+      await Promise.all(files.map((f) => removeQuietly(f.filepath)))
+      cleanupTempFolder()
+    }
   }
 
   async handleUploadVideo(req: Request) {
-    const files = await handleUploadVideo(req) // lấy file trong req
-    const result = await Promise.all(
+    const files = await handleUploadVideo(req)
+    const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+    return Promise.all(
       files.map(async (file) => {
-        // trả ra link
-        const apiBase = (process.env.API_URL || process.env.HOST || `http://localhost:${process.env.PORT || 3000}`).replace(/\/+$/, '')
+        const cloudinaryUrl = await this.uploadToCloudinary(
+          file.filepath,
+          process.env.CLOUDINARY_VIDEO_FOLDER || 'vibrant-mart/videos',
+          'video'
+        ).catch((err) => {
+          console.error('Cloudinary video upload error:', err?.message || err)
+          return null
+        })
+        if (cloudinaryUrl) await fs.promises.unlink(file.filepath).catch(() => undefined)
         const url: Media = {
-          url: `${apiBase}/static/video/${file.newFilename}`,
+          url: cloudinaryUrl || `${apiBase}/static/video/${file.newFilename}`,
           type: MediaType.Video
         }
         return url
       })
     )
-    return result
   }
 }
 

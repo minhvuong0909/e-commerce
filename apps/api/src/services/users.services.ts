@@ -13,6 +13,13 @@ import { REGEX_USERNAME } from '~/constants/regex'
 import { createMailTransporter, getApiBaseUrl, getGmailAuth } from '~/config/mail'
 import { supabaseConfig } from '~/config/config'
 
+/** Locked accounts must not obtain new tokens by any route (password, Google, refresh). */
+export function assertNotBanned(user: { verify_status?: UserVerifyStatus }) {
+  if (user.verify_status === UserVerifyStatus.Banned) {
+    throw new ErrorWithStatus({ status: HTTP_STATUS.FORBIDDEN, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.' })
+  }
+}
+
 class UserServices {
   // kí access_token bằng jwt
   private signAccessToken(user_id: string) {
@@ -37,7 +44,7 @@ class UserServices {
     return signToken({
       payload: { user_id, token_type: TokenType.RefreshToken },
       privateKey: process.env.JWT_SECRET_REFRESH_TOKEN as string,
-      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as any } 
+      options: { expiresIn: process.env.REFRESH_TOKEN_EXPIRE_IN as any }
     })
   }
 
@@ -127,6 +134,8 @@ class UserServices {
         message: USERS_MESSAGES.Password_IS_INCORRECT
       })
     }
+    // checked after the password so a locked account does not reveal itself to guessers
+    assertNotBanned(user)
     // check
     // nếu có user thì tạo access_token và refresh_token
     const user_id = user._id.toString()
@@ -228,6 +237,7 @@ class UserServices {
         message: USERS_MESSAGES.USER_NOT_FOUND
       })
     }
+    assertNotBanned(user)
 
     const tokens = await this.signAccessAndRefreshTokens(user._id.toString())
     const { iat, exp } = await this.decodeRefreshToken(tokens.refresh_token)
@@ -312,7 +322,10 @@ class UserServices {
         _id: user_id,
         username: `user${user_id.toString()}`, // dùng mã để tạo ra username mặc định
         email_verify_token,
-        ...payload,
+        name: payload.name,
+        email: payload.email,
+        role: USER_ROLE.User,
+        verify_status: UserVerifyStatus.Unverified,
         password: passwordHashed,
         date_of_birth: payload.date_of_birth ? new Date(payload.date_of_birth) : undefined
       })
@@ -602,6 +615,12 @@ class UserServices {
 
   // hàm refresh token
   async refreshToken({ user_id, refresh_token, exp }: { user_id: string; refresh_token: string; exp: number }) {
+    const user = await databaseService.users.findOne({ _id: new ObjectId(user_id) }, { projection: { verify_status: 1 } })
+    if (!user) throw new ErrorWithStatus({ status: HTTP_STATUS.UNAUTHORIZED, message: USERS_MESSAGES.USER_NOT_FOUND })
+    if (user.verify_status === UserVerifyStatus.Banned) {
+      await databaseService.refreshTokens.deleteMany({ user_id: user._id })
+      assertNotBanned(user)
+    }
     // kì access và refresh
     const tokens = await this.signAccessAndRefreshTokens(user_id)
     const { iat } = await this.decodeRefreshToken(refresh_token)

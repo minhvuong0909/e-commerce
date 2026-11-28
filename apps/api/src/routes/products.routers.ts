@@ -1,3 +1,4 @@
+import { verifiedAdmin } from '~/middlewares/catalog.middlewares'
 import express from 'express'
 import {
   createProductController,
@@ -8,7 +9,7 @@ import {
 } from '~/controllers/products.controllers'
 import { filterMiddleware } from '~/middlewares/common.middlewares'
 import { createProductValidator, getProductByIdValidator } from '~/middlewares/products.middlewares'
-import { accessTokenValidator } from '~/middlewares/users.middlewares'
+
 import { CreateProductBody } from '~/models/requests/Products.requests'
 import { wrapAsync } from '~/utils/handlers'
 const productRouter = express.Router()
@@ -16,10 +17,10 @@ const productRouter = express.Router()
 /**
  * POST /products/create
  * Create a product from the admin product form.
- * Auth: access token.
+ * Auth: verified Admin access token.
  * Features: stores name, price, inventory, media, category, brand, shipping size and publish status.
  */
-productRouter.post('/create', accessTokenValidator, createProductValidator, wrapAsync(createProductController))
+productRouter.post('/create', ...verifiedAdmin, createProductValidator, wrapAsync(createProductController))
 
 /**
  * GET /products/:id
@@ -31,7 +32,7 @@ productRouter.get('/:id', getProductByIdValidator, wrapAsync(getProductByIdContr
 /**
  * PATCH /products/update/:id
  * Update an existing product.
- * Auth: access token.
+ * Auth: verified Admin access token.
  * Features: edits product content, images, price, inventory, category/brand mapping and visible status.
  */
 productRouter.patch(
@@ -53,7 +54,7 @@ productRouter.patch(
     'ship_category_id',
     'brand_id'
   ]),
-  accessTokenValidator,
+  ...verifiedAdmin,
   createProductValidator,
   wrapAsync(updateProductController)
 )
@@ -61,10 +62,10 @@ productRouter.patch(
 /**
  * DELETE /products/delete/:id
  * Delete a product.
- * Auth: access token.
+ * Auth: verified Admin access token.
  * Features: removes the product from the catalog when admin no longer sells it.
  */
-productRouter.delete('/delete/:id', accessTokenValidator, wrapAsync(deleteProductController))
+productRouter.delete('/delete/:id', ...verifiedAdmin, wrapAsync(deleteProductController))
 
 /**
  * GET /products

@@ -29,13 +29,13 @@ export function getProductBadges(product: Product): ProductBadge[] {
 }
 
 export const BADGE_LABELS: Record<ProductBadge, string> = {
-  NEW: 'NEW',
-  BESTSELLER: 'BESTSELLER',
-  OUT_OF_STOCK: 'OUT OF STOCK'
+  NEW: 'Mới',
+  BESTSELLER: 'Bán chạy',
+  OUT_OF_STOCK: 'Hết hàng'
 }
 
 export const BADGE_STYLES: Record<ProductBadge, string> = {
-  NEW: 'bg-[#3d3330] text-white',
-  BESTSELLER: 'bg-[#b07a72] text-white',
-  OUT_OF_STOCK: 'bg-[#6b5f59] text-white'
+  NEW: 'bg-lime-300 text-ink-950',
+  BESTSELLER: 'bg-berry-600 text-white',
+  OUT_OF_STOCK: 'bg-ink-950 text-white'
 }

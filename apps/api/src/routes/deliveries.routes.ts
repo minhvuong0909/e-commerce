@@ -1,22 +1,15 @@
 import { Router } from 'express'
-import { USER_ROLE } from '~/constants/enums'
 import { getAllDeliveryMethodsController } from '~/controllers/delivery_methods.controllers'
-import { accessTokenValidator, checkPermissions } from '~/middlewares/users.middlewares'
 import { wrapAsync } from '~/utils/handlers'
 
 const deliveryRoutes = Router()
 
 /**
  * GET /delivery-methods
- * Customer delivery method list.
- * Auth: access token, User role.
- * Features: returns active delivery options available during checkout.
+ * Public delivery method list (name, description, type, status only — no customer data).
+ * Must stay public: guest "buy now" checkout loads it before the shopper has an account,
+ * and Admin/Staff use the same checkout. Previously User-only, which broke both.
  */
-deliveryRoutes.get(
-  '/',
-  accessTokenValidator,
-  checkPermissions(USER_ROLE.User),
-  wrapAsync(getAllDeliveryMethodsController)
-)
+deliveryRoutes.get('/', wrapAsync(getAllDeliveryMethodsController))
 
 export default deliveryRoutes

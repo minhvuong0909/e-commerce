@@ -47,11 +47,18 @@ export function buildProductMatchStage(q: ProductQueryParams): Record<string, an
     }
   }
 
-  const min = q.minPrice !== undefined && q.minPrice !== '' ? Number(q.minPrice) : undefined
-  const max = q.maxPrice !== undefined && q.maxPrice !== '' ? Number(q.maxPrice) : undefined
+  const toPrice = (v?: string | number) => {
+    if (v === undefined || v === '') return undefined
+    const n = Number(v)
+    return Number.isFinite(n) && n >= 0 ? n : undefined // negative / garbage values are ignored
+  }
+  let min = toPrice(q.minPrice)
+  let max = toPrice(q.maxPrice)
+  // a reversed range ("from 500k to 200k") is almost always a typo: treat it as 200k–500k
+  if (min !== undefined && max !== undefined && min > max) [min, max] = [max, min]
   const priceFilter: Record<string, number> = {}
-  if (min !== undefined && !Number.isNaN(min)) priceFilter.$gte = min
-  if (max !== undefined && !Number.isNaN(max)) priceFilter.$lte = max
+  if (min !== undefined) priceFilter.$gte = min
+  if (max !== undefined) priceFilter.$lte = max
   if (Object.keys(priceFilter).length > 0) {
     match.price = priceFilter
   }

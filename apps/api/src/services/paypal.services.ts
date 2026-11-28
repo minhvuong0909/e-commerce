@@ -1,11 +1,13 @@
 import https from 'https'
 import { ObjectId } from 'mongodb'
-import { PaymentStatus } from '~/constants/enums'
+import { OrderStatus, PaymentStatus, PaymentMethod } from '~/constants/enums'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/models/Errors'
 import databaseService from './database.service'
 import paymentService from './payment.services'
+import { confirmGatewayPayment } from './payment_confirmation.service'
 import { PAYPAL_CONFIG } from '~/config/payment'
+import { applyRequestTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 type PayPalLink = {
   rel: string
@@ -60,6 +62,7 @@ class PaypalService {
         }
       )
 
+      applyRequestTimeout(req, HTTP_TIMEOUTS.paymentGateway, 'paypal')
       req.on('error', reject)
       if (body) req.write(body)
       req.end()
@@ -219,6 +222,18 @@ class PaypalService {
         status: HTTP_STATUS.NOT_FOUND
       })
     }
+    const existingOrder = await databaseService.orders.findOne({ _id: orderObjectId })
+    if (
+      !existingOrder ||
+      existingOrder.refund_state ||
+      existingOrder.status === OrderStatus.Cancelled ||
+      existingOrder.payment_status === PaymentStatus.REFUNDED ||
+      payment.payment_status === PaymentStatus.REFUNDED ||
+      existingOrder.payment_method !== PaymentMethod.PAYPAL ||
+      Number(existingOrder.total_price) !== Number(payment.amount)
+    ) {
+      throw new ErrorWithStatus({ message: 'Đơn hàng không thể nhận thanh toán này.', status: HTTP_STATUS.BAD_REQUEST })
+    }
 
     if (payment.payment_status === PaymentStatus.COMPLETED) {
       return payment.raw_gateway_response as PayPalCaptureResponse
@@ -250,26 +265,7 @@ class PaypalService {
       })
     }
 
-    await databaseService.payments.updateOne(
-      { _id: payment._id },
-      {
-        $set: {
-          payment_status: PaymentStatus.COMPLETED,
-          raw_gateway_response: captureResult,
-          updated_at: new Date()
-        }
-      }
-    )
-
-    await databaseService.orders.updateOne(
-      { _id: orderObjectId },
-      {
-        $set: {
-          payment_status: PaymentStatus.COMPLETED,
-          updated_at: new Date()
-        }
-      }
-    )
+    await confirmGatewayPayment(payment._id, 'PAYPAL', undefined, captureResult)
 
     const order = await databaseService.orders.findOne({ _id: orderObjectId })
     if (order) {

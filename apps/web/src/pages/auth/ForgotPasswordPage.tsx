@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { MailCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -46,13 +46,13 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+      <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className='flex flex-col items-center text-center'>
           <span className='grid h-16 w-16 place-items-center rounded-3xl bg-emerald-50 text-emerald-600'>
             <MailCheck size={30} />
           </span>
           <h2 className='mt-5 text-2xl font-black tracking-tight text-ink-950'>Kiểm tra email của bạn</h2>
-          <p className='mt-2 text-sm leading-6 text-slate-500'>
+          <p className='mt-2 text-sm leading-6 text-ink-500'>
             Chúng tôi đã gửi link đặt lại mật khẩu tới <span className='font-black text-ink-900'>{email.trim()}</span>.
             Link có hiệu lực trong thời gian giới hạn.
           </p>
@@ -68,20 +68,20 @@ export default function ForgotPasswordPage() {
           </Button>
           <Link
             to={ROUTES.AUTH + ROUTES.LOGIN}
-            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-ink-950 px-5 text-sm font-bold text-white shadow-card transition hover:bg-brand-600'
+            className='inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-berry-600 px-5 text-sm font-bold text-white shadow-card transition hover:bg-berry-700'
           >
             Quay lại đăng nhập
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     )
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Quên mật khẩu</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Nhập email để nhận link đặt lại mật khẩu.</p>
+        <p className='mt-2 text-sm leading-6 text-ink-500'>Nhập email để nhận link đặt lại mật khẩu.</p>
       </div>
 
       <form className='space-y-4' onSubmit={handleSubmit} noValidate>
@@ -106,13 +106,13 @@ export default function ForgotPasswordPage() {
 
         <Alert variant='info' title='Tip' desc='Nếu không thấy email, hãy kiểm tra Spam / Junk hoặc thử gửi lại sau vài phút.' />
 
-        <p className='text-center text-sm text-slate-500'>
+        <p className='text-center text-sm text-ink-500'>
           Quay lại{' '}
           <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
             Đăng nhập
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }

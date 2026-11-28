@@ -1,4 +1,5 @@
 import https from 'https'
+import { applyRequestTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 const stripEnv = (value?: string) => (value ?? '').trim().replace(/^['"]|['"]$/g, '')
 
@@ -43,6 +44,7 @@ class TelegramService {
           })
         }
       )
+      applyRequestTimeout(req, HTTP_TIMEOUTS.telegram, 'telegram')
       req.on('error', reject)
       req.write(body)
       req.end()

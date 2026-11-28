@@ -1,6 +1,8 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, BrowserRouter, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { LazyMotion, domAnimation } from 'framer-motion'
+import { ConfirmProvider } from './components/ui/ConfirmDialog'
 import AuthLayout from './layouts/AuthLayout'
 import UserLayout from './layouts/UserLayout'
 import HomePage from './pages/user/HomePage'
@@ -23,6 +25,9 @@ const OrderDetailPage = lazy(() => import('./pages/user/OrderDetailPage'))
 const OrderResultPage = lazy(() => import('./pages/user/OrderResultPage'))
 const ProfilePage = lazy(() => import('./pages/user/GetProfile'))
 const ChangePasswordPage = lazy(() => import('./pages/user/ChangePasswordPage'))
+const WishlistPage = lazy(() => import('./pages/user/WishlistPage'))
+const TrackOrderPage = lazy(() => import('./pages/user/TrackOrderPage'))
+const PolicyPage = lazy(() => import('./pages/user/PolicyPage'))
 
 // Lazy loaded Admin Layout & Pages
 const AdminLayout = lazy(() => import('./layouts/AdminLayout'))
@@ -40,6 +45,7 @@ const AdminOrdersPage = lazy(() => import('./pages/admin/orders/AdminOrdersPage'
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/orders/AdminOrderDetailPage'))
 const AdminUsersPage = lazy(() => import('./pages/admin/users/AdminUsersPage'))
 const AdminSettingsPage = lazy(() => import('./pages/admin/AdminSettingsPage'))
+const AdminVouchersPage = lazy(() => import('./pages/admin/vouchers/AdminVouchersPage'))
 
 import RequireAuth from './components/auth/RequireAuth'
 import RequireRole from './components/auth/RequireRole'
@@ -88,9 +94,9 @@ function ScrollToTop() {
 
 function PageLoadingFallback() {
   return (
-    <div className='flex min-h-[50vh] flex-col items-center justify-center space-y-3 py-16 text-[#b07a72]'>
-      <div className='h-9 w-9 animate-spin rounded-full border-3 border-current border-t-transparent' />
-      <p className='text-xs font-medium tracking-wide text-[#786452] animate-pulse'>Đang tải nội dung...</p>
+    <div className='flex min-h-[50vh] flex-col items-center justify-center gap-3 py-16 text-berry-600' role='status'>
+      <div className='h-9 w-9 animate-spin rounded-full border-[3px] border-current border-t-transparent' />
+      <p className='text-sm text-ink-500'>Đang tải…</p>
     </div>
   )
 }
@@ -98,10 +104,13 @@ function PageLoadingFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+    {/* chỉ nạp phần animation thực sự dùng (fade/slide/whileInView); strict: cấm <motion.*> nạp full bundle */}
+    <LazyMotion features={domAnimation} strict>
+    <ConfirmProvider>
       <ScrollToTop />
       <AuthBootstrap />
       <AuthNoticeListener />
-      <Toaster richColors position='top-right' />
+      <Toaster position='top-center' toastOptions={{ unstyled: false, classNames: { toast: 'app-toast', title: 'app-toast-title', description: 'app-toast-desc' } }} />
       <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path={ROUTE_PATHS.AUTH_CALLBACK} element={<AuthCallbackPage />} />
@@ -129,10 +138,7 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            <Route
-              path={ROUTE_SEGMENTS.USER_CHECKOUT}
-              element={<CheckoutPage />}
-            />
+            <Route path={ROUTE_SEGMENTS.USER_CHECKOUT} element={<CheckoutPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_ORDERS}
               element={
@@ -149,14 +155,7 @@ export default function App() {
                 </RequireAuth>
               }
             />
-            <Route
-              path={ROUTE_SEGMENTS.USER_ORDER_RESULT}
-              element={
-                <RequireAuth>
-                  <OrderResultPage />
-                </RequireAuth>
-              }
-            />
+            <Route path={ROUTE_SEGMENTS.USER_ORDER_RESULT} element={<OrderResultPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_PROFILE}
               element={
@@ -165,6 +164,9 @@ export default function App() {
                 </RequireAuth>
               }
             />
+            <Route path={ROUTE_SEGMENTS.USER_WISHLIST} element={<WishlistPage />} />
+            <Route path={ROUTE_SEGMENTS.USER_TRACK_ORDER} element={<TrackOrderPage />} />
+            <Route path={ROUTE_SEGMENTS.USER_POLICY} element={<PolicyPage />} />
             <Route
               path={ROUTE_SEGMENTS.USER_CHANGE_PASSWORD}
               element={
@@ -278,6 +280,14 @@ export default function App() {
               }
             />
             <Route
+              path={ROUTE_SEGMENTS.ADMIN_VOUCHERS}
+              element={
+                <AdminOnly>
+                  <AdminVouchersPage />
+                </AdminOnly>
+              }
+            />
+            <Route
               path={ROUTE_SEGMENTS.ADMIN_SETTINGS}
               element={
                 <AdminOnly>
@@ -291,8 +301,8 @@ export default function App() {
           <Route path='*' element={<Navigate to={ROUTE_PATHS.USER} replace />} />
         </Routes>
       </Suspense>
+    </ConfirmProvider>
+    </LazyMotion>
     </BrowserRouter>
   )
 }
-
-// Touch comment to trigger reload

@@ -2,6 +2,7 @@ import { shippingConfig } from '~/config/shipping'
 import { ErrorWithStatus } from '~/models/Errors'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { SHIPPING_MESSAGES } from '~/constants/messages'
+import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 export type GeocodedLocation = {
   lat: number
@@ -50,9 +51,16 @@ async function requestNominatim<T>(path: string, params: Record<string, string>)
     url.searchParams.set(key, value)
   }
 
-  const response = await fetch(url, {
-    headers: { 'User-Agent': shippingConfig.nominatimUserAgent }
-  })
+  let response: Response
+  try {
+    response = await fetchWithTimeout(
+      url,
+      { headers: { 'User-Agent': shippingConfig.nominatimUserAgent } },
+      { timeoutMs: HTTP_TIMEOUTS.geocoding, service: 'nominatim' }
+    )
+  } catch {
+    throw new ErrorWithStatus({ status: HTTP_STATUS.BAD_GATEWAY, message: SHIPPING_MESSAGES.GEOCODING_FAILED })
+  }
 
   if (!response.ok) {
     throw new ErrorWithStatus({

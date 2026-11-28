@@ -7,6 +7,7 @@ import { ErrorWithStatus } from '~/models/Errors'
 import { applyExpressSurcharge, calculateBaseShippingFee } from '~/utils/shippingFee'
 import databaseService from './database.service'
 import geocodingService from './geocoding.services'
+import { fetchWithTimeout, HTTP_TIMEOUTS } from '~/utils/http'
 
 export type ShippingQuoteInput = {
   address_line?: string
@@ -42,7 +43,12 @@ class ShippingService {
     const { storeLat, storeLng, osrmBaseUrl } = shippingConfig
     const url = `${osrmBaseUrl}/route/v1/driving/${storeLng},${storeLat};${destLng},${destLat}?overview=false`
 
-    const response = await fetch(url)
+    let response: Response
+    try {
+      response = await fetchWithTimeout(url, {}, { timeoutMs: HTTP_TIMEOUTS.routing, service: 'osrm' })
+    } catch {
+      throw new ErrorWithStatus({ status: HTTP_STATUS.BAD_GATEWAY, message: SHIPPING_MESSAGES.ROUTING_FAILED })
+    }
     if (!response.ok) {
       throw new ErrorWithStatus({
         status: HTTP_STATUS.BAD_GATEWAY,

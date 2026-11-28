@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, CheckCircle2, KeyRound, Lock, Mail, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, KeyRound, Lock, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -9,9 +9,6 @@ import { ROUTE_PATHS } from '../../routes/route.paths'
 import { changePasswordApi, forgotPasswordApi, getMeApi } from '../../services/auths.services'
 import { getApiErrorMessage } from '../../utils/apiError'
 import cn from '../../utils/cn'
-
-const inputClass =
-  '!rounded-xl !border-[#E7E0D8] focus:!border-[#A16207] focus:!ring-[#A16207]/20 disabled:!bg-[#FAF7F2] disabled:!opacity-70 text-xs'
 
 export default function ChangePasswordPage() {
   const [userProfile, setUserProfile] = useState<{ email?: string; supabase_user_id?: string } | null>(null)
@@ -96,177 +93,112 @@ export default function ChangePasswordPage() {
 
   if (profileLoading) {
     return (
-      <div className='mx-auto max-w-xl px-4 py-10 text-center'>
-        <div className='inline-block h-8 w-8 animate-spin rounded-full border-4 border-[#1C1917] border-t-transparent' />
-        <p className='mt-2 text-xs text-[#786C60]'>Đang kiểm tra tài khoản...</p>
+      <div className='mx-auto max-w-xl px-4 py-16 text-center' aria-busy='true'>
+        <span className='inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-berry-500 border-t-transparent' />
+        <p className='mt-3 text-sm text-ink-500'>Đang kiểm tra tài khoản…</p>
       </div>
     )
   }
 
   return (
-    <div className='mx-auto max-w-xl px-4 py-8 md:px-6 md:py-10'>
-      <header className='mb-6 flex items-start gap-4'>
-        <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-          <KeyRound size={22} strokeWidth={1.75} />
+    <div className='mx-auto max-w-xl px-4 py-8 md:py-12'>
+      <Link to={ROUTE_PATHS.USER_PROFILE} className='inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-950'>
+        <ArrowLeft size={16} /> Hồ sơ
+      </Link>
+      <div className='mt-4 flex items-center gap-4'>
+        <span className='grid h-14 w-14 shrink-0 rotate-[-6deg] place-items-center rounded-3xl bg-lilac-100 text-lilac-700'>
+          <KeyRound size={24} aria-hidden />
         </span>
         <div>
-          <h1 className='font-display text-2xl font-extrabold text-[#1C1917]'>
-            {isGoogleUser ? 'Thiết lập mật khẩu' : 'Đổi mật khẩu'}
-          </h1>
-          <p className='mt-1 text-xs text-[#786C60]'>
-            {isGoogleUser
-              ? 'Tạo mật khẩu riêng cho tài khoản Google của bạn.'
-              : 'Bảo mật tài khoản mua sắm cao cấp của bạn.'}
+          <h1 className='font-display text-3xl font-bold md:text-4xl'>{isGoogleUser ? 'Thiết lập mật khẩu' : 'Đổi mật khẩu'}</h1>
+          <p className='text-ink-500'>
+            {isGoogleUser ? 'Tạo mật khẩu riêng cho tài khoản Google.' : 'Dùng mật khẩu mạnh để bảo vệ tài khoản.'}
           </p>
         </div>
-      </header>
+      </div>
 
-      {/* Google OAuth Linked Account Dedicated View */}
       {isGoogleUser ? (
-        <div className='space-y-5 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'>
-          <div className='flex items-start gap-3.5 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4'>
-            <Sparkles size={20} className='mt-0.5 shrink-0 text-[#A16207]' />
-            <div>
-              <p className='text-xs font-bold text-[#1C1917]'>Tài khoản liên kết Google</p>
-              <p className='mt-1 text-xs leading-relaxed text-[#44403C]'>
-                Tài khoản <span className='font-bold text-[#1C1917]'>{userProfile?.email}</span> của bạn hiện đang được liên kết bảo mật qua Google.
-              </p>
-            </div>
-          </div>
-
+        <div className='mt-8 space-y-5 rounded-4xl bg-white p-6 ring-1 ring-ink-100 sm:p-8'>
+          <p className='text-sm leading-relaxed text-ink-700'>
+            Tài khoản <span className='font-semibold text-ink-950'>{userProfile?.email}</span> đang đăng nhập qua Google. Tạo thêm mật khẩu để
+            có thể đăng nhập bằng email + mật khẩu.
+          </p>
           {!linkSent ? (
-            <div className='space-y-4 pt-2'>
-              <p className='text-xs leading-relaxed text-[#44403C]'>
-                Để tạo mật khẩu riêng giúp bạn có thể đăng nhập linh hoạt bằng cả 2 cách (bấm Đăng nhập Google hoặc gõ Email + Mật khẩu), hãy bấm nút bên dưới để nhận link xác thực gửi về Gmail của bạn:
-              </p>
-
-              <Button
-                variant='accent'
-                full
-                loading={sendingLink}
-                disabled={sendingLink}
-                onClick={handleSendSetPasswordLink}
-                className='!min-h-11 !rounded-xl'
-              >
-                <Mail size={16} />
-                <span>Gửi link thiết lập mật khẩu về Gmail</span>
-              </Button>
-            </div>
+            <Button variant='accent' size='lg' full loading={sendingLink} onClick={handleSendSetPasswordLink}>
+              <Mail size={18} /> Gửi link thiết lập qua email
+            </Button>
           ) : (
-            <div className='rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-center space-y-2 animate-in fade-in'>
-              <CheckCircle2 size={32} className='mx-auto text-emerald-600' />
-              <h3 className='text-sm font-bold text-emerald-900'>Đã gửi link thiết lập!</h3>
-              <p className='text-xs leading-relaxed text-emerald-800 max-w-md mx-auto'>
-                Chúng tôi đã gửi đường dẫn thiết lập mật khẩu tới Gmail <span className='font-bold'>{userProfile?.email}</span>. Vui lòng mở hộp thư và bấm nút xác thực để tạo mật khẩu mới.
-              </p>
+            <div className='rounded-3xl bg-emerald-50 p-6 text-center' role='status'>
+              <CheckCircle2 size={32} className='mx-auto text-emerald-600' aria-hidden />
+              <p className='mt-2 font-semibold text-emerald-900'>Đã gửi link!</p>
+              <p className='mt-1 text-sm text-emerald-800'>Mở hộp thư {userProfile?.email} và làm theo hướng dẫn.</p>
               <button
                 type='button'
                 onClick={handleSendSetPasswordLink}
                 disabled={sendingLink}
-                className='mt-2 text-xs font-bold text-emerald-700 underline hover:text-emerald-900'
+                className='mt-3 cursor-pointer text-sm font-semibold text-emerald-700 underline'
               >
-                Gửi lại email nếu chưa nhận được
+                Gửi lại
               </button>
             </div>
           )}
-
-          <div className='border-t border-[#E7E0D8] pt-4'>
-            <Link
-              to={ROUTE_PATHS.USER_PROFILE}
-              className='inline-flex items-center gap-1.5 text-xs font-bold text-[#786C60] hover:text-[#1C1917]'
-            >
-              <ArrowLeft size={14} />
-              Quay lại hồ sơ
-            </Link>
-          </div>
         </div>
       ) : (
-        /* Standard User Password Change Form */
-        <>
-          <div className='mb-5 flex gap-3 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] px-4 py-3.5'>
-            <ShieldCheck size={18} className='mt-0.5 shrink-0 text-[#A16207]' />
-            <p className='text-xs leading-relaxed text-[#44403C]'>
-              Dùng mật khẩu mạnh (chữ hoa, số, ký tự đặc biệt) để bảo vệ tài khoản cá nhân.
-            </p>
+        <form
+          onSubmit={handleSubmit}
+          noValidate
+          className={cn('mt-8 space-y-5 rounded-4xl bg-white p-6 ring-1 ring-ink-100 sm:p-8', loading && 'pointer-events-none opacity-80')}
+        >
+          <Input
+            label='Mật khẩu hiện tại'
+            name='oldPassword'
+            type='password'
+            autoComplete='current-password'
+            value={oldPassword}
+            disabled={loading}
+            onChange={(e) => {
+              setOldPassword(e.target.value)
+              setErrors((prev) => ({ ...prev, oldPassword: undefined }))
+            }}
+            error={errors.oldPassword}
+            leftIcon={<Lock size={17} />}
+          />
+          <div className='space-y-2'>
+            <Input
+              label='Mật khẩu mới'
+              name='password'
+              type='password'
+              autoComplete='new-password'
+              value={password}
+              disabled={loading}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                setErrors((prev) => ({ ...prev, password: undefined }))
+              }}
+              error={errors.password}
+              helperText={!errors.password ? 'Tối thiểu 8 ký tự' : undefined}
+              leftIcon={<Lock size={17} />}
+            />
+            <PasswordStrength password={password} />
           </div>
-
-          <form
-            onSubmit={handleSubmit}
-            noValidate
-            className={cn(
-              'space-y-4 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8',
-              loading && 'pointer-events-none opacity-80'
-            )}
-          >
-            <Input
-              label='Mật khẩu hiện tại'
-              name='oldPassword'
-              type='password'
-              value={oldPassword}
-              disabled={loading}
-              onChange={(e) => {
-                setOldPassword(e.target.value)
-                setErrors((prev) => ({ ...prev, oldPassword: undefined }))
-              }}
-              error={errors.oldPassword}
-              leftIcon={<Lock size={16} className='text-[#A16207]' />}
-              className={inputClass}
-            />
-
-            <div className='space-y-2'>
-              <Input
-                label='Mật khẩu mới'
-                name='password'
-                type='password'
-                value={password}
-                disabled={loading}
-                onChange={(e) => {
-                  setPassword(e.target.value)
-                  setErrors((prev) => ({ ...prev, password: undefined }))
-                }}
-                error={errors.password}
-                helperText={!errors.password ? 'Tối thiểu 8 ký tự' : undefined}
-                leftIcon={<Lock size={16} className='text-[#A16207]' />}
-                className={inputClass}
-              />
-              <PasswordStrength password={password} variant='cosmetics' />
-            </div>
-
-            <Input
-              label='Xác nhận mật khẩu mới'
-              name='confirmPassword'
-              type='password'
-              value={confirmPassword}
-              disabled={loading}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value)
-                setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
-              }}
-              error={errors.confirmPassword}
-              leftIcon={<Lock size={16} className='text-[#A16207]' />}
-              className={inputClass}
-            />
-
-            <div className='flex flex-col-reverse gap-3 border-t border-[#E7E0D8] pt-5 sm:flex-row sm:items-center sm:justify-between'>
-              <Link
-                to={ROUTE_PATHS.USER_PROFILE}
-                className='inline-flex items-center justify-center gap-1.5 text-xs font-bold text-[#786C60] hover:text-[#1C1917]'
-              >
-                <ArrowLeft size={14} />
-                Quay lại hồ sơ
-              </Link>
-              <Button
-                type='submit'
-                loading={loading}
-                disabled={loading}
-                variant='accent'
-                className='!px-6 !rounded-xl'
-              >
-                Lưu mật khẩu mới
-              </Button>
-            </div>
-          </form>
-        </>
+          <Input
+            label='Nhập lại mật khẩu mới'
+            name='confirmPassword'
+            type='password'
+            autoComplete='new-password'
+            value={confirmPassword}
+            disabled={loading}
+            onChange={(e) => {
+              setConfirmPassword(e.target.value)
+              setErrors((prev) => ({ ...prev, confirmPassword: undefined }))
+            }}
+            error={errors.confirmPassword}
+            leftIcon={<Lock size={17} />}
+          />
+          <Button type='submit' loading={loading} variant='accent' size='lg' full>
+            Lưu mật khẩu mới
+          </Button>
+        </form>
       )}
     </div>
   )

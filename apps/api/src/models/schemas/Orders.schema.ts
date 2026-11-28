@@ -33,9 +33,13 @@ interface OrderType {
   shipping_address?: ShippingAddress
   created_at?: Date
   updated_at?: Date
+  idempotency_key?: string
 }
 
 export default class Order {
+  refund_state?: 'processing' | 'completed'
+  /** Buyer-scoped key that makes order creation idempotent (unique, partial index). */
+  idempotency_key?: string
   _id?: ObjectId
   user_id?: ObjectId
   guest_customer?: GuestCustomer
@@ -60,6 +64,7 @@ export default class Order {
     this.shipping_fee = order.shipping_fee
     this.status = order.status
     this.shipping_address = order.shipping_address
+    this.idempotency_key = order.idempotency_key
     this.created_at = order.created_at || date
     this.updated_at = order.updated_at || date
   }

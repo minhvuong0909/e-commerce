@@ -7,11 +7,15 @@ import { hashPassword } from '~/utils/crypto'
 
 dotenv.config()
 
-const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@vibrantmart.local'
-const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'Admin@123456'
+const adminEmail = (process.env.SEED_ADMIN_EMAIL || '').trim()
+const adminPassword = process.env.SEED_ADMIN_PASSWORD || ''
 const adminName = process.env.SEED_ADMIN_NAME || 'Vibrant Mart Admin'
 
 async function seedAdmin() {
+  // No built-in defaults: a guessable fallback would create — or reset — an admin with a known password.
+  if (!adminEmail || adminPassword.length < 12) {
+    throw new Error('Cần đặt SEED_ADMIN_EMAIL và SEED_ADMIN_PASSWORD (tối thiểu 12 ký tự) trong apps/api/.env.')
+  }
   await databaseService.connect()
 
   const now = new Date()

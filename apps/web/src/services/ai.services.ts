@@ -1,18 +1,23 @@
 import api from '../configs/api'
 
+export type ChatTurn = { role: 'user' | 'assistant'; content: string }
+
+export type ChatProduct = {
+  _id: string
+  name: string
+  price: number
+  thumbnail?: string
+  origin?: string
+}
+
 export type SkincareChatResponse = {
   answer: string
-  products: Array<{
-    _id: string
-    name: string
-    price: number
-    thumbnail: string
-    tag: string
-  }>
+  products: ChatProduct[]
+  source: 'openai' | 'rules'
 }
 
 /**
- * [Admin] Tự động tạo mô hình mô tả sản phẩm bằng AI
+ * [Admin] Gợi ý mô tả sản phẩm bằng AI
  */
 export const generateProductDescriptionApi = (data: {
   name: string
@@ -25,8 +30,8 @@ export const generateProductDescriptionApi = (data: {
 }
 
 /**
- * Gửi câu hỏi tư vấn da liễu tới Backend AI Assistant Endpoint
+ * Trợ lý chăm sóc da trên storefront. `history` là vài lượt gần nhất để AI hiểu ngữ cảnh.
  */
-export const skincareChatApi = (message: string) => {
-  return api.post<{ message: string; result: SkincareChatResponse }>('/ai/chat', { message })
+export const skincareChatApi = (message: string, history: ChatTurn[] = []) => {
+  return api.post<{ message: string; result: SkincareChatResponse }>('/ai/chat', { message, history })
 }

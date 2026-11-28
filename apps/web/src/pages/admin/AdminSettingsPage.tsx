@@ -45,14 +45,14 @@ export default function AdminSettingsPage() {
   return (
     <div className='space-y-6'>
       <div>
-        <p className='text-xs font-bold uppercase tracking-[0.16em] text-[#b07a72]'>Storefront settings</p>
-        <h1 className='mt-1 text-3xl font-black text-[#3d3330]'>Cài đặt shop</h1>
-        <p className='mt-2 text-sm text-[#8a7a74]'>
+        <p className='text-xs font-bold uppercase tracking-[0.16em] text-berry-600'>Storefront settings</p>
+        <h1 className='mt-1 text-3xl font-black text-ink-950'>Cài đặt shop</h1>
+        <p className='mt-2 text-sm text-ink-500'>
           Quản lý thông tin hiển thị ngoài trang bán hàng: logo, banner, hotline, Zalo/Messenger và địa chỉ kho.
         </p>
       </div>
 
-      <div className='grid gap-4 rounded-lg border border-[#eaded8] bg-white p-5 md:grid-cols-2'>
+      <div className='grid gap-4 rounded-lg border border-ink-200 bg-white p-5 md:grid-cols-2'>
         <Input label='Tên shop' name='shop_name' value={settings.shop_name} onChange={(e) => patch('shop_name', e.target.value)} />
         <Input label='Hotline' name='hotline' value={settings.hotline || ''} onChange={(e) => patch('hotline', e.target.value)} />
         <Input label='Logo URL' name='logo_url' value={settings.logo_url || ''} onChange={(e) => patch('logo_url', e.target.value)} />
@@ -73,17 +73,17 @@ export default function AdminSettingsPage() {
           />
         </div>
         <div className='md:col-span-2'>
-          <label className='mb-2 block text-sm font-semibold text-[#3d3330]'>Chính sách đổi trả</label>
+          <label className='mb-2 block text-sm font-semibold text-ink-950'>Chính sách đổi trả</label>
           <textarea
             value={settings.return_policy || ''}
             onChange={(e) => patch('return_policy', e.target.value)}
             rows={5}
-            className='w-full rounded-md border border-[#eaded8] px-4 py-3 text-sm outline-none focus:border-[#cbb8af] focus:ring-2 focus:ring-[#f5d5cf]/50'
+            className='w-full rounded-md border border-ink-200 px-4 py-3 text-sm outline-none focus:border-ink-200 focus:ring-2 focus:ring-berry-50/50'
           />
         </div>
       </div>
 
-      <Button onClick={save} loading={loading} className='!rounded-md !bg-[#3d3330] hover:!bg-[#2a2421]'>
+      <Button onClick={save} loading={loading} className='!rounded-md'>
         Lưu cài đặt
       </Button>
     </div>

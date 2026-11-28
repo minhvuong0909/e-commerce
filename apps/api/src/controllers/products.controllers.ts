@@ -7,9 +7,10 @@ import { CreateProductBody } from '~/models/requests/Products.requests'
 import { TokenPayload } from '~/models/requests/Users.requests'
 import productsService from '~/services/products.services'
 import usersService from '~/services/users.services'
+import { getParam } from '~/utils/params'
 
 export const createProductController = async (
-  req: Request<ParamsDictionary, any, CreateProductBody>,
+  req: Request<ParamsDictionary, unknown, CreateProductBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -31,7 +32,7 @@ export const createProductController = async (
 }
 
 export const updateProductController = async (
-  req: Request<ParamsDictionary, any, CreateProductBody>,
+  req: Request<ParamsDictionary, unknown, CreateProductBody>,
   res: Response,
   next: NextFunction
 ) => {
@@ -45,7 +46,7 @@ export const updateProductController = async (
     })
   }
   // update
-  const result = await productsService.updateProduct({ product_id: ((req.params as any).id as string), payload: req.body })
+  const result = await productsService.updateProduct({ product_id: getParam(req, 'id'), payload: req.body })
   res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.UPDATE_PRODUCT_SUCCESS,
     result
@@ -53,11 +54,11 @@ export const updateProductController = async (
 }
 
 export const getProductByIdController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
-  const id = ((req.params as any).id as string) as string
+  const id = getParam(req, 'id')
   const product = await productsService.getProductById(id)
   return res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.GET_PRODUCT_SUCCESS,
@@ -66,7 +67,7 @@ export const getProductByIdController = async (
 }
 
 export const deleteProductController = async (
-  req: Request<ParamsDictionary, any, any>,
+  req: Request<ParamsDictionary, unknown, any>,
   res: Response,
   next: NextFunction
 ) => {
@@ -79,7 +80,7 @@ export const deleteProductController = async (
     })
   }
   // delete
-  await productsService.deleteProduct(((req.params as any).id as string))
+  await productsService.deleteProduct(getParam(req, 'id'))
   res.status(HTTP_STATUS.OK).json({
     message: PRODUCT_MESSAGES.DELETE_PRODUCT_SUCCESS
   })

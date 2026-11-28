@@ -51,7 +51,7 @@ userRouter.post('/login', authLimiter, loginValidator, wrapAsync(loginController
  * Customer registration.
  * Features: creates an account with name, email and password, then starts the email verification flow.
  */
-userRouter.post('/register', registerValidator, wrapAsync(registerController))
+userRouter.post('/register', authLimiter, registerValidator, wrapAsync(registerController))
 
 /**
  * GET /users/verify-email

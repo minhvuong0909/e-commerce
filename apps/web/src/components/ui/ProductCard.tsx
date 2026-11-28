@@ -1,6 +1,5 @@
-import { Heart, Plus, Star, Eye } from 'lucide-react'
+import { Eye, Heart, Plus, Star } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { useState, type MouseEvent } from 'react'
 import type { Product } from '../../models/ProductRequests'
 import { useCartActions } from '../../hooks/useCartActions'
@@ -9,107 +8,87 @@ import { BADGE_LABELS, BADGE_STYLES, getProductBadges } from '../../utils/produc
 import cn from '../../utils/cn'
 import money from '../../utils/money'
 import { formatImageUrl } from '../../utils/formatImageUrl'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import QuickViewModal from './QuickViewModal'
 
 interface ProductCardProps {
   product: Product
+  /** soft tint behind the product shot; cycles on grids for a playful rhythm */
+  tint?: 'blush' | 'lilac' | 'peach' | 'mist'
 }
 
-function StarRating({ value }: { value: number }) {
-  const rating = Math.max(0, Math.min(5, value || 0))
-  return (
-    <div className='flex items-center gap-0.5' aria-label={`Đánh giá ${rating.toFixed(1)} trên 5`}>
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          size={12}
-          className={cn(
-            index < Math.round(rating) ? 'fill-amber-400 text-amber-400' : 'fill-[#E8DDD8] text-[#E8DDD8]'
-          )}
-        />
-      ))}
-      <span className='ml-1 text-xs font-semibold text-[#8C7D70]'>{rating.toFixed(1)}</span>
-    </div>
-  )
-}
+const TINTS = {
+  blush: 'bg-ink-100',
+  lilac: 'bg-ink-100',
+  peach: 'bg-ink-100',
+  mist: 'bg-ink-100'
+} as const
 
-export default function ProductCard({ product }: ProductCardProps) {
+export const CARD_TINTS = Object.keys(TINTS) as Array<keyof typeof TINTS>
+
+export default function ProductCard({ product, tint = 'blush' }: ProductCardProps) {
   const firstMedia = product.medias?.[0]
-  const rawImage = product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url)
-  const image = formatImageUrl(rawImage)
+  const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
+  const secondMedia = product.medias?.[1]
+  const hoverImage = secondMedia
+    ? formatImageUrl(typeof secondMedia === 'string' ? secondMedia : secondMedia?.url)
+    : undefined
   const outOfStock = product.quantity <= 0
   const badges = getProductBadges(product)
+  const rating = Math.max(0, Math.min(5, product.rating_number || 0))
+  const href = ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)
 
   const { isWishlisted, toggleWishlist } = useWishlist()
   const favorited = isWishlisted(product._id)
   const [quickViewOpen, setQuickViewOpen] = useState(false)
-
   const { addToCart, isAdding, addingProductId } = useCartActions()
   const isAddingThis = isAdding && addingProductId === product._id
 
-  const handleQuickAdd = (e: MouseEvent) => {
+  const stop = (e: MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (outOfStock || isAddingThis) return
-    addToCart({ product_id: product._id, quantity: 1, redirect: false })
-  }
-
-  const handleFavorite = (e: MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    toggleWishlist(product)
-  }
-
-  const handleOpenQuickView = (e: MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setQuickViewOpen(true)
   }
 
   return (
     <>
-      <motion.article
-        layout
-        className='group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#E7E0D8] bg-white p-2.5 interactive-lift'
-      >
-        <div className='relative'>
-          <Link to={`/user/products/${product._id}`} className='block overflow-hidden rounded-xl bg-[#F5EFE6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'>
-            <div className='relative aspect-square overflow-hidden'>
-              {image ? (
+      <article className='group relative flex h-full flex-col'>
+        <div className={cn('relative overflow-hidden rounded-2xl', TINTS[tint])}>
+          <Link to={href} className='block aspect-[4/5] focus-visible:outline-none' aria-label={product.name}>
+            {image ? (
+              <div className='relative h-full w-full'>
                 <img
                   src={image}
-                  alt={product.name}
+                  alt=''
                   referrerPolicy='no-referrer'
-                  className='h-full w-full object-contain p-4 transition-transform duration-500 group-hover:scale-105'
                   loading='lazy'
+                  className={cn(
+                    'h-full w-full object-contain p-6 mix-blend-multiply transition duration-500 ease-out',
+                    outOfStock && 'opacity-50 grayscale',
+                    hoverImage && '[@media(hover:hover)]:group-hover:opacity-0'
+                  )}
                 />
-              ) : (
-                <div className='grid h-full place-items-center text-xs font-medium text-[#786C60]'>Chưa có ảnh</div>
-              )}
-              {outOfStock ? <div className='absolute inset-0 bg-white/70 backdrop-blur-[1px]' /> : null}
-
-              {/* Quick View Button on Image Hover & Focus */}
-              <button
-                type='button'
-                onClick={handleOpenQuickView}
-                className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-full border border-[#E7E0D8] bg-white/95 px-3.5 py-1.5 text-xs font-bold text-[#1C1917] shadow-md backdrop-blur-sm opacity-0 transition duration-200 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-[#1C1917] hover:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                aria-label='Xem nhanh sản phẩm'
-              >
-                <Eye size={14} />
-                <span>Xem nhanh</span>
-              </button>
-            </div>
+                {hoverImage ? (
+                  <img
+                    src={hoverImage}
+                    alt=''
+                    aria-hidden
+                    referrerPolicy='no-referrer'
+                    loading='lazy'
+                    className='absolute inset-0 h-full w-full object-contain p-6 opacity-0 mix-blend-multiply transition duration-500 [@media(hover:hover)]:group-hover:opacity-100'
+                  />
+                ) : null}
+              </div>
+            ) : (
+              <div className='grid h-full place-items-center text-xs text-ink-500'>Chưa có ảnh</div>
+            )}
           </Link>
 
           {badges.length > 0 ? (
-            <div className='pointer-events-none absolute left-2 top-2 flex max-w-[calc(100%-3rem)] flex-wrap gap-1'>
+            <div className='pointer-events-none absolute left-3 top-3 flex flex-wrap gap-1.5'>
               {badges.map((badge) => (
                 <span
                   key={badge}
-                  className={cn(
-                    'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-xs',
-                    BADGE_STYLES[badge]
-                  )}
+                  className={cn('rounded-md px-2 py-0.5 text-[11px] font-semibold', BADGE_STYLES[badge])}
                 >
                   {BADGE_LABELS[badge]}
                 </span>
@@ -119,59 +98,77 @@ export default function ProductCard({ product }: ProductCardProps) {
 
           <button
             type='button'
-            onClick={handleFavorite}
+            onClick={(e) => {
+              stop(e)
+              toggleWishlist(product)
+            }}
             aria-label={favorited ? 'Bỏ yêu thích' : 'Thêm vào yêu thích'}
             aria-pressed={favorited}
             className={cn(
-              'absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#594D42] shadow-xs transition-all hover:border-[#A16207] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-              favorited && 'border-rose-200 bg-rose-50 text-rose-600'
+              'absolute right-3 top-3 grid h-10 w-10 cursor-pointer place-items-center rounded-full bg-white text-ink-700 transition hover:text-berry-600',
+              favorited && 'text-berry-600'
             )}
           >
-            <Heart size={15} className={cn(favorited && 'fill-current')} />
+            <Heart size={18} className={cn(favorited && 'fill-current')} />
           </button>
 
-          {!outOfStock ? (
-            <div className='absolute bottom-3 right-3'>
+          {/* hover actions — always visible on touch (no hover) */}
+          <div className='absolute inset-x-3 bottom-3 flex gap-2 transition duration-300 [@media(hover:hover)]:translate-y-2 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:translate-y-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:translate-y-0 [@media(hover:hover)]:group-focus-within:opacity-100'>
+            <button
+              type='button'
+              onClick={(e) => {
+                stop(e)
+                setQuickViewOpen(true)
+              }}
+              className='hidden h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-white text-[13px] font-semibold text-ink-950 shadow-soft transition hover:bg-ink-50 sm:inline-flex'
+            >
+              <Eye size={16} /> Xem nhanh
+            </button>
+            {!outOfStock ? (
               <button
                 type='button'
-                onClick={handleQuickAdd}
+                onClick={(e) => {
+                  stop(e)
+                  if (!isAddingThis) addToCart({ product_id: product._id, quantity: 1, redirect: false })
+                }}
                 disabled={isAddingThis}
-                className='grid h-9 w-9 place-items-center rounded-full bg-[#1C1917] text-[#FAF7F2] shadow-sm transition-all duration-200 hover:bg-[#A16207] disabled:opacity-60 sm:h-10 sm:w-10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                aria-label='Thêm nhanh vào giỏ'
-                title={isAddingThis ? 'Đang thêm...' : 'Thêm nhanh vào giỏ'}
+                aria-label={`Thêm ${product.name} vào giỏ`}
+                className='ml-auto grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-lg bg-berry-600 text-white shadow-soft transition hover:bg-berry-700 disabled:opacity-60'
               >
-                <Plus size={16} />
+                {isAddingThis ? (
+                  <span className='h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent' />
+                ) : (
+                  <Plus size={20} />
+                )}
               </button>
-            </div>
-          ) : null}
-        </div>
-
-        <div className='flex flex-1 flex-col p-3'>
-          <Link to={`/user/products/${product._id}`} className='flex flex-1 flex-col focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded-lg'>
-            {product.origin ? (
-              <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#A16207]'>{product.origin}</p>
             ) : null}
-            <h3 className='mt-1 line-clamp-2 text-sm font-bold leading-snug text-[#1C1917] group-hover:text-[#A16207] transition-colors'>
-              {product.name}
-            </h3>
-            <div className='mt-2'>
-              <StarRating value={product.rating_number} />
-            </div>
-            <div className='mt-auto pt-4 flex items-center justify-between'>
-              <p className='whitespace-nowrap text-base font-extrabold tracking-tight text-[#B45309] lg:text-lg'>
-                {money(product.price)}
-              </p>
-              {outOfStock ? (
-                <span className='text-[11px] font-bold text-rose-600 uppercase tracking-wider'>Hết hàng</span>
-              ) : null}
-            </div>
-          </Link>
+          </div>
         </div>
-      </motion.article>
 
-      {quickViewOpen ? (
-        <QuickViewModal product={product} onClose={() => setQuickViewOpen(false)} />
-      ) : null}
+        <Link to={href} className='mt-3 flex flex-1 flex-col px-1 focus-visible:outline-none'>
+          <div className='flex items-center justify-between gap-2 text-xs text-ink-500'>
+            <span className='truncate font-medium uppercase tracking-wider'>{product.origin || 'Chính hãng'}</span>
+            {rating > 0 ? (
+              <span className='inline-flex shrink-0 items-center gap-1 font-semibold text-ink-700'>
+                <Star size={12} className='fill-peach-500 text-peach-500' aria-hidden />
+                {rating.toFixed(1)}
+                <span className='sr-only'>trên 5 sao</span>
+              </span>
+            ) : null}
+          </div>
+          <h3 className='mt-1 line-clamp-2 text-[15px] font-medium leading-snug text-ink-950 group-hover:text-berry-700'>
+            {product.name}
+          </h3>
+          <div className='mt-auto flex items-baseline gap-2 pt-2'>
+            <span className='text-base font-semibold text-ink-950'>{money(product.price)}</span>
+            {(product.soldNumber ?? 0) > 0 ? (
+              <span className='text-xs text-ink-500'>· đã bán {product.soldNumber}</span>
+            ) : null}
+          </div>
+        </Link>
+      </article>
+
+      {quickViewOpen ? <QuickViewModal product={product} onClose={() => setQuickViewOpen(false)} /> : null}
     </>
   )
 }

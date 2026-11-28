@@ -147,3 +147,9 @@ dist
 RAG-Retrieval-Indexing-API/
 
 # End of https://www.toptal.com/developers/gitignore/api/node
+# File admin/khách upload (ảnh, video) sinh lúc chạy và nằm trên volume của server, không đưa vào git
+apps/api/uploads/
+apps/api/tmp/
+
+# ảnh chụp UI khi review — không đưa vào repo
+artifacts/

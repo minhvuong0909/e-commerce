@@ -10,14 +10,14 @@ interface StatusBadgeProps {
 }
 
 const styles: Record<StatusTone, string> = {
-  processing: 'border-amber-200 bg-amber-50 text-amber-800',
-  shipping: 'border-sky-200 bg-sky-50 text-sky-800',
-  done: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  cancel: 'border-rose-200 bg-rose-50 text-rose-800',
-  info: 'border-slate-200 bg-slate-50 text-slate-700',
-  warning: 'border-amber-200 bg-amber-50 text-amber-800',
-  success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
-  danger: 'border-rose-200 bg-rose-50 text-rose-800'
+  processing: 'bg-peach-100 text-peach-700',
+  shipping: 'bg-lilac-100 text-lilac-700',
+  done: 'bg-emerald-100 text-emerald-800',
+  cancel: 'bg-rose-100 text-rose-700',
+  info: 'bg-ink-100 text-ink-700',
+  warning: 'bg-peach-100 text-peach-700',
+  success: 'bg-emerald-100 text-emerald-800',
+  danger: 'bg-rose-100 text-rose-700'
 }
 
 const icons: Record<StatusTone, typeof CircleDashed> = {
@@ -33,16 +33,15 @@ const icons: Record<StatusTone, typeof CircleDashed> = {
 
 export default function StatusBadge({ tone = 'info', children, className = '' }: StatusBadgeProps) {
   const Icon = icons[tone]
-
   return (
     <span
       className={cn(
-        'inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-extrabold',
+        'inline-flex w-fit items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-bold',
         styles[tone],
         className
       )}
     >
-      <Icon size={14} />
+      <Icon size={13} aria-hidden />
       {children}
     </span>
   )

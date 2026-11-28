@@ -1,235 +1,109 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ChevronLeft, ChevronRight, Droplets, Leaf, Pause, Play, ShieldCheck, Sparkles, Sun, Tag } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { m, useReducedMotion } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
+import { useProducts } from '../../hooks/useProducts'
+import { ROUTE_PATHS } from '../../routes/route.paths'
+import { formatImageUrl } from '../../utils/formatImageUrl'
+import money from '../../utils/money'
+import { easeOut } from '../../constants/motion'
 
-interface SlideItem {
-  id: number
-  badge: string
-  badgeIcon: React.ElementType
-  title: string
-  highlightTitle?: string
-  description: string
-  buttonText: string
-  buttonLink: string
-  image: string
-  footerIcon1: React.ElementType
-  footerText1: string
-  footerIcon2: React.ElementType
-  footerText2: string
-  cardIcon: React.ElementType
-  cardTitle: string
-  cardSub: string
-}
-
-const HERO_SLIDES: SlideItem[] = [
-  {
-    id: 1,
-    badge: 'Skincare & Natural Routine',
-    badgeIcon: Sparkles,
-    title: 'Làn da dịu nhẹ,',
-    highlightTitle: 'vẻ đẹp tự nhiên.',
-    description: 'Một chút chăm sóc mỗi ngày. Khám phá những sản phẩm chuẩn chuyên gia nuôi dưỡng vẻ đẹp thuần khiết.',
-    buttonText: 'Khám phá ngay',
-    buttonLink: '#new-arrivals',
-    image: '/images/hero_slide_routine.jpg',
-    footerIcon1: Leaf,
-    footerText1: 'Thành phần hữu cơ lành tính',
-    footerIcon2: ShieldCheck,
-    footerText2: 'Minh bạch nguồn gốc 100%',
-    cardIcon: Droplets,
-    cardTitle: 'Chăm da từ những điều giản dị',
-    cardSub: 'Làm sạch · Dưỡng ẩm · Bảo vệ'
-  },
-  {
-    id: 2,
-    badge: 'Ưu đãi đặc biệt mùa hè',
-    badgeIcon: Sun,
-    title: 'Bảo vệ toàn diện,',
-    highlightTitle: 'mùa hè không lo.',
-    description: 'Bảo vệ làn da trước tia UV với dòng kem chống nắng quang phổ rộng, thẩm thấu nhanh, không nhờn rít. Tặng mã giảm 15% cho đơn đầu tiên.',
-    buttonText: 'Săn Deal Chống Nắng',
-    buttonLink: '#featured-products',
-    image: '/images/hero_slide_sunscreen.jpg',
-    footerIcon1: ShieldCheck,
-    footerText1: 'Chỉ số SPF 50+ PA++++',
-    footerIcon2: Tag,
-    footerText2: 'Freeship đơn từ 299k',
-    cardIcon: Sun,
-    cardTitle: 'Chống nắng quang phổ rộng',
-    cardSub: 'Mỏng nhẹ · Không bóng nhờn · Kháng nước'
-  },
-  {
-    id: 3,
-    badge: 'Làm sạch chuyên sâu',
-    badgeIcon: Leaf,
-    title: 'Sạch lỗ chân lông,',
-    highlightTitle: 'da sáng mịn màng.',
-    description: 'Combo bộ ba Tẩy trang - Sữa rửa mặt - Toner cấp ẩm dịu nhẹ giúp cân bằng độ pH tự nhiên và thu nhỏ lỗ chân lông hiệu quả.',
-    buttonText: 'Xem Bộ Routine',
-    buttonLink: '#featured-products',
-    image: '/images/cleanser-routine-essentials.jpg',
-    footerIcon1: Droplets,
-    footerText1: 'Cấp ẩm tức thì 24H',
-    footerIcon2: ShieldCheck,
-    footerText2: 'Không chứa cồn & Paraben',
-    cardIcon: Sparkles,
-    cardTitle: 'Routine Làm Sạch Đạt Chuẩn',
-    cardSub: 'Dịu nhẹ cho mọi loại da, kể cả da nhạy cảm'
-  }
-]
-
+/** Home hero: short headline + CTA on the left, lifestyle photo with the current best-seller on the right. */
 export default function HomeHero() {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [isPaused, setIsPaused] = useState(false)
-
-  const handleNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % HERO_SLIDES.length)
-  }, [])
-
-  const handlePrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + HERO_SLIDES.length) % HERO_SLIDES.length)
-  }, [])
-
-  useEffect(() => {
-    if (isPaused) return
-    const timer = setInterval(handleNext, 5000)
-    return () => clearInterval(timer)
-  }, [handleNext, isPaused])
-
-  const slide = HERO_SLIDES[currentIndex]
-  const BadgeIcon = slide.badgeIcon
-  const FooterIcon1 = slide.footerIcon1
-  const FooterIcon2 = slide.footerIcon2
-  const CardIcon = slide.cardIcon
+  const reduce = useReducedMotion()
+  const { data } = useProducts(1, 1, { sort: 'best_selling' })
+  const rise = (delay: number) =>
+    reduce
+      ? {}
+      : {
+          initial: { opacity: 0, y: 20 },
+          animate: { opacity: 1, y: 0 },
+          transition: { duration: 0.6, delay, ease: easeOut }
+        }
+  const star = data?.products?.[0]
+  const starImg = star
+    ? formatImageUrl(
+        star.thumbnail ||
+          (typeof star.medias?.[0] === 'string'
+            ? (star.medias[0] as string)
+            : (star.medias?.[0] as { url?: string })?.url)
+      )
+    : undefined
 
   return (
-    <section className='bg-[#FAF7F2] px-4 py-6 md:px-6 md:py-8'>
-      <div
-        className='group relative mx-auto grid max-w-7xl items-center gap-8 overflow-hidden rounded-[32px] border border-[#E7E0D8] bg-[#FFFFFF] p-6 shadow-soft md:grid-cols-[1.1fr_0.9fr] md:p-10 lg:gap-14 lg:p-14'
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
-        onFocus={() => setIsPaused(true)}
-        onBlur={() => setIsPaused(false)}
-      >
-        {/* Left text column */}
-        <AnimatePresence mode='wait'>
-          <motion.div
-            key={slide.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.35 }}
+    <section className='px-4 pt-4 md:px-6 md:pt-6'>
+      <div className='mx-auto grid max-w-[1320px] overflow-hidden rounded-4xl bg-ink-100 lg:grid-cols-2'>
+        <div className='flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 lg:py-20'>
+          <m.p {...rise(0)} className='eyebrow'>
+            Skincare · Makeup · Body
+          </m.p>
+          <m.h1
+            {...rise(0.08)}
+            className='mt-4 font-display text-4xl font-semibold leading-[1.1] text-ink-950 sm:text-5xl lg:text-[3.5rem]'
           >
-            <p className='inline-flex items-center gap-2 rounded-full border border-[#E7E0D8] bg-[#FAF7F2] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#A16207]'>
-              <BadgeIcon size={14} className='text-[#A16207]' />
-              <span>{slide.badge}</span>
-            </p>
-
-            <h1 className='mt-6 font-display text-4xl font-extrabold leading-[1.12] tracking-tight text-[#1C1917] sm:text-5xl lg:text-6xl'>
-              {slide.title}<br />
-              <span className='italic font-serif text-[#A16207]'>{slide.highlightTitle}</span>
-            </h1>
-
-            <p className='mt-5 max-w-md text-sm leading-relaxed text-[#594D42] md:text-base'>
-              {slide.description}
-            </p>
-
-            <div className='mt-8 flex flex-wrap items-center gap-3.5'>
-              <a
-                href={slide.buttonLink}
-                className='inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-[#1C1917] px-8 text-sm font-bold text-[#FAF7F2] shadow-sm transition-all duration-300 hover:bg-[#A16207] hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] focus-visible:ring-offset-2'
-              >
-                <span>{slide.buttonText}</span>
-                <ArrowRight size={16} />
-              </a>
-
-              <button
-                type='button'
-                onClick={() => setIsPaused((p) => !p)}
-                className='inline-flex h-12 w-12 items-center justify-center rounded-full border border-[#E7E0D8] bg-white text-[#594D42] transition hover:border-[#A16207] hover:text-[#1C1917] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                aria-label={isPaused ? 'Phát trình chiếu banner' : 'Tạm dừng trình chiếu banner'}
-                title={isPaused ? 'Tiếp tục tự động chuyển slide' : 'Tạm dừng tự động chuyển slide'}
-              >
-                {isPaused ? <Play size={16} /> : <Pause size={16} />}
-              </button>
-            </div>
-
-            <div className='mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-[#E7E0D8] pt-5 text-xs font-semibold text-[#786C60]'>
-              <span className='inline-flex items-center gap-2'>
-                <FooterIcon1 size={16} className='text-[#A16207]' />
-                <span>{slide.footerText1}</span>
-              </span>
-              <span className='inline-flex items-center gap-2'>
-                <FooterIcon2 size={16} className='text-[#A16207]' />
-                <span>{slide.footerText2}</span>
-              </span>
-            </div>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Right image carousel */}
-        <div className='relative aspect-[4/3] w-full overflow-hidden rounded-2xl md:aspect-auto md:h-[420px] bg-[#F5EFE6] border border-[#E7E0D8]'>
-          <AnimatePresence mode='wait'>
-            <motion.div
-              key={slide.id}
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              transition={{ duration: 0.4 }}
-              className='h-full w-full'
+            Chăm da đúng cách,
+            <br />
+            từng bước một.
+          </m.h1>
+          <m.p {...rise(0.16)} className='mt-5 max-w-md text-base leading-relaxed text-ink-600'>
+            Chọn sản phẩm theo từng bước routine, từ làm sạch, serum đến chống nắng. Giao hàng tận nơi, theo dõi đơn dễ
+            dàng.
+          </m.p>
+          <m.div {...rise(0.24)} className='mt-8 flex flex-wrap gap-3'>
+            <a
+              href='#shop'
+              className='inline-flex h-12 items-center gap-2 rounded-lg bg-berry-600 px-6 text-sm font-semibold text-white transition hover:bg-berry-700'
             >
-              <img
-                src={slide.image}
-                alt={slide.title}
-                className='h-full w-full object-cover rounded-2xl shadow-sm'
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Floating spec badge card */}
-          <div className='absolute bottom-4 left-4 right-4 flex items-center gap-3 rounded-2xl border border-[#E7E0D8] bg-white/95 p-4 shadow-lg backdrop-blur-md'>
-            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-              <CardIcon size={21} />
-            </span>
-            <div className='min-w-0 flex-1'>
-              <p className='truncate text-xs font-bold text-[#1C1917]'>{slide.cardTitle}</p>
-              <p className='mt-0.5 truncate text-[11px] font-medium text-[#786C60]'>{slide.cardSub}</p>
-            </div>
-          </div>
+              Mua sắm ngay <ArrowRight size={16} aria-hidden />
+            </a>
+            <a
+              href='#routine'
+              className='inline-flex h-12 items-center rounded-lg border border-ink-300 bg-white px-6 text-sm font-semibold text-ink-950 transition hover:border-berry-300'
+            >
+              Routine 4 bước
+            </a>
+          </m.div>
         </div>
 
-        {/* Navigation arrows */}
-        <button
-          type='button'
-          onClick={handlePrev}
-          className='absolute left-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#1C1917] shadow-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#1C1917] hover:text-white z-10 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#A16207]'
-          aria-label='Slide trước'
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        <button
-          type='button'
-          onClick={handleNext}
-          className='absolute right-3 top-1/2 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-[#E7E0D8] bg-white/95 text-[#1C1917] shadow-sm opacity-0 transition duration-200 group-hover:opacity-100 hover:bg-[#1C1917] hover:text-white z-10 cursor-pointer focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[#A16207]'
-          aria-label='Slide sau'
-        >
-          <ChevronRight size={20} />
-        </button>
-
-        {/* Dots indicator */}
-        <div className='absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10'>
-          {HERO_SLIDES.map((s, idx) => (
-            <button
-              key={s.id}
-              type='button'
-              onClick={() => setCurrentIndex(idx)}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#A16207] ${
-                currentIndex === idx ? 'w-7 bg-[#A16207]' : 'w-2 bg-[#D6C8B8] hover:bg-[#786C60]'
-              }`}
-              aria-label={`Chuyển sang slide ${idx + 1}`}
-            />
-          ))}
+        <div className='relative min-h-[20rem] overflow-hidden lg:min-h-[32rem]'>
+          <m.img
+            src='/images/hero_slide_routine.jpg'
+            alt='Routine chăm sóc da buổi sáng'
+            className='absolute inset-0 h-full w-full object-cover'
+            fetchPriority='high'
+            initial={reduce ? undefined : { scale: 1.12 }}
+            animate={reduce ? undefined : { scale: 1 }}
+            transition={{ duration: 1.6, ease: easeOut }}
+          />
+          {star ? (
+            <m.div
+              className='absolute inset-x-4 bottom-4 sm:inset-x-auto sm:left-5 sm:bottom-5 sm:w-80'
+              {...(reduce
+                ? {}
+                : {
+                    initial: { opacity: 0, y: 24 },
+                    animate: { opacity: 1, y: 0 },
+                    transition: { duration: 0.6, delay: 0.7, ease: easeOut }
+                  })}
+            >
+              <Link
+                to={ROUTE_PATHS.USER_PRODUCT_DETAIL(star._id)}
+                className='flex items-center gap-3 rounded-xl bg-white p-3 shadow-soft transition hover:bg-ink-50'
+              >
+                <span className='h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-ink-100'>
+                  {starImg ? (
+                    <img src={starImg} alt='' className='h-full w-full object-contain p-1 mix-blend-multiply' />
+                  ) : null}
+                </span>
+                <span className='min-w-0 flex-1'>
+                  <span className='block text-[11px] font-semibold uppercase tracking-wider text-berry-600'>
+                    Bán chạy nhất
+                  </span>
+                  <span className='mt-0.5 block truncate text-sm font-medium text-ink-950'>{star.name}</span>
+                  <span className='text-sm font-semibold text-ink-950'>{money(star.price)}</span>
+                </span>
+              </Link>
+            </m.div>
+          ) : null}
         </div>
       </div>
     </section>

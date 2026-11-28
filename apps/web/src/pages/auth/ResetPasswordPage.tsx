@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
@@ -60,10 +60,10 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Đặt lại mật khẩu</h2>
-        <p className='mt-2 text-sm leading-6 text-slate-500'>Tạo mật khẩu mới cho tài khoản của bạn.</p>
+        <p className='mt-2 text-sm leading-6 text-ink-500'>Tạo mật khẩu mới cho tài khoản của bạn.</p>
       </div>
 
       {!hasToken ? (
@@ -113,13 +113,13 @@ export default function ResetPasswordPage() {
           Đặt mật khẩu
         </Button>
 
-        <p className='text-center text-sm text-slate-500'>
+        <p className='text-center text-sm text-ink-500'>
           Quay lại{' '}
           <Link to={ROUTES.AUTH + ROUTES.LOGIN} className='font-black text-brand-600 hover:text-brand-900'>
             Đăng nhập
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }

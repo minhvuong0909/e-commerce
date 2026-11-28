@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { BadgeCheck, Check, CreditCard, Loader2, Lock, MapPin, PackageCheck, ShieldCheck, Truck, Zap } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { ArrowLeft, Banknote, Check, Loader2, Lock, MapPinned, PenLine, QrCode, Smartphone, Wallet } from 'lucide-react'
 import { toast } from 'sonner'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -8,7 +8,7 @@ import ShippingMapPicker from '../../components/checkout/ShippingMapPicker'
 import SavedAddressesPanel from '../../components/profile/SavedAddressesPanel'
 import { getCartApi } from '../../services/carts.services'
 import { getDeliveryMethodsApi } from '../../services/delivery_methods.services'
-import { createGuestOrderApi, createOrderApi } from '../../services/orders.services'
+import { createGuestOrderApi, createOrderApi, newCheckoutKey } from '../../services/orders.services'
 import { getShippingQuoteApi, getStoreInfoApi, reverseGeocodeApi, type ShippingQuote, type StoreInfo } from '../../services/shipping.services'
 import { createSavedAddressApi, getSavedAddressesApi, type SavedAddress } from '../../services/user_addresses.services'
 import { getPayosPaymentUrlApi } from '../../services/payment.services'
@@ -34,103 +34,72 @@ type ShippingForm = {
 
 type AddressMode = 'manual' | 'map'
 
-const panelClass = 'rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:p-8'
-
-const paymentMethodMeta: Record<PaymentMethod, { label: string; desc: string; badge?: string }> = {
+const paymentMethodMeta: Record<PaymentMethod, { label: string; desc: string; badge?: string; icon: typeof Wallet }> = {
   [PaymentMethod.CASH_ON_DELIVERY]: {
-    label: 'Thanh Toán Khi Nhận Hàng (COD)',
-    desc: 'Kiểm tra hàng trước khi thanh toán cho shipper.'
+    label: 'Thanh toán khi nhận hàng',
+    desc: 'Trả tiền mặt cho shipper khi nhận hàng.',
+    icon: Banknote
   },
   [PaymentMethod.CREDIT_CARD]: {
-    label: 'Thẻ Tín Dụng / Visa / MasterCard',
-    desc: 'Cổng thanh toán bảo mật quốc tế SSL 256-bit.'
+    label: 'Thẻ quốc tế',
+    desc: 'Chưa hỗ trợ.',
+    icon: Wallet
   },
   [PaymentMethod.PAYPAL]: {
-    label: 'Thanh Toán Qua Cổng PayPal',
-    desc: 'Thanh toán an toàn bằng tài khoản PayPal cá nhân.'
+    label: 'PayPal',
+    desc: 'Thanh toán bằng tài khoản PayPal.',
+    icon: Wallet
   },
   [PaymentMethod.MOMO]: {
-    label: 'Ví Điện Tử MoMo (Quét Mã QR)',
-    desc: 'Thanh toán tức thì qua ứng dụng MoMo trên điện thoại.'
+    label: 'Ví MoMo',
+    desc: 'Quét mã bằng ứng dụng MoMo.',
+    icon: Smartphone
   },
   [PaymentMethod.PAYOS]: {
-    label: 'Chuyển Khoản Ngân Hàng QR Code (PayOS)',
-    desc: 'Tự động xác nhận giao dịch qua mọi ứng dụng Ngân Hàng / VietQR.',
-    badge: 'Khuyên Dùng · Nhanh Nhất'
+    label: 'Chuyển khoản QR (PayOS)',
+    desc: 'Quét VietQR bằng app ngân hàng, tự động xác nhận.',
+    badge: 'Nhanh nhất',
+    icon: QrCode
   }
 }
 
-function TrustBadges({ compact = false }: { compact?: boolean }) {
-  const items = [
-    { icon: BadgeCheck, label: 'Cam kết 100% chính hãng' },
-    { icon: ShieldCheck, label: 'Bảo mật thông tin & SSL' },
-    { icon: Truck, label: 'Giao hàng toàn quốc an toàn' }
-  ]
-
+function Step({ n, title, done, children, aside }: { n: number; title: string; done?: boolean; children: ReactNode; aside?: ReactNode }) {
   return (
-    <div
-      className={cn(
-        'flex flex-wrap gap-2.5',
-        compact ? 'justify-center' : 'rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4'
-      )}
-    >
-      {items.map(({ icon: Icon, label }) => (
+    <section className='rounded-4xl bg-white p-5 ring-1 ring-ink-100 sm:p-8'>
+      <div className='mb-6 flex items-center gap-3'>
         <span
-          key={label}
-          className='inline-flex items-center gap-2 rounded-full border border-[#E7E0D8] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#44403C] shadow-xs'
+          className={cn(
+            'grid h-9 w-9 shrink-0 place-items-center rounded-full font-display text-sm font-bold transition',
+            done ? 'bg-lime-300 text-ink-950' : 'bg-berry-600 text-white'
+          )}
         >
-          <Icon size={14} className='text-[#A16207]' />
-          {label}
+          {done ? <Check size={16} strokeWidth={3} aria-label='Đã xong' /> : n}
         </span>
-      ))}
-    </div>
+        <h2 className='font-display text-xl font-bold sm:text-2xl'>{title}</h2>
+        {aside ? <div className='ml-auto'>{aside}</div> : null}
+      </div>
+      {children}
+    </section>
   )
 }
 
-function CheckoutStepper({ step }: { step: 1 | 2 | 3 }) {
-  const steps = [
-    { num: 1, label: 'Địa Chỉ Giao Hàng' },
-    { num: 2, label: 'Đơn Vị Vận Chuyển' },
-    { num: 3, label: 'Thanh Toán & Xác Nhận' }
-  ]
+const optionCls = (selected: boolean) =>
+  cn(
+    'relative flex cursor-pointer items-start gap-3 rounded-3xl border p-4 transition',
+    selected ? 'border-berry-500 bg-white shadow-soft' : 'border-ink-100 bg-white hover:border-ink-300'
+  )
 
+function Radio({ checked }: { checked: boolean }) {
   return (
-    <div className='mb-8 rounded-3xl border border-[#E7E0D8] bg-white p-4 shadow-xs'>
-      <div className='flex items-center justify-between gap-2 max-w-3xl mx-auto'>
-        {steps.map((s, idx) => {
-          const isActive = s.num <= step
-          const isCurrent = s.num === step
-
-          return (
-            <div key={s.num} className='flex items-center gap-2.5 flex-1 last:flex-none'>
-              <div className='flex items-center gap-2.5'>
-                <span
-                  className={cn(
-                    'grid h-8 w-8 place-items-center rounded-full text-xs font-bold transition-all',
-                    isActive
-                      ? 'bg-[#1C1917] text-white shadow-sm'
-                      : 'bg-[#FAF7F2] text-[#786C60] border border-[#E7E0D8]'
-                  )}
-                >
-                  {s.num < step ? <Check size={14} strokeWidth={3} /> : s.num}
-                </span>
-                <span
-                  className={cn(
-                    'hidden sm:inline font-sans text-xs font-bold tracking-tight',
-                    isCurrent ? 'text-[#1C1917]' : isActive ? 'text-[#44403C]' : 'text-[#786C60]'
-                  )}
-                >
-                  {s.label}
-                </span>
-              </div>
-              {idx < steps.length - 1 ? (
-                <div className={cn('h-0.5 min-w-4 flex-1 mx-2 hidden sm:block transition-colors', s.num < step ? 'bg-[#A16207]' : 'bg-[#E7E0D8]')} />
-              ) : null}
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <span
+      aria-hidden
+      className={cn(
+        'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border transition',
+        checked ? 'border-berry-500' : 'border-ink-300'
+      )}
+    >
+      <span className={cn('h-2.5 w-2.5 rounded-full transition', checked ? 'bg-berry-600' : 'bg-transparent')} />
+    </span>
   )
 }
 
@@ -146,8 +115,10 @@ export default function CheckoutPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>([])
   const [selectedDelivery, setSelectedDelivery] = useState<string>()
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.PAYOS)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(isGuestCheckout ? PaymentMethod.CASH_ON_DELIVERY : PaymentMethod.PAYOS)
   const [loading, setLoading] = useState(false)
+  // One key per checkout attempt: retries of the same attempt can never create a second order.
+  const checkoutKey = useRef(newCheckoutKey())
   const [addressMode, setAddressMode] = useState<AddressMode>('manual')
   const [storeInfo, setStoreInfo] = useState<StoreInfo | null>(null)
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
@@ -334,6 +305,7 @@ export default function CheckoutPage() {
   }
 
   const handleCheckout = async () => {
+    if (loading) return
     if (!selectedDelivery) {
       toast.error('Vui lòng chọn phương thức giao hàng')
       return
@@ -381,14 +353,20 @@ export default function CheckoutPage() {
       }
 
       const res = isGuestCheckout
-        ? await createGuestOrderApi({
-            ...commonPayload,
-            items: cartItems.map((item) => ({ product_id: item.product_infor._id, quantity: item.quantity }))
-          })
-        : await createOrderApi({
-            ...commonPayload,
-            items: selectedIds
-          })
+        ? await createGuestOrderApi(
+            {
+              ...commonPayload,
+              items: cartItems.map((item) => ({ product_id: item.product_infor._id, quantity: item.quantity }))
+            },
+            checkoutKey.current
+          )
+        : await createOrderApi(
+            {
+              ...commonPayload,
+              items: selectedIds
+            },
+            checkoutKey.current
+          )
 
       const orderId = res.data?.result?.insertedId as string | undefined
       toast.success('Đặt hàng thành công!')
@@ -434,7 +412,7 @@ export default function CheckoutPage() {
         return
       }
 
-      navigate(isGuestCheckout ? ROUTE_PATHS.USER_ORDER_RESULT : ROUTE_PATHS.USER_ORDERS, {
+      navigate(isGuestCheckout ? `${ROUTE_PATHS.USER_ORDER_RESULT}?orderId=${encodeURIComponent(orderId ?? '')}&status=pending&paymentMethod=COD` : ROUTE_PATHS.USER_ORDERS, {
         state: { orderId, isGuestCheckout }
       })
     } catch (err) {
@@ -444,126 +422,79 @@ export default function CheckoutPage() {
     }
   }
 
-  // Active step calculation
-  const currentStep: 1 | 2 | 3 = quote ? 3 : selectedDelivery ? 2 : 1
+  const contactDone = Boolean(shipping.recipient_name.trim() && shipping.phone.trim() && shipping.address_line.trim())
+  const availablePayments = (Object.values(PaymentMethod) as PaymentMethod[]).filter(
+    (method) => method !== PaymentMethod.CREDIT_CARD && (!isGuestCheckout || method === PaymentMethod.CASH_ON_DELIVERY)
+  )
+  const canSubmit = !loading && !quoteLoading && Boolean(quote) && !quoteError
 
   return (
-    <div className='mx-auto max-w-7xl px-4 py-8 md:px-6 bg-[#FAF7F2] text-[#1C1917] min-h-screen'>
-      {/* Header Info */}
-      <div className='mb-6 flex flex-col gap-3'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#A16207]'>Commercial Checkout Engine</p>
-            <h1 className='mt-1 font-display text-3xl font-extrabold tracking-tight text-[#1C1917] md:text-4xl'>
-              {isGuestCheckout ? 'Xác Nhận Đặt Hàng Vãng Lai' : 'Thanh Toán Đơn Hàng'}
-            </h1>
-          </div>
-          <div className='hidden sm:flex items-center gap-2 text-xs font-semibold text-emerald-800 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200'>
-            <Lock size={13} /> Bảo mật SSL 256-bit
-          </div>
-        </div>
-        <TrustBadges />
+    <div className='mx-auto max-w-[1320px] px-4 py-8 md:px-6 md:py-12'>
+      <Link
+        to={isGuestCheckout ? ROUTE_PATHS.USER_HOME : ROUTE_PATHS.USER_CART}
+        className='inline-flex items-center gap-1.5 text-sm font-medium text-ink-600 hover:text-ink-950'
+      >
+        <ArrowLeft size={16} /> {isGuestCheckout ? 'Tiếp tục mua sắm' : 'Quay lại giỏ hàng'}
+      </Link>
+      <div className='mt-3 flex flex-wrap items-end justify-between gap-3'>
+        <h1 className='font-display text-4xl font-bold md:text-5xl'>Thanh toán</h1>
+        {isGuestCheckout ? (
+          <p className='text-sm text-ink-600'>
+            Mua không cần tài khoản ·{' '}
+            <Link to={ROUTE_PATHS.AUTH_LOGIN} className='font-semibold text-berry-600 hover:underline'>
+              Đăng nhập
+            </Link>{' '}
+            để thanh toán online
+          </p>
+        ) : null}
       </div>
 
-      {/* Stepper Indicator */}
-      <CheckoutStepper step={currentStep} />
-
-      <div className='grid gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px]'>
-        <div className='space-y-6'>
-          {/* Section 1: Cart Items */}
-          <section className={panelClass}>
-            <div className='mb-4 flex items-center justify-between border-b border-[#E7E0D8] pb-4'>
-              <div className='flex items-center gap-3'>
-                <span className='grid h-10 w-10 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-                  <PackageCheck size={19} />
-                </span>
-                <h2 className='font-display text-lg font-bold text-[#1C1917]'>1. Sản Phẩm Đặt Mua ({cartItems.length})</h2>
+      <div className='mt-8 grid gap-6 lg:grid-cols-[1fr_420px] lg:gap-10'>
+        <div className='space-y-4'>
+          <Step n={1} title='Thông tin nhận hàng' done={contactDone}>
+            {!isGuestCheckout ? (
+              <div className='mb-6'>
+                <p className='field-label'>Sổ địa chỉ</p>
+                <SavedAddressesPanel selectable selectedId={selectedAddressId} onSelect={applySavedAddress} />
               </div>
-            </div>
+            ) : null}
 
-            <div className='space-y-3'>
-              {cartItems.map((item) => {
-                const product = item.product_infor
-                const firstMedia = product.medias?.[0]
-                const mediaUrl = typeof firstMedia === 'string' ? firstMedia : firstMedia?.url
-                const image = formatImageUrl(product.thumbnail || mediaUrl)
-
-                return (
-                  <div key={item._id} className='flex gap-4 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-3.5 sm:items-center'>
-                    <div className='aspect-square w-16 shrink-0 overflow-hidden rounded-xl bg-white border border-[#E7E0D8] sm:w-20'>
-                      {image ? <img src={image} alt={product.name} referrerPolicy='no-referrer' className='h-full w-full object-cover' /> : null}
-                    </div>
-
-                    <div className='min-w-0 flex-1'>
-                      {product.origin ? (
-                        <p className='text-[10px] font-bold uppercase tracking-[0.14em] text-[#A16207]'>{product.origin}</p>
-                      ) : null}
-                      <div className='line-clamp-2 font-sans text-xs font-bold text-[#1C1917]'>{product.name}</div>
-                      <div className='mt-1 text-xs text-[#786C60] font-medium'>
-                        {money(product.price)} × {item.quantity}
-                      </div>
-                    </div>
-
-                    <div className='shrink-0 text-sm font-extrabold text-[#B45309]'>{money(product.price * item.quantity)}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-
-          {/* Section 2: Delivery Address & Map */}
-          <section className={panelClass}>
-            <div className='mb-4 flex items-center justify-between border-b border-[#E7E0D8] pb-4'>
-              <div className='flex items-center gap-3'>
-                <span className='grid h-10 w-10 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-                  <MapPin size={19} />
-                </span>
-                <h2 className='font-display text-lg font-bold text-[#1C1917]'>2. Địa Chỉ Nhận Hàng</h2>
-              </div>
-            </div>
-
-            <div className='mb-5'>
-              {!isGuestCheckout ? (
-                <>
-                  <p className='mb-3 text-xs font-bold uppercase tracking-wider text-[#44403C]'>Chọn từ sổ địa chỉ cá nhân</p>
-                  <SavedAddressesPanel selectable selectedId={selectedAddressId} onSelect={applySavedAddress} />
-                </>
-              ) : (
-                <div className='rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-4 text-xs font-medium text-[#44403C]'>
-                  Khách vãng lai: Nhập thông tin liên hệ chính xác để shipper gọi giao hàng.
-                </div>
-              )}
-            </div>
-
-            <div className='mb-5 grid grid-cols-2 gap-2 rounded-2xl bg-[#FAF7F2] p-1 border border-[#E7E0D8]'>
-              {([
-                { id: 'manual' as const, label: 'Nhập địa chỉ thủ công' },
-                { id: 'map' as const, label: 'Chọn trên bản đồ' }
-              ]).map((tab) => (
+            <div role='tablist' aria-label='Cách nhập địa chỉ' className='mb-5 inline-flex rounded-full bg-ink-100 p-1'>
+              {[
+                { id: 'manual' as const, label: 'Nhập tay', icon: PenLine },
+                { id: 'map' as const, label: 'Ghim trên bản đồ', icon: MapPinned }
+              ].map((tab) => (
                 <button
                   key={tab.id}
                   type='button'
+                  role='tab'
+                  aria-selected={addressMode === tab.id}
                   onClick={() => {
                     setAddressMode(tab.id)
                     setSelectedAddressId(null)
                     if (tab.id === 'manual') setCoords(null)
                   }}
                   className={cn(
-                    'rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider transition-all',
-                    addressMode === tab.id
-                      ? 'bg-[#1C1917] text-white shadow-sm'
-                      : 'text-[#786C60] hover:text-[#1C1917]'
+                    'inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg px-4 text-sm font-semibold transition',
+                    addressMode === tab.id ? 'bg-white text-ink-950 shadow-xs' : 'text-ink-600 hover:text-ink-950'
                   )}
                 >
-                  {tab.label}
+                  <tab.icon size={16} aria-hidden /> {tab.label}
                 </button>
               ))}
             </div>
+
+            {addressMode === 'map' && storeInfo ? (
+              <div className='mb-5'>
+                <ShippingMapPicker storeLat={storeInfo.lat} storeLng={storeInfo.lng} value={coords} onPick={handleMapPick} />
+              </div>
+            ) : null}
 
             <div className='grid gap-4 md:grid-cols-2'>
               <Input
                 label='Họ tên người nhận'
                 name='recipient_name'
+                autoComplete='name'
                 value={shipping.recipient_name}
                 onChange={(e) => patchShipping({ recipient_name: e.target.value })}
                 required
@@ -571,256 +502,220 @@ export default function CheckoutPage() {
               <Input
                 label='Số điện thoại'
                 name='phone'
+                type='tel'
+                inputMode='tel'
+                autoComplete='tel'
                 value={shipping.phone}
                 onChange={(e) => patchShipping({ phone: e.target.value })}
                 required
               />
               <div className='md:col-span-2'>
                 <Input
-                  label='Địa chỉ chi tiết (Số nhà, tên đường...)'
+                  label='Địa chỉ (số nhà, tên đường)'
                   name='address_line'
+                  autoComplete='street-address'
                   value={shipping.address_line}
                   onChange={(e) => patchShipping({ address_line: e.target.value })}
                   required
                 />
               </div>
               <Input label='Tỉnh / Thành phố' name='city' value={shipping.city} onChange={(e) => patchShipping({ city: e.target.value })} />
-              <Input
-                label='Quận / Huyện'
-                name='district'
-                value={shipping.district}
-                onChange={(e) => patchShipping({ district: e.target.value })}
-              />
+              <Input label='Quận / Huyện' name='district' value={shipping.district} onChange={(e) => patchShipping({ district: e.target.value })} />
               <div className='md:col-span-2'>
-                <label className='mb-2 block text-xs font-bold uppercase tracking-wider text-[#44403C]'>Ghi chú cho shipper</label>
+                <label htmlFor='ship-note' className='field-label'>
+                  Ghi chú cho shipper <span className='font-normal text-ink-500'>(không bắt buộc)</span>
+                </label>
                 <textarea
+                  id='ship-note'
                   value={shipping.note}
                   onChange={(e) => patchShipping({ note: e.target.value })}
-                  rows={3}
-                  placeholder='Ví dụ: Giao giờ hành chính, gọi trước 15 phút...'
-                  className='w-full rounded-2xl border border-[#E7E0D8] bg-white px-4 py-3 text-xs text-[#1C1917] placeholder-[#A8A29E] outline-none transition focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
+                  rows={2}
+                  placeholder='VD: Giao giờ hành chính, gọi trước 15 phút'
+                  className='field'
                 />
               </div>
             </div>
 
             {!isGuestCheckout && !selectedAddressId ? (
-              <label className='mt-4 flex cursor-pointer items-center gap-3 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] px-4 py-3 hover:bg-white transition-colors'>
+              <label className='mt-4 inline-flex cursor-pointer items-center gap-3 text-sm'>
                 <input
                   type='checkbox'
                   checked={saveThisAddress}
                   onChange={(e) => setSaveThisAddress(e.target.checked)}
-                  className='h-4 w-4 rounded accent-[#A16207]'
+                  className='h-5 w-5 rounded accent-ink-950'
                 />
-                <span className='text-xs font-semibold text-[#44403C]'>Lưu địa chỉ này vào sổ địa chỉ cá nhân</span>
+                Lưu địa chỉ này cho lần sau
               </label>
             ) : null}
+          </Step>
 
-            {addressMode === 'map' && storeInfo ? (
-              <div className='mt-4 overflow-hidden rounded-2xl border border-[#E7E0D8]'>
-                <ShippingMapPicker storeLat={storeInfo.lat} storeLng={storeInfo.lng} value={coords} onPick={handleMapPick} />
-              </div>
-            ) : null}
-
-            <div className='mt-4 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] px-4 py-3 text-xs'>
-              {quoteLoading ? (
-                <span className='inline-flex items-center gap-2 font-bold text-[#A16207]'>
-                  <Loader2 size={16} className='animate-spin' />
-                  Đang tính toán cước vận chuyển chính xác...
-                </span>
-              ) : quoteError ? (
-                <span className='font-bold text-rose-600'>{quoteError}</span>
-              ) : quote ? (
-                <div className='space-y-1 font-medium text-[#44403C]'>
-                  <div className='flex justify-between items-center'>
-                    <span>Khoảng cách từ trung tâm kho:</span>
-                    <span className='font-bold text-[#1C1917]'>{quote.distance_km} km</span>
-                  </div>
-                  <div className='flex justify-between items-center'>
-                    <span>Cước phí giao hàng cơ bản:</span>
-                    <span className='font-bold text-[#B45309]'>{money(quote.base_shipping_fee)}</span>
-                  </div>
-                  {quote.express_surcharge > 0 ? (
-                    <div className='flex justify-between items-center'>
-                      <span>Phụ phí hỏa tốc:</span>
-                      <span className='font-bold text-amber-600'>{money(quote.express_surcharge)}</span>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <span className='font-medium text-[#786C60]'>Nhập địa chỉ ở trên để hệ thống tự động tính cước giao hàng.</span>
-              )}
-            </div>
-          </section>
-
-          {/* Section 3: Delivery Methods */}
-          <section className={panelClass}>
-            <div className='mb-4 flex items-center gap-3 border-b border-[#E7E0D8] pb-4'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-                <Truck size={19} />
-              </span>
-              <h2 className='font-display text-lg font-bold text-[#1C1917]'>3. Đơn Vị Vận Chuyển</h2>
-            </div>
-
+          <Step n={2} title='Vận chuyển' done={Boolean(quote)}>
             <div className='grid gap-3 md:grid-cols-2'>
               {deliveryMethods.map((method) => {
                 const isSelected = selectedDelivery === method._id
-
                 return (
-                  <label
-                    key={method._id}
-                    className={cn(
-                      'cursor-pointer rounded-2xl border p-4 transition-all',
-                      isSelected
-                        ? 'border-[#A16207] bg-[#FAF7F2] ring-2 ring-[#A16207]/20 shadow-xs'
-                        : 'border-[#E7E0D8] bg-white hover:border-[#A16207]'
-                    )}
-                  >
-                    <div className='flex items-start justify-between gap-3'>
-                      <div>
-                        <div className='font-sans text-sm font-bold text-[#1C1917]'>{method.name}</div>
-                        <div className='mt-1 text-xs text-[#786C60] leading-relaxed'>{method.description}</div>
-                      </div>
-
-                      <input
-                        type='radio'
-                        name='deliveryMethod'
-                        value={method._id}
-                        checked={isSelected}
-                        onChange={() => setSelectedDelivery(method._id)}
-                        className='mt-1 h-4 w-4 accent-[#A16207]'
-                      />
-                    </div>
-                  </label>
-                )
-              })}
-            </div>
-          </section>
-
-          {/* Section 4: Payment Methods */}
-          <section className={panelClass}>
-            <div className='mb-4 flex items-center justify-between border-b border-[#E7E0D8] pb-4'>
-              <div className='flex items-center gap-3'>
-                <span className='grid h-10 w-10 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-                  <CreditCard size={19} />
-                </span>
-                <h2 className='font-display text-lg font-bold text-[#1C1917]'>4. Phương Thức Thanh Toán</h2>
-              </div>
-              <span className='text-xs font-semibold text-[#786C60] inline-flex items-center gap-1'><Zap size={14} className='text-amber-500' /> Khuyên dùng PayOS</span>
-            </div>
-
-            <div className='space-y-3'>
-              {(Object.values(PaymentMethod) as PaymentMethod[]).map((method) => {
-                const isSelected = paymentMethod === method
-                const meta = paymentMethodMeta[method]
-
-                return (
-                  <label
-                    key={method}
-                    className={cn(
-                      'flex cursor-pointer items-center justify-between gap-4 rounded-2xl border p-4 transition-all',
-                      isSelected
-                        ? 'border-[#A16207] bg-[#FAF7F2] ring-2 ring-[#A16207]/20 shadow-sm'
-                        : 'border-[#E7E0D8] bg-white hover:border-[#A16207]'
-                    )}
-                  >
-                    <div className='space-y-1 min-w-0'>
-                      <div className='flex items-center gap-2 flex-wrap'>
-                        <span className='font-sans text-xs font-bold text-[#1C1917]'>{meta.label}</span>
-                        {meta.badge ? (
-                          <span className='rounded-full bg-emerald-100 border border-emerald-300 px-2.5 py-0.5 text-[9px] font-extrabold text-emerald-800 uppercase tracking-wide'>
-                            {meta.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className='text-xs text-[#786C60]'>{meta.desc}</p>
-                    </div>
-
+                  <label key={method._id} className={optionCls(isSelected)}>
                     <input
                       type='radio'
+                      name='deliveryMethod'
+                      value={method._id}
                       checked={isSelected}
-                      onChange={() => setPaymentMethod(method)}
-                      className='h-4 w-4 shrink-0 accent-[#A16207]'
+                      onChange={() => setSelectedDelivery(method._id)}
+                      className='sr-only'
                     />
+                    <Radio checked={isSelected} />
+                    <span className='min-w-0'>
+                      <span className='block font-semibold'>{method.name}</span>
+                      <span className='mt-0.5 block text-sm leading-relaxed text-ink-500'>{method.description}</span>
+                    </span>
                   </label>
                 )
               })}
             </div>
-          </section>
+
+            <div className='mt-4 rounded-3xl bg-ink-50 px-5 py-4 text-sm' aria-live='polite'>
+              {quoteLoading ? (
+                <span className='inline-flex items-center gap-2 font-medium text-ink-700'>
+                  <Loader2 size={16} className='animate-spin' /> Đang tính phí giao hàng…
+                </span>
+              ) : quoteError ? (
+                <span className='font-semibold text-rose-600'>{quoteError}</span>
+              ) : quote ? (
+                <dl className='grid gap-1.5 text-ink-700'>
+                  <div className='flex justify-between'>
+                    <dt>Khoảng cách</dt>
+                    <dd className='font-semibold text-ink-950'>{quote.distance_km} km</dd>
+                  </div>
+                  <div className='flex justify-between'>
+                    <dt>Phí cơ bản</dt>
+                    <dd className='font-semibold text-ink-950'>{money(quote.base_shipping_fee)}</dd>
+                  </div>
+                  {quote.express_surcharge > 0 ? (
+                    <div className='flex justify-between'>
+                      <dt>Phụ phí hỏa tốc</dt>
+                      <dd className='font-semibold text-ink-950'>{money(quote.express_surcharge)}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              ) : (
+                <span className='text-ink-500'>Nhập địa chỉ để xem phí giao hàng.</span>
+              )}
+            </div>
+          </Step>
+
+          <Step
+            n={3}
+            title='Thanh toán'
+            done={Boolean(quote) && contactDone}
+            aside={isGuestCheckout ? <span className='chip bg-peach-100 text-peach-700'>Khách: chỉ COD</span> : undefined}
+          >
+            <div className='grid gap-3'>
+              {availablePayments.map((method) => {
+                const isSelected = paymentMethod === method
+                const meta = paymentMethodMeta[method]
+                const Icon = meta.icon
+                return (
+                  <label key={method} className={optionCls(isSelected)}>
+                    <input
+                      type='radio'
+                      name='paymentMethod'
+                      checked={isSelected}
+                      onChange={() => setPaymentMethod(method)}
+                      className='sr-only'
+                    />
+                    <Radio checked={isSelected} />
+                    <span className='min-w-0 flex-1'>
+                      <span className='flex flex-wrap items-center gap-2 font-semibold'>
+                        {meta.label}
+                        {meta.badge ? <span className='chip bg-lime-200 px-2 py-0.5 text-[11px] text-lime-700'>{meta.badge}</span> : null}
+                      </span>
+                      <span className='mt-0.5 block text-sm text-ink-500'>{meta.desc}</span>
+                    </span>
+                    <span className='grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-ink-50 text-ink-700'>
+                      <Icon size={20} aria-hidden />
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+          </Step>
         </div>
 
-        {/* Order Summary Sidebar */}
-        <aside className={cn(panelClass, 'h-fit lg:sticky lg:top-28')}>
-          <div className='mb-4 border-b border-[#E7E0D8] pb-4'>
-            <p className='font-display text-base font-bold text-[#1C1917]'>Tóm Tắt Đơn Hàng</p>
-            <p className='mt-1 text-xs text-[#786C60]'>{cartItems.length} sản phẩm</p>
-          </div>
+        {/* summary */}
+        <aside className='h-fit space-y-4 lg:sticky lg:top-36'>
+          <div className='rounded-4xl bg-white p-5 ring-1 ring-ink-100 sm:p-6'>
+            <h2 className='font-display text-xl font-bold'>Đơn hàng ({cartItems.length})</h2>
+            <ul className='mt-4 max-h-72 space-y-3 overflow-y-auto pr-1'>
+              {cartItems.map((item) => {
+                const product = item.product_infor
+                const first = product.medias?.[0]
+                const image = formatImageUrl(product.thumbnail || (typeof first === 'string' ? first : first?.url))
+                return (
+                  <li key={item._id} className='flex items-center gap-3'>
+                    <span className='relative h-16 w-16 shrink-0 rounded-2xl bg-berry-50'>
+                      {image ? (
+                        <img src={image} alt='' referrerPolicy='no-referrer' className='h-full w-full rounded-2xl object-contain p-1 mix-blend-multiply' />
+                      ) : null}
+                      <span className='absolute -right-1.5 -top-1.5 grid h-6 min-w-6 place-items-center rounded-full bg-berry-600 px-1 text-xs font-bold text-white'>
+                        {item.quantity}
+                      </span>
+                    </span>
+                    <span className='line-clamp-2 min-w-0 flex-1 text-sm font-medium'>{product.name}</span>
+                    <span className='shrink-0 text-sm font-semibold'>{money(product.price * item.quantity)}</span>
+                  </li>
+                )
+              })}
+            </ul>
 
-          <div className='space-y-3 text-xs font-medium text-[#44403C]'>
-            <div className='flex justify-between'>
-              <span>Tạm tính sản phẩm</span>
-              <span className='font-bold text-[#1C1917]'>{money(subtotal)}</span>
+            <div className='mt-5 flex gap-2 border-t border-ink-100 pt-5'>
+              <input
+                value={voucherCode}
+                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                placeholder='Mã giảm giá'
+                aria-label='Mã giảm giá'
+                className='field h-11 min-w-0 flex-1 rounded-full uppercase'
+              />
+              <Button variant='secondary' onClick={applyVoucher} loading={voucherLoading} disabled={subtotal <= 0 || !voucherCode.trim()}>
+                Áp dụng
+              </Button>
             </div>
-            <div className='flex justify-between'>
-              <span>Phí vận chuyển</span>
-              <span className='font-bold text-[#A16207]'>
-                {quoteLoading ? 'Đang tính...' : quote ? money(shippingFee) : 'Chưa tính'}
-              </span>
-            </div>
-            
-            <div className='pt-2'>
-              <label className='text-xs font-bold uppercase tracking-wider text-[#44403C]'>Mã Voucher / Ưu Đãi</label>
-              <div className='mt-2 flex gap-2'>
-                <input
-                  value={voucherCode}
-                  onChange={(e) => setVoucherCode(e.target.value)}
-                  placeholder='Nhập mã ưu đãi'
-                  className='h-10 min-w-0 flex-1 rounded-xl border border-[#E7E0D8] bg-white px-3 text-xs text-[#1C1917] outline-none focus:border-[#A16207]'
-                />
-                <button
-                  type='button'
-                  onClick={applyVoucher}
-                  disabled={voucherLoading || subtotal <= 0}
-                  className='rounded-xl border border-[#1C1917] bg-[#1C1917] px-3.5 text-xs font-bold text-white hover:bg-[#A16207] disabled:opacity-50 transition-all'
-                >
-                  {voucherLoading ? '...' : 'Áp dụng'}
-                </button>
+
+            <dl className='mt-5 space-y-2.5 text-sm'>
+              <div className='flex justify-between'>
+                <dt className='text-ink-600'>Tạm tính</dt>
+                <dd className='font-semibold'>{money(subtotal)}</dd>
               </div>
+              <div className='flex justify-between'>
+                <dt className='text-ink-600'>Vận chuyển</dt>
+                <dd className='font-semibold'>{quoteLoading ? 'Đang tính…' : quote ? money(shippingFee) : '—'}</dd>
+              </div>
+              {discount > 0 ? (
+                <div className='flex justify-between text-emerald-700'>
+                  <dt>Giảm giá ({voucher?.voucher.code})</dt>
+                  <dd className='font-semibold'>−{money(discount)}</dd>
+                </div>
+              ) : null}
+            </dl>
+            <div className='mt-5 flex items-end justify-between border-t border-ink-100 pt-5'>
+              <span className='font-semibold'>Tổng cộng</span>
+              <span className='font-display text-3xl font-bold'>{money(total)}</span>
             </div>
 
-            {discount > 0 ? (
-              <div className='flex justify-between text-emerald-600 font-bold'>
-                <span>Voucher giảm giá</span>
-                <span>-{money(discount)}</span>
-              </div>
-            ) : null}
-
-            {quote ? (
-              <div className='rounded-2xl bg-[#FAF7F2] p-3 text-[11px] text-[#786C60] border border-[#E7E0D8]'>
-                Khoảng cách {quote.distance_km} km từ trung tâm kho. Vận chuyển hỏa tốc trong bán kính 25 km.
-              </div>
-            ) : null}
-          </div>
-
-          <div className='my-5 h-px bg-[#E7E0D8]' />
-
-          <div className='flex justify-between items-end gap-4'>
-            <span className='text-xs font-bold uppercase tracking-wider text-[#786C60]'>Tổng Tiền Thanh Toán</span>
-            <span className='text-2xl font-extrabold text-[#B45309]'>{money(total)}</span>
-          </div>
-
-          <Button
-            full
-            variant='accent'
-            className='mt-6 !rounded-xl !py-3.5 !text-xs !font-bold !uppercase !tracking-wider shadow-md disabled:opacity-50'
-            onClick={handleCheckout}
-            loading={loading}
-            disabled={loading || quoteLoading || !quote || Boolean(quoteError)}
-          >
-            Xác Nhận Đặt Hàng Ngay
-          </Button>
-
-          <div className='mt-5'>
-            <TrustBadges compact />
+            <Button full variant='accent' size='lg' className='mt-6' onClick={handleCheckout} loading={loading} disabled={!canSubmit}>
+              <Lock size={16} /> Đặt hàng · {money(total)}
+            </Button>
+            {!quote && !quoteLoading ? <p className='mt-3 text-center text-xs text-ink-500'>Hoàn tất địa chỉ để tính phí và đặt hàng.</p> : null}
+            <p className='mt-3 text-center text-xs leading-relaxed text-ink-500'>
+              Bằng việc đặt hàng, bạn đồng ý với{' '}
+              <Link to={ROUTE_PATHS.USER_POLICY('dieu-khoan')} target='_blank' className='font-semibold text-berry-700 hover:underline'>
+                Điều khoản
+              </Link>{' '}
+              và{' '}
+              <Link to={ROUTE_PATHS.USER_POLICY('doi-tra')} target='_blank' className='font-semibold text-berry-700 hover:underline'>
+                Chính sách đổi trả
+              </Link>
+              .
+            </p>
           </div>
         </aside>
       </div>

@@ -1,83 +1,240 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, LogOut, Menu, PackageCheck, Search, ShieldCheck, ShoppingBag, Sparkles, Truck, UserRound, X } from 'lucide-react'
+import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ArrowUpRight,
+  Home,
+  LogIn,
+  LogOut,
+  Menu,
+  Package,
+  Search,
+  ShoppingBag,
+  UserRound,
+  X,
+  Heart
+} from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { POLICIES, POLICY_SLUGS } from '../constants/policies'
 import { ROUTE_PATHS } from '../routes/route.paths'
 import { logoutApi } from '../services/auths.services'
 import { clearAuth, getRefreshToken, getToken } from '../utils/authSession'
 import cn from '../utils/cn'
 import { useCart } from '../hooks/useCart'
 import { useProducts } from '../hooks/useProducts'
+import { useStorefrontCategories } from '../hooks/useStorefrontCategories'
 import money from '../utils/money'
 import { formatImageUrl } from '../utils/formatImageUrl'
 import type { Product } from '../models/ProductRequests'
+import BrandMark from '../components/ui/BrandMark'
+import ChatAssistant from '../components/chat/ChatAssistant'
+import { useWishlist, WishlistLoginMerge } from '../hooks/useWishlist'
 
-const mobileNav = [
-  { to: ROUTE_PATHS.USER_HOME, label: 'Trang chủ', icon: ShoppingBag },
-  { to: ROUTE_PATHS.USER_CART, label: 'Giỏ hàng', icon: PackageCheck },
-  { to: ROUTE_PATHS.USER_ORDERS, label: 'Đơn hàng', icon: Truck },
-  { to: ROUTE_PATHS.USER_PROFILE, label: 'Tài khoản', icon: UserRound }
+const SHOP_ANCHOR = '#shop'
+
+const TICKER = [
+  'Hàng chính hãng, rõ nguồn gốc',
+  'Giao nhanh nội thành TP.HCM',
+  'Đổi trả 7 ngày nếu hàng lỗi',
+  'Thanh toán COD · PayOS · MoMo',
+  'Theo dõi đơn hàng mọi lúc',
+  'Lưu sản phẩm yêu thích chỉ với một chạm'
 ]
 
-type HeaderSearchBarProps = {
-  initialSearch: string
-  onSearch: (query: string) => void
+const categoryHref = (id?: string) =>
+  id ? `${ROUTE_PATHS.USER_HOME}?category=${encodeURIComponent(id)}${SHOP_ANCHOR}` : `${ROUTE_PATHS.USER_HOME}${SHOP_ANCHOR}`
+
+function productThumb(product: Product) {
+  const first = product.medias?.[0]
+  return formatImageUrl(product.thumbnail || (typeof first === 'string' ? first : first?.url))
 }
 
-function HeaderSearchControls({
+/* ───────── Search with live suggestions ───────── */
+function HeaderSearch({
   initialSearch,
   onSearch,
-  children
-}: HeaderSearchBarProps & {
-  children: (props: {
-    headerSearch: string
-    setHeaderSearch: (value: string) => void
-    handleSubmit: (e: FormEvent) => void
-    shouldSuggest: boolean
-    suggestionData?: { products: Array<Product> }
-    setFocused: (focused: boolean) => void
-  }) => React.ReactNode
+  className,
+  autoFocus
+}: {
+  initialSearch: string
+  onSearch: (q: string) => void
+  className?: string
+  autoFocus?: boolean
 }) {
-  const [headerSearch, setHeaderSearch] = useState(initialSearch)
+  const [value, setValue] = useState(initialSearch)
   const [focused, setFocused] = useState(false)
-  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(headerSearch.trim()), 250)
-    return () => clearTimeout(timer)
-  }, [headerSearch])
-  const shouldSuggest = focused && debouncedSearch.length >= 2
-  const { data: suggestionData } = useProducts(1, 4, {
-    search: shouldSuggest ? debouncedSearch : undefined,
-    sort: 'newest'
-  })
+  const [debounced, setDebounced] = useState(initialSearch)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleSubmit = (e: FormEvent) => {
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value.trim()), 250)
+    return () => clearTimeout(t)
+  }, [value])
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus()
+  }, [autoFocus])
+
+  // "/" focuses search, like most modern storefronts
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(target.tagName) && !target.isContentEditable) {
+        e.preventDefault()
+        inputRef.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const shouldSuggest = focused && debounced.length >= 2
+  const { data, isFetching } = useProducts(1, 5, { search: shouldSuggest ? debounced : undefined, sort: 'newest' })
+  const suggestions = shouldSuggest ? (data?.products ?? []) : []
+
+  const submit = (e: FormEvent) => {
     e.preventDefault()
     setFocused(false)
-    onSearch(headerSearch.trim())
+    inputRef.current?.blur()
+    onSearch(value.trim())
   }
 
   return (
     <div
-      className='contents'
-      onFocus={(event) => { if (event.target instanceof HTMLInputElement) setFocused(true) }}
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false) }}
-      onKeyDown={(event) => { if (event.key === 'Escape') setFocused(false) }}
+      className={cn('relative', className)}
+      onFocus={() => setFocused(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget)) setFocused(false)
+      }}
+      onKeyDown={(e) => e.key === 'Escape' && setFocused(false)}
     >
-      {children({ headerSearch, setHeaderSearch, handleSubmit, shouldSuggest, suggestionData, setFocused })}
+      <form onSubmit={submit} role='search' className='relative'>
+        <Search size={18} className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-500' aria-hidden />
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          placeholder='Tìm serum, kem chống nắng, son…'
+          aria-label='Tìm kiếm sản phẩm'
+          className='h-12 w-full rounded-full border border-transparent bg-ink-100/70 pl-11 pr-12 text-[15px] text-ink-950 outline-none transition placeholder:text-ink-500 hover:bg-ink-100 focus:border-berry-500 focus:bg-white'
+        />
+        <kbd className='pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-md bg-white px-1.5 py-0.5 text-[11px] font-semibold text-ink-500 shadow-xs lg:block'>
+          /
+        </kbd>
+      </form>
+
+      {shouldSuggest ? (
+        <div className='absolute inset-x-0 top-full z-[60] mt-2 overflow-hidden rounded-3xl border border-ink-100 bg-white p-2 shadow-lift animate-soft-pop'>
+          {suggestions.length ? (
+            <>
+              <p className='px-3 pb-1 pt-2 text-xs font-semibold text-ink-500'>Gợi ý cho “{debounced}”</p>
+              {suggestions.map((product) => {
+                const img = productThumb(product)
+                return (
+                  <Link
+                    key={product._id}
+                    to={ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)}
+                    onClick={() => setFocused(false)}
+                    className='flex items-center gap-3 rounded-2xl px-2.5 py-2 transition hover:bg-ink-50'
+                  >
+                    <span className='h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-berry-50'>
+                      {img ? <img src={img} alt='' className='h-full w-full object-contain p-1 mix-blend-multiply' /> : null}
+                    </span>
+                    <span className='min-w-0 flex-1'>
+                      <span className='block truncate text-sm font-semibold text-ink-950'>{product.name}</span>
+                      <span className='text-sm text-ink-600'>{money(product.price)}</span>
+                    </span>
+                    <ArrowUpRight size={16} className='text-ink-400' aria-hidden />
+                  </Link>
+                )
+              })}
+              <button
+                type='button'
+                onClick={() => {
+                  setFocused(false)
+                  onSearch(value.trim())
+                }}
+                className='mt-1 w-full cursor-pointer rounded-2xl bg-ink-50 px-3 py-2.5 text-left text-sm font-semibold text-ink-950 hover:bg-ink-100'
+              >
+                Xem tất cả kết quả →
+              </button>
+            </>
+          ) : (
+            <p className='px-3 py-4 text-sm text-ink-500'>{isFetching ? 'Đang tìm…' : `Không có gợi ý cho “${debounced}”.`}</p>
+          )}
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+function IconLink({ to, label, children, badge }: { to: string; label: string; children: ReactNode; badge?: number }) {
+  return (
+    <Link
+      to={to}
+      aria-label={badge ? `${label} (${badge})` : label}
+      title={label}
+      className='relative grid h-11 w-11 place-items-center rounded-full text-ink-950 transition hover:bg-ink-100'
+    >
+      {children}
+      {badge ? (
+        <span className='absolute right-0.5 top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-berry-600 px-1 text-[11px] font-bold text-white ring-2 ring-canvas'>
+          {badge > 99 ? '99+' : badge}
+        </span>
+      ) : null}
+    </Link>
   )
 }
 
 export default function UserLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-
   const hasToken = Boolean(getToken())
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef<HTMLDivElement>(null)
+
   const { data: cartItems = [] } = useCart(hasToken)
   const cartCount = useMemo(() => cartItems.reduce((sum, item) => sum + item.quantity, 0), [cartItems])
+  const { count: wishlistCount } = useWishlist()
+  const { data: categories = [] } = useStorefrontCategories(7)
+
+  const isHome = location.pathname === ROUTE_PATHS.USER_HOME || location.pathname === ROUTE_PATHS.USER
+  const params = new URLSearchParams(location.search)
+  const urlSearch = isHome ? (params.get('search') ?? '') : ''
+  const activeCategory = isHome ? (params.get('category') ?? '') : ''
+
+  // close overlays on navigation
+  const [lastPath, setLastPath] = useState(location.key)
+  if (lastPath !== location.key) {
+    setLastPath(location.key)
+    setMenuOpen(false)
+    setAccountOpen(false)
+  }
+
+  useEffect(() => {
+    if (!accountOpen) return
+    const onClick = (e: MouseEvent) => {
+      if (!accountRef.current?.contains(e.target as Node)) setAccountOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [accountOpen])
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : ''
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [menuOpen])
+
+  const handleSearch = (q: string) => {
+    const next = new URLSearchParams(isHome ? location.search : '')
+    if (q) next.set('search', q)
+    else next.delete('search')
+    const query = next.toString()
+    navigate(`${ROUTE_PATHS.USER_HOME}${query ? `?${query}` : ''}${SHOP_ANCHOR}`)
+  }
 
   const handleLogout = async () => {
     const refresh_token = getRefreshToken()
@@ -85,355 +242,332 @@ export default function UserLayout() {
       try {
         await logoutApi(refresh_token)
       } catch {
-        // ignore
+        // token may already be invalid; local sign-out still proceeds
       }
     }
     clearAuth()
-    toast.success('Đăng xuất thành công!')
+    toast.success('Đã đăng xuất. Hẹn gặp lại!')
     navigate(ROUTE_PATHS.AUTH_LOGIN)
   }
 
-  const isHome = location.pathname === ROUTE_PATHS.USER_HOME || location.pathname === ROUTE_PATHS.USER
-  const urlSearch = isHome ? (new URLSearchParams(location.search).get('search') ?? '') : ''
-  const searchKey = `${location.pathname}${location.search}`
-
-  const handleSearch = (q: string) => {
-    const params = new URLSearchParams(isHome ? location.search : '')
-    if (q) params.set('search', q)
-    else params.delete('search')
-    const query = params.toString()
-    const target = query
-      ? `${ROUTE_PATHS.USER_HOME}?${query}#featured-products`
-      : `${ROUTE_PATHS.USER_HOME}#featured-products`
-    navigate(target)
-  }
+  const navLinkCls = (active: boolean) =>
+    cn(
+      'relative shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition',
+      active ? 'bg-berry-50 text-berry-700' : 'text-ink-700 hover:bg-ink-100 hover:text-ink-950'
+    )
 
   return (
-    <div className='min-h-screen bg-[#FAF7F2] text-[#1C1917] selection:bg-[#A16207]/20'>
-      {/* Top Announcement Bar */}
-      <div className='bg-[#1C1917] py-2 px-4 text-center text-xs font-medium text-[#FAF7F2] tracking-wide'>
-        <div className='mx-auto max-w-7xl flex items-center justify-between gap-4'>
-          <span className='hidden sm:inline-flex items-center gap-1.5 text-amber-300 text-[11px] font-semibold uppercase tracking-widest'>
-            <Sparkles size={13} className='text-[#A16207]' /> Vibrant Mart
-          </span>
-          <span className='mx-auto sm:mx-0'>
-            Miễn phí vận chuyển cho đơn hàng từ <strong>500.000đ</strong> · Bảo chứng 100% chính hãng
-          </span>
-          <span className='hidden md:inline-flex items-center gap-2 text-[11px] text-[#E7E0D8]'>
-            Tư vấn chuyên sâu 24/7
-          </span>
+    <div className='min-h-screen bg-canvas text-ink-950'>
+      <a
+        href='#main'
+        className='sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-full focus:bg-berry-600 focus:px-4 focus:py-2 focus:text-white'
+      >
+        Bỏ qua tới nội dung
+      </a>
+
+      {/* announcement */}
+      <div className='border-b border-berry-100 bg-berry-50 text-berry-800'>
+        <div className='mx-auto flex max-w-[1320px] flex-wrap items-center justify-center gap-x-8 gap-y-1 px-4 py-2 text-[13px] text-berry-800 md:px-6'>
+          {TICKER.map((t, i) => (
+            <span key={i} className={i > 1 ? 'hidden md:inline' : undefined}>
+              {t}
+            </span>
+          ))}
         </div>
       </div>
+<header className='glass-header sticky top-0 z-50'>
+        <div className='mx-auto flex max-w-[1320px] items-center gap-3 px-4 py-3 md:gap-6 md:px-6'>
+          <button
+            type='button'
+            onClick={() => setMenuOpen(true)}
+            className='grid h-11 w-11 cursor-pointer place-items-center rounded-full text-ink-950 hover:bg-ink-100 lg:hidden'
+            aria-label='Mở menu'
+            aria-expanded={menuOpen}
+          >
+            <Menu size={22} />
+          </button>
 
-      <HeaderSearchControls key={searchKey} initialSearch={urlSearch} onSearch={handleSearch}>
-        {({ headerSearch, setHeaderSearch, handleSubmit, shouldSuggest, suggestionData, setFocused }) => (
-          <header className='sticky top-0 z-50 glass-header shadow-xs transition-all'>
-            <div className='mx-auto max-w-7xl px-4 md:px-6'>
-              <div className='flex items-center justify-between gap-4 py-3.5'>
-                {/* Mobile Menu Trigger */}
-                <button
-                  type='button'
-                  onClick={() => setMobileMenuOpen((prev) => !prev)}
-                  className='grid h-11 w-11 place-items-center rounded-xl border border-[#E7E0D8] bg-white text-[#1C1917] md:hidden shadow-xs hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                  aria-label='Mở menu danh mục'
-                  aria-expanded={mobileMenuOpen}
+          <Link to={ROUTE_PATHS.USER_HOME} aria-label='Vibrant Mart — trang chủ' className='shrink-0 rounded-xl'>
+            <BrandMark className='hidden sm:inline-flex' />
+            <BrandMark compact className='sm:hidden' />
+          </Link>
+
+          <HeaderSearch
+            key={`${location.pathname}${location.search}`}
+            initialSearch={urlSearch}
+            onSearch={handleSearch}
+            className='hidden flex-1 md:block lg:max-w-xl'
+          />
+
+          <div className='ml-auto flex items-center gap-1'>
+            <IconLink to={ROUTE_PATHS.USER_WISHLIST} label='Yêu thích' badge={wishlistCount}>
+              <Heart size={21} />
+            </IconLink>
+            <IconLink to={hasToken ? ROUTE_PATHS.USER_ORDERS : ROUTE_PATHS.USER_TRACK_ORDER} label={hasToken ? 'Đơn hàng' : 'Tra cứu đơn hàng'}>
+              <Package size={21} />
+            </IconLink>
+
+            <div ref={accountRef} className='relative'>
+              <button
+                type='button'
+                onClick={() => setAccountOpen((v) => !v)}
+                aria-label='Tài khoản'
+                aria-expanded={accountOpen}
+                aria-haspopup='menu'
+                className='grid h-11 w-11 cursor-pointer place-items-center rounded-full text-ink-950 transition hover:bg-ink-100'
+              >
+                <UserRound size={21} />
+              </button>
+              {accountOpen ? (
+                <div
+                  role='menu'
+                  className='absolute right-0 top-full z-[70] mt-2 w-60 overflow-hidden rounded-3xl border border-ink-100 bg-white p-2 shadow-lift animate-soft-pop'
                 >
-                  {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
-                </button>
-
-                {/* Brand Logo */}
-                <Link
-                  to={ROUTE_PATHS.USER_HOME}
-                  className='flex shrink-0 items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded-xl'
-                  aria-label='Vibrant Mart Home'
-                >
-                  <span className='grid h-11 w-11 place-items-center rounded-xl bg-[#1C1917] text-[#FAF7F2] shadow-sm transition-transform duration-300 group-hover:scale-105'>
-                    <Sparkles size={20} className='text-[#A16207]' />
-                  </span>
-                  <span className='leading-none'>
-                    <span className='block font-display text-2xl font-bold tracking-tight md:text-3xl text-[#1C1917]'>
-                      Vibrant Mart
-                    </span>
-                    <span className='block mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-[#A16207]'>
-                      Luxury &amp; Editorial Skincare
-                    </span>
-                  </span>
-                </Link>
-
-                {/* Desktop Search Bar */}
-                <div className='relative hidden min-w-0 max-w-md flex-1 md:block'>
-                  <form onSubmit={handleSubmit} className='relative w-full' role='search'>
-                    <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#786C60]' size={17} />
-                    <input
-                      value={headerSearch}
-                      onChange={(e) => setHeaderSearch(e.target.value)}
-                      placeholder='Tìm sản phẩm dưỡng da, nước hoa, serum...'
-                      aria-label='Tìm kiếm sản phẩm'
-                      className='h-11 w-full rounded-full border border-[#E7E0D8] bg-white/95 pl-11 pr-14 text-sm font-medium text-[#1C1917] shadow-xs outline-none transition placeholder:text-[#8C7D70] focus:border-[#A16207] focus:bg-white focus:ring-4 focus:ring-[#A16207]/15'
-                    />
-                    <kbd className='pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md border border-[#E7E0D8] bg-[#F5EFE6] px-2 py-0.5 text-[10px] font-semibold text-[#786C60]'>
-                      ⌘K
-                    </kbd>
-                  </form>
-                  {shouldSuggest && suggestionData?.products?.length ? (
-                    <div className='absolute left-0 right-0 top-full mt-2 z-[60] overflow-hidden rounded-2xl border border-[#E7E0D8] bg-white p-2 shadow-xl shadow-[#1C1917]/10'>
-                      <p className='px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#A16207]'>Gợi ý tìm kiếm</p>
-                      {suggestionData.products.map((product) => {
-                        const firstMedia = product.medias?.[0]
-                        const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
-                        return (
-                          <Link
-                            key={product._id}
-                            to={ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)}
-                            onClick={() => setFocused(false)}
-                            className='flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 transition hover:border-[#E7E0D8] hover:bg-[#FAF7F2]'
-                          >
-                            <span className='h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-[#F5EFE6] border border-[#E7E0D8]'>
-                              {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
-                            </span>
-                            <span className='min-w-0 flex-1'>
-                              <span className='block truncate text-sm font-bold text-[#1C1917]'>{product.name}</span>
-                              <span className='mt-0.5 block text-xs font-semibold text-[#A16207]'>{money(product.price)}</span>
-                            </span>
-                          </Link>
-                        )
-                      })}
+                  {hasToken ? (
+                    <>
+                      <Link role='menuitem' to={ROUTE_PATHS.USER_PROFILE} className='block rounded-2xl px-4 py-2.5 text-sm font-medium hover:bg-ink-50'>
+                        Hồ sơ của tôi
+                      </Link>
+                      <Link role='menuitem' to={ROUTE_PATHS.USER_ORDERS} className='block rounded-2xl px-4 py-2.5 text-sm font-medium hover:bg-ink-50'>
+                        Đơn hàng
+                      </Link>
+                      <Link role='menuitem' to={ROUTE_PATHS.USER_CHANGE_PASSWORD} className='block rounded-2xl px-4 py-2.5 text-sm font-medium hover:bg-ink-50'>
+                        Đổi mật khẩu
+                      </Link>
+                      <div className='my-1 h-px bg-ink-100' />
+                      <button
+                        role='menuitem'
+                        type='button'
+                        onClick={handleLogout}
+                        className='flex w-full cursor-pointer items-center gap-2 rounded-2xl px-4 py-2.5 text-left text-sm font-medium text-rose-600 hover:bg-rose-50'
+                      >
+                        <LogOut size={16} /> Đăng xuất
+                      </button>
+                    </>
+                  ) : (
+                    <div className='p-2'>
+                      <p className='font-display text-lg font-bold'>Chào bạn!</p>
+                      <p className='mt-1 text-sm text-ink-600'>Đăng nhập để lưu giỏ hàng và theo dõi đơn.</p>
+                      <Link
+                        role='menuitem'
+                        to={ROUTE_PATHS.AUTH_LOGIN}
+                        className='mt-4 flex h-11 items-center justify-center rounded-full bg-berry-600 text-sm font-semibold text-white hover:bg-berry-700'
+                      >
+                        Đăng nhập
+                      </Link>
+                      <Link
+                        role='menuitem'
+                        to={ROUTE_PATHS.AUTH_REGISTER}
+                        className='mt-2 flex h-11 items-center justify-center rounded-full border border-ink-200 text-sm font-semibold hover:border-berry-300'
+                      >
+                        Tạo tài khoản
+                      </Link>
                     </div>
-                  ) : null}
+                  )}
                 </div>
-
-                {/* Right Action Icons */}
-                <div className='flex items-center gap-2.5'>
-                  <Link
-                    to={ROUTE_PATHS.USER_CART}
-                    aria-label='Giỏ hàng'
-                    title='Giỏ hàng của bạn'
-                    className='relative grid h-11 w-11 place-items-center rounded-xl border border-[#E7E0D8] bg-white text-[#1C1917] shadow-xs transition hover:border-[#A16207] hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                  >
-                    <ShoppingBag size={20} />
-                    {cartCount > 0 ? (
-                      <span className='absolute -right-1.5 -top-1.5 grid h-5 min-w-5 place-items-center rounded-full bg-[#1C1917] px-1 text-[10px] font-bold text-[#FAF7F2] shadow-sm ring-2 ring-[#FAF7F2]'>
-                        {cartCount > 99 ? '99+' : cartCount}
-                      </span>
-                    ) : null}
-                  </Link>
-
-                  <div className='relative'>
-                    <button
-                      type='button'
-                      onClick={() => setUserMenuOpen((prev) => !prev)}
-                      className='inline-flex h-11 items-center gap-2 rounded-xl border border-[#E7E0D8] bg-white px-3.5 text-sm font-medium text-[#1C1917] shadow-xs transition hover:border-[#A16207] hover:bg-[#F5EFE6] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-                      aria-label='Menu tài khoản'
-                      aria-expanded={userMenuOpen}
-                    >
-                      <UserRound size={19} className='text-[#A16207]' />
-                      <span className='hidden lg:inline text-xs font-bold text-[#1C1917]'>Tài khoản</span>
-                      <ChevronDown size={14} className='text-[#786C60]' />
-                    </button>
-                    {userMenuOpen ? (
-                      <div className='absolute right-0 top-13 z-[70] w-56 overflow-hidden rounded-2xl border border-[#E7E0D8] bg-white p-1.5 shadow-xl shadow-[#1C1917]/10'>
-                        <Link to={ROUTE_PATHS.USER_PROFILE} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1C1917] hover:bg-[#F5EFE6] transition-colors'>
-                          Hồ sơ cá nhân
-                        </Link>
-                        <Link to={ROUTE_PATHS.USER_ORDERS} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-semibold text-[#1C1917] hover:bg-[#F5EFE6] transition-colors'>
-                          Đơn hàng đã đặt
-                        </Link>
-                        {hasToken ? (
-                          <button
-                            type='button'
-                            onClick={handleLogout}
-                            className='flex w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left text-sm font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer'
-                          >
-                            <LogOut size={16} />
-                            Đăng xuất
-                          </button>
-                        ) : (
-                          <Link to={ROUTE_PATHS.AUTH_LOGIN} onClick={() => setUserMenuOpen(false)} className='block rounded-xl px-3.5 py-2.5 text-sm font-bold text-[#A16207] hover:bg-[#F5EFE6] transition-colors'>
-                            Đăng nhập / Đăng ký
-                          </Link>
-                        )}
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile Search Bar Input */}
-              <div className='relative pb-3 md:hidden'>
-                <form onSubmit={handleSubmit} role='search'>
-                  <div className='relative'>
-                    <Search className='pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#786C60]' size={16} />
-                    <input
-                      value={headerSearch}
-                      onChange={(e) => setHeaderSearch(e.target.value)}
-                      placeholder='Tìm sản phẩm...'
-                      aria-label='Tìm sản phẩm'
-                      className='h-11 w-full rounded-xl border border-[#E7E0D8] bg-white pl-10 pr-4 text-sm font-medium outline-none focus:border-[#A16207] focus:ring-2 focus:ring-[#A16207]/20'
-                    />
-                  </div>
-                </form>
-                {shouldSuggest && suggestionData?.products?.length ? (
-                  <div className='absolute left-0 right-0 top-full mt-1 z-[60] overflow-hidden rounded-xl border border-[#E7E0D8] bg-white shadow-xl'>
-                    {suggestionData.products.map((product) => {
-                      const firstMedia = product.medias?.[0]
-                      const image = formatImageUrl(product.thumbnail || (typeof firstMedia === 'string' ? firstMedia : firstMedia?.url))
-                      return (
-                        <Link
-                          key={product._id}
-                          to={ROUTE_PATHS.USER_PRODUCT_DETAIL(product._id)}
-                          onClick={() => setFocused(false)}
-                          className='flex items-center gap-3 border-b border-[#E7E0D8] px-3 py-2.5 last:border-0 hover:bg-[#F5EFE6]'
-                        >
-                          <span className='h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-[#F5EFE6]'>
-                            {image ? <img src={image} alt='' className='h-full w-full object-cover' /> : null}
-                          </span>
-                          <span className='min-w-0 flex-1'>
-                            <span className='block truncate text-xs font-bold text-[#1C1917]'>{product.name}</span>
-                            <span className='block text-[11px] font-bold text-[#A16207]'>{money(product.price)}</span>
-                          </span>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                ) : null}
-              </div>
+              ) : null}
             </div>
 
-            {/* Sub-Navigation Categories Bar */}
-            <div className='hidden border-t border-[#E7E0D8] bg-white/80 md:block'>
-              <nav className='mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-6 py-2.5 text-xs font-bold uppercase tracking-[0.14em] text-[#594D42]'>
-                {['Tất cả sản phẩm', 'Skincare High-End', 'Chống Nắng', 'Làm Sạch', 'Trang Điểm Editorial', 'Bộ Giftset & Combo'].map((item) => (
+            <Link
+              to={ROUTE_PATHS.USER_CART}
+              aria-label={`Giỏ hàng (${cartCount} sản phẩm)`}
+              className='ml-1 inline-flex h-11 items-center gap-2 rounded-full bg-berry-600 pl-4 pr-1.5 text-sm font-semibold text-white transition hover:bg-berry-700'
+            >
+              <ShoppingBag size={18} aria-hidden />
+              <span className='hidden sm:inline'>Giỏ</span>
+              <span className='grid h-8 min-w-8 place-items-center rounded-full bg-white/15 px-2 text-[13px]'>
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            </Link>
+          </div>
+        </div>
+
+        {/* mobile search */}
+        <div className='px-4 pb-3 md:hidden'>
+          <HeaderSearch key={`m-${location.pathname}${location.search}`} initialSearch={urlSearch} onSearch={handleSearch} />
+        </div>
+
+        {/* category rail (desktop) */}
+        <nav aria-label='Danh mục' className='hidden border-t border-ink-100/80 lg:block'>
+          <div className='no-scrollbar mx-auto flex max-w-[1320px] items-center gap-1 overflow-x-auto px-6 py-2'>
+            <a href={categoryHref()} className={navLinkCls(isHome && !activeCategory && !urlSearch)}>
+              Tất cả
+            </a>
+            {categories.map((c) => (
+              <a key={c.id} href={categoryHref(c.id)} className={navLinkCls(activeCategory === c.id)}>
+                {c.name}
+              </a>
+            ))}
+            <span className='ml-auto hidden shrink-0 items-center gap-1.5 text-[13px] text-ink-500 xl:inline-flex'>
+              <span className='h-2 w-2 rounded-full bg-emerald-500' aria-hidden /> Đang mở bán trực tuyến
+            </span>
+          </div>
+        </nav>
+      </header>
+
+      {/* mobile drawer */}
+      {menuOpen ? (
+        <div className='fixed inset-0 z-[90] lg:hidden' role='dialog' aria-modal='true' aria-label='Menu'>
+          <button type='button' aria-label='Đóng menu' className='absolute inset-0 cursor-default bg-ink-950/40 backdrop-blur-sm' onClick={() => setMenuOpen(false)} />
+          <div className='absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col bg-canvas shadow-lift animate-fade-up'>
+            <div className='flex items-center justify-between px-5 py-4'>
+              <BrandMark />
+              <button
+                type='button'
+                onClick={() => setMenuOpen(false)}
+                className='grid h-11 w-11 cursor-pointer place-items-center rounded-full hover:bg-ink-100'
+                aria-label='Đóng menu'
+              >
+                <X size={22} />
+              </button>
+            </div>
+            <div className='flex-1 overflow-y-auto px-5 pb-8'>
+              <p className='eyebrow mt-2'>Danh mục</p>
+              <div className='mt-3 grid gap-1'>
+                <a href={categoryHref()} onClick={() => setMenuOpen(false)} className='rounded-2xl px-4 py-3 font-display text-xl font-bold hover:bg-ink-100'>
+                  Tất cả sản phẩm
+                </a>
+                {categories.map((c) => (
                   <a
-                    key={item}
-                    href={item === 'Tất cả sản phẩm' ? `${ROUTE_PATHS.USER_HOME}#new-arrivals` : `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(item)}#featured-products`}
-                    className='shrink-0 border-b-2 border-transparent px-3 py-1.5 transition-all hover:border-[#A16207] hover:text-[#1C1917]'
+                    key={c.id}
+                    href={categoryHref(c.id)}
+                    onClick={() => setMenuOpen(false)}
+                    className='rounded-2xl px-4 py-3 font-display text-xl font-bold hover:bg-ink-100'
                   >
-                    {item}
+                    {c.name}
                   </a>
                 ))}
-              </nav>
-            </div>
-
-            {/* Mobile Expandable Drawer Menu */}
-            {mobileMenuOpen ? (
-              <div className='border-t border-[#E7E0D8] bg-white px-4 py-4 md:hidden'>
-                <div className='grid grid-cols-2 gap-2'>
-                  {['Tất cả sản phẩm', 'Skincare High-End', 'Chống Nắng', 'Làm Sạch', 'Trang Điểm', 'Bộ Giftset'].map((item) => (
-                    <a
-                      key={item}
-                      href={item === 'Tất cả sản phẩm' ? `${ROUTE_PATHS.USER_HOME}#new-arrivals` : `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(item)}#featured-products`}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className='rounded-xl border border-[#E7E0D8] bg-[#FAF7F2] px-3 py-2.5 text-xs font-bold text-[#1C1917]'
-                    >
-                      {item}
-                    </a>
-                  ))}
-                </div>
               </div>
-            ) : null}
-
-            {/* Mobile Floating Bottom Dock */}
-            <div className='md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[#E7E0D8] bg-white/95 backdrop-blur-md shadow-lg shadow-black/5'>
-              <nav className='mx-auto grid grid-cols-4 gap-1 px-2 py-2'>
-                {mobileNav.map(({ to, label, icon: Icon }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex flex-col items-center justify-center gap-1 rounded-xl py-2 min-h-[44px] text-[10px] font-bold transition cursor-pointer',
-                        isActive ? 'bg-[#1C1917] text-[#FAF7F2] shadow-xs' : 'text-[#594D42] hover:bg-[#F5EFE6]'
-                      )
-                    }
-                  >
-                    <div className='relative'>
-                      <Icon size={18} />
-                      {to === ROUTE_PATHS.USER_CART && cartCount > 0 ? (
-                        <span className='absolute -right-2 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-[#A16207] px-1 text-[9px] font-bold text-white'>
-                          {cartCount > 99 ? '99+' : cartCount}
-                        </span>
-                      ) : null}
-                    </div>
-                    <span>{label}</span>
-                  </NavLink>
-                ))}
-              </nav>
+              {!hasToken ? (
+                <Link
+                  to={ROUTE_PATHS.AUTH_LOGIN}
+                  className='mt-8 flex h-12 items-center justify-center gap-2 rounded-full bg-berry-600 font-semibold text-white hover:bg-berry-700'
+                >
+                  <LogIn size={18} /> Đăng nhập
+                </Link>
+              ) : null}
             </div>
-          </header>
-        )}
-      </HeaderSearchControls>
+          </div>
+        </div>
+      ) : null}
 
-      <main className='min-h-[calc(100vh-140px)] pb-16 md:pb-0'>
+      <main id='main' className='min-h-[60vh] pb-24 lg:pb-0'>
         <Outlet />
       </main>
 
-      {/* Editorial Luxury Footer */}
-      <footer className='mt-20 border-t border-[#E7E0D8] bg-[#1C1917] text-[#FAF7F2]'>
-        <div className='mx-auto max-w-7xl px-4 py-16 md:px-6'>
-          <div className='grid gap-10 md:grid-cols-2 lg:grid-cols-4'>
-            {/* Brand Info */}
-            <div className='space-y-4'>
-              <div className='flex items-center gap-2.5'>
-                <span className='grid h-9 w-9 place-items-center rounded-xl bg-[#A16207] text-[#1C1917]'>
-                  <Sparkles size={18} />
-                </span>
-                <span className='font-display text-2xl font-bold tracking-tight text-white'>Vibrant Mart</span>
-              </div>
-              <p className='text-xs leading-relaxed text-[#D6C8B8]'>
-                Thương hiệu phân phối mỹ phẩm &amp; giải pháp chăm sóc da cao cấp theo tinh thần Warm Luxury. Cam kết 100% chính hãng.
+      {/* footer */}
+      <footer className='mt-24 border-t border-ink-200 bg-white text-ink-950'>
+        <div className='mx-auto max-w-[1320px] px-4 pb-28 pt-16 md:px-6 lg:pb-12'>
+          <div className='grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr]'>
+            <div>
+              <BrandMark />
+              <p className='mt-5 max-w-sm text-sm leading-relaxed text-ink-600'>
+                Mỹ phẩm và skincare chọn lọc cho routine hằng ngày. Mua sắm dễ, thanh toán linh hoạt, theo dõi đơn rõ ràng.
               </p>
+              <Link
+                to={ROUTE_PATHS.USER_HOME}
+                className='mt-6 inline-flex h-11 items-center gap-2 rounded-lg bg-berry-600 px-5 text-sm font-semibold text-white transition hover:bg-berry-700'
+              >
+                Mua sắm ngay <ArrowUpRight size={16} />
+              </Link>
             </div>
-
-            {/* Navigation Links */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Danh mục nổi bật</h4>
-              <ul className='space-y-2.5 text-xs text-[#D6C8B8]'>
-                <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Skincare Chuyên Sâu</a></li>
-                <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Kem Chống Nắng Quang Phổ Rộng</a></li>
-                <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Trang Điểm Natural Look</a></li>
-                <li><a href={`${ROUTE_PATHS.USER_HOME}#featured-products`} className='hover:text-white transition'>Bộ Sản Phẩm Tiết Kiệm</a></li>
+              <h4 className='text-sm font-semibold text-ink-950'>Danh mục</h4>
+              <ul className='mt-4 space-y-2.5 text-sm'>
+                {(categories.length ? categories.slice(0, 5) : []).map((c) => (
+                  <li key={c.id}>
+                    <a href={categoryHref(c.id)} className='text-ink-600 transition hover:text-berry-700'>
+                      {c.name}
+                    </a>
+                  </li>
+                ))}
+                <li>
+                  <a href={categoryHref()} className='text-ink-600 transition hover:text-berry-700'>
+                    Tất cả sản phẩm
+                  </a>
+                </li>
               </ul>
             </div>
-
-            {/* Customer Care */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Hỗ trợ khách hàng</h4>
-              <ul className='space-y-2.5 text-xs text-[#D6C8B8]'>
-                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='hover:text-white transition'>Tra cứu đơn hàng</Link></li>
-                <li><a href='#' className='hover:text-white transition'>Chính sách đổi trả 7 ngày</a></li>
-                <li><a href='#' className='hover:text-white transition'>Chính sách bảo mật thông tin</a></li>
-                <li><a href='#' className='hover:text-white transition'>Điều khoản dịch vụ</a></li>
+              <h4 className='text-sm font-semibold text-ink-950'>Tài khoản</h4>
+              <ul className='mt-4 space-y-2.5 text-sm'>
+                <li><Link to={ROUTE_PATHS.USER_PROFILE} className='text-ink-600 transition hover:text-berry-700'>Hồ sơ</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_ORDERS} className='text-ink-600 transition hover:text-berry-700'>Đơn hàng của tôi</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_TRACK_ORDER} className='text-ink-600 transition hover:text-berry-700'>Tra cứu đơn (không cần tài khoản)</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_CART} className='text-ink-600 transition hover:text-berry-700'>Giỏ hàng</Link></li>
+                <li><Link to={ROUTE_PATHS.USER_WISHLIST} className='text-ink-600 transition hover:text-berry-700'>Yêu thích</Link></li>
               </ul>
             </div>
-
-            {/* Newsletter Subscription */}
             <div>
-              <h4 className='font-display text-sm font-bold uppercase tracking-wider text-amber-300 mb-4'>Đăng ký nhận ưu đãi</h4>
-              <p className='text-xs text-[#D6C8B8] mb-3'>Nhận mã voucher giảm 10% cho đơn hàng đầu tiên.</p>
-              <form onSubmit={(e) => { e.preventDefault(); toast.success('Đăng ký nhận ưu đãi thành công!') }} className='space-y-2'>
-                <input
-                  type='email'
-                  required
-                  placeholder='Nhập email của bạn...'
-                  aria-label='Email đăng ký nhận ưu đãi'
-                  className='h-11 w-full rounded-xl border border-white/20 bg-white/10 px-3.5 text-xs text-white placeholder:text-white/50 outline-none focus:border-[#A16207]'
-                />
-                <button type='submit' className='h-11 w-full rounded-xl bg-[#A16207] text-xs font-bold text-white hover:bg-[#854D0E] transition-colors cursor-pointer'>
-                  Gửi đăng ký
-                </button>
-              </form>
+              <h4 className='text-sm font-semibold text-ink-950'>Hỗ trợ</h4>
+              <ul className='mt-4 space-y-2.5 text-sm'>
+                {POLICY_SLUGS.map((slug) => (
+                  <li key={slug}>
+                    <Link to={ROUTE_PATHS.USER_POLICY(slug)} className='text-ink-600 transition hover:text-berry-700'>
+                      {POLICIES[slug].title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className='text-sm font-semibold text-ink-950'>Thanh toán</h4>
+              <div className='mt-4 flex flex-wrap gap-2'>
+                {['COD', 'PayOS', 'MoMo'].map((m) => (
+                  <span key={m} className='chip border border-ink-200 bg-ink-50 text-ink-700'>
+                    {m}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className='mt-12 border-t border-white/10 pt-6 flex flex-col gap-4 text-center md:flex-row md:items-center md:justify-between text-xs text-[#D6C8B8]'>
-            <div className='flex items-center justify-center gap-2'>
-              <ShieldCheck size={16} className='text-[#A16207]' />
-              Thanh toán an toàn với SSL 256-bit · PayOS · MoMo · Visa / MasterCard
-            </div>
-            <div>© {new Date().getFullYear()} Vibrant Mart Inc. Bản quyền được bảo lưu.</div>
+          <div aria-hidden className='mt-16 select-none font-display text-[18vw] font-extrabold leading-[0.8] tracking-tighter text-berry-50 lg:text-[13rem]'>
+            vibrant.
+          </div>
+          <div className='mt-6 flex flex-col gap-2 border-t border-ink-200 pt-6 text-xs text-ink-500 sm:flex-row sm:justify-between'>
+            <span>© {new Date().getFullYear()} Vibrant Mart</span>
+            <span>Made for glowing skin ✦</span>
           </div>
         </div>
       </footer>
+
+      <ChatAssistant />
+      <WishlistLoginMerge />
+
+      {/* mobile dock */}
+      <nav
+        aria-label='Điều hướng nhanh'
+        className='fixed inset-x-3 bottom-3 z-50 rounded-full border border-ink-200 bg-white/95 p-1.5 shadow-lift backdrop-blur lg:hidden'
+      >
+        <div className='grid grid-cols-4'>
+          {[
+            { to: ROUTE_PATHS.USER_HOME, label: 'Trang chủ', icon: Home },
+            { to: ROUTE_PATHS.USER_CART, label: 'Giỏ hàng', icon: ShoppingBag, badge: cartCount },
+            { to: hasToken ? ROUTE_PATHS.USER_ORDERS : ROUTE_PATHS.USER_TRACK_ORDER, label: 'Đơn hàng', icon: Package },
+            { to: ROUTE_PATHS.USER_PROFILE, label: 'Tôi', icon: UserRound }
+          ].map(({ to, label, icon: Icon, badge }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                cn(
+                  'relative flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition',
+                  isActive ? 'bg-berry-50 text-berry-700' : 'text-ink-500 hover:text-ink-950'
+                )
+              }
+            >
+              <Icon size={19} aria-hidden />
+              {label}
+              {badge ? (
+                <span className='absolute right-[22%] top-1 grid h-4 min-w-4 place-items-center rounded-full bg-berry-500 px-1 text-[10px] font-bold text-white'>
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              ) : null}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
     </div>
   )
 }

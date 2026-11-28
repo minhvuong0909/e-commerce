@@ -10,6 +10,7 @@ import money from '../../../utils/money'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import { getRole, USER_ROLE } from '../../../utils/authSession'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 type Product = {
   name: string
@@ -58,6 +59,7 @@ function getPaymentStatusLabel(status: number) {
 }
 
 export default function AdminOrderDetailPage() {
+  const confirm = useConfirm()
   const { id } = useParams<{ id: string }>()
   const [updating, setUpdating] = useState(false)
   const [refunding, setRefunding] = useState(false)
@@ -96,7 +98,7 @@ export default function AdminOrderDetailPage() {
 
   const handleRefund = async () => {
     if (!id) return
-    if (!window.confirm('Hoàn tiền cho đơn này? Tồn kho sẽ được cộng lại và đơn chuyển sang trạng thái đã hủy.')) return
+    if (!(await confirm('Hoàn tiền cho đơn này? Tồn kho sẽ được cộng lại và đơn chuyển sang trạng thái đã hủy.'))) return
     try {
       setRefunding(true)
       await refundOrderApi(id)
@@ -113,7 +115,7 @@ export default function AdminOrderDetailPage() {
     return (
       <div className='flex min-h-[300px] flex-col items-center justify-center gap-3'>
         <RefreshCw className='h-8 w-8 animate-spin text-brand-600' />
-        <p className='text-sm text-slate-500 font-semibold'>Đang tải thông tin đơn hàng...</p>
+        <p className='text-sm text-ink-500 font-semibold'>Đang tải thông tin đơn hàng...</p>
       </div>
     )
   }
@@ -137,7 +139,7 @@ export default function AdminOrderDetailPage() {
       <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
         <div>
           <div className='flex items-center gap-2'>
-            <Link to='/admin/orders' className='text-slate-400 hover:text-ink-950 transition'>
+            <Link to='/admin/orders' className='text-ink-400 hover:text-ink-950 transition'>
               <ChevronLeft size={20} />
             </Link>
             <p className='text-xs font-black uppercase tracking-[0.18em] text-brand-600'>Order detail</p>
@@ -145,7 +147,7 @@ export default function AdminOrderDetailPage() {
           <h1 className='mt-1 text-3xl font-black tracking-tight text-ink-950'>
             Đơn hàng #{order._id.slice(-8).toUpperCase()}
           </h1>
-          <p className='mt-2 text-sm text-slate-500'>
+          <p className='mt-2 text-sm text-ink-500'>
             Đặt lúc: {new Date(order.created_at).toLocaleString('vi-VN')}
           </p>
         </div>
@@ -158,7 +160,7 @@ export default function AdminOrderDetailPage() {
         <div className='space-y-6 md:col-span-2'>
           <section className='surface-strong rounded-3xl p-6'>
             <div className='mb-4 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-100 text-ink-950'>
                 <CalendarClock size={18} />
               </span>
               <h2 className='text-lg font-black text-ink-950'>Sản phẩm trong đơn ({order.items.length})</h2>
@@ -166,17 +168,17 @@ export default function AdminOrderDetailPage() {
 
             <div className='mt-4 space-y-3'>
               {order.items.length === 0 ? (
-                <div className='rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500'>
+                <div className='rounded-2xl border border-dashed border-ink-200 bg-ink-50 p-6 text-center text-sm text-ink-500'>
                   Không có sản phẩm nào trong đơn hàng này.
                 </div>
               ) : (
                 order.items.map((item, idx) => (
                   <div
                     key={idx}
-                    className='flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 p-4'
+                    className='flex items-center justify-between rounded-3xl border border-ink-200 bg-ink-50 p-4'
                   >
                     <div className='flex items-center gap-3'>
-                      <div className='grid h-12 w-12 place-items-center rounded-xl bg-slate-200 text-xs font-black text-slate-500 overflow-hidden'>
+                      <div className='grid h-12 w-12 place-items-center rounded-xl bg-ink-200 text-xs font-black text-ink-500 overflow-hidden'>
                         {item.product?.images?.[0] ? (
                           <img
                             src={item.product.images[0]}
@@ -189,7 +191,7 @@ export default function AdminOrderDetailPage() {
                       </div>
                       <div>
                         <div className='font-black text-ink-950'>{item.product?.name || 'Sản phẩm không tồn tại'}</div>
-                        <div className='text-sm font-semibold text-slate-500'>
+                        <div className='text-sm font-semibold text-ink-500'>
                           Số lượng: {item.quantity} × {money(item.price)}
                         </div>
                       </div>
@@ -203,7 +205,7 @@ export default function AdminOrderDetailPage() {
 
           <section className='surface-strong rounded-3xl p-6'>
             <div className='mb-4 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-100 text-ink-950'>
                 <ReceiptText size={18} />
               </span>
               <h2 className='text-lg font-black text-ink-950'>Thông tin chi tiết đơn hàng</h2>
@@ -220,7 +222,7 @@ export default function AdminOrderDetailPage() {
         <aside className='space-y-6'>
           <section className='surface-card rounded-3xl p-6'>
             <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-100 text-ink-950'>
                 <User size={18} />
               </span>
               <h2 className='text-lg font-black text-ink-950'>Khách hàng</h2>
@@ -233,7 +235,7 @@ export default function AdminOrderDetailPage() {
 
           <section className='surface-card rounded-3xl p-6'>
             <div className='mb-5 flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-100 text-ink-950'>
                 <CreditCard size={18} />
               </span>
               <h2 className='text-lg font-black text-ink-950'>Thanh toán & Giao nhận</h2>
@@ -243,18 +245,18 @@ export default function AdminOrderDetailPage() {
               <SummaryRow label='Phương thức' value={`${order.payment_method}`} />
               <SummaryRow label='Trạng thái thanh toán' value={getPaymentStatusLabel(order.payment_status)} />
               <div className='flex items-center justify-between gap-3'>
-                <span className='text-slate-500 font-medium'>Trạng thái đơn hàng</span>
+                <span className='text-ink-500 font-medium'>Trạng thái đơn hàng</span>
                 <StatusBadge tone={statusInfo.tone}>{statusInfo.label}</StatusBadge>
               </div>
 
-              <div className='border-t border-slate-200 pt-3 space-y-3'>
+              <div className='border-t border-ink-200 pt-3 space-y-3'>
                 <SummaryRow label='Tạm tính' value={money(totalItemsPrice)} />
                 <SummaryRow label='Phí vận chuyển' value={order.shipping_fee === 0 ? 'Miễn phí' : money(order.shipping_fee)} />
                 <SummaryRow label='Tổng thanh toán' value={money(order.total_price)} strong />
               </div>
             </div>
 
-            <div className='mt-6 border-t border-slate-200 pt-5 space-y-4'>
+            <div className='mt-6 border-t border-ink-200 pt-5 space-y-4'>
               <div className='grid gap-2'>
                 {order.status === 0 && (
                   <>
@@ -300,8 +302,8 @@ export default function AdminOrderDetailPage() {
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl border border-slate-100 bg-slate-50/50 p-4'>
-      <div className='text-xs font-black uppercase tracking-wider text-slate-400'>{label}</div>
+    <div className='rounded-2xl border border-ink-100 bg-ink-50/50 p-4'>
+      <div className='text-xs font-black uppercase tracking-wider text-ink-400'>{label}</div>
       <div className='mt-1 font-mono text-sm font-black text-ink-950 break-all'>{value}</div>
     </div>
   )
@@ -310,7 +312,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 function SummaryRow({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className='flex justify-between gap-3'>
-      <span className='text-slate-500 font-medium'>{label}</span>
+      <span className='text-ink-500 font-medium'>{label}</span>
       <span className={strong ? 'font-black text-brand-700 text-base' : 'font-semibold text-ink-950'}>{value}</span>
     </div>
   )

@@ -7,11 +7,13 @@ export interface VoucherType {
   code: string
   discount_type: VoucherDiscountType
   discount_value: number
+  /** Cap for percent vouchers (VND); null = no cap */
+  max_discount_value?: number | null
   min_order_value?: number
   usage_limit?: number
   used_count?: number
-  starts_at?: Date
-  ends_at?: Date
+  starts_at?: Date | null
+  ends_at?: Date | null
   active?: boolean
   created_at?: Date
   updated_at?: Date
@@ -22,11 +24,12 @@ export default class Voucher {
   code: string
   discount_type: VoucherDiscountType
   discount_value: number
+  max_discount_value: number | null
   min_order_value: number
   usage_limit: number
   used_count: number
-  starts_at?: Date
-  ends_at?: Date
+  starts_at?: Date | null
+  ends_at?: Date | null
   active: boolean
   created_at: Date
   updated_at: Date
@@ -37,6 +40,7 @@ export default class Voucher {
     this.code = voucher.code.trim().toUpperCase()
     this.discount_type = voucher.discount_type
     this.discount_value = Number(voucher.discount_value)
+    this.max_discount_value = voucher.max_discount_value ?? null
     this.min_order_value = Number(voucher.min_order_value || 0)
     this.usage_limit = Number(voucher.usage_limit || 0)
     this.used_count = Number(voucher.used_count || 0)

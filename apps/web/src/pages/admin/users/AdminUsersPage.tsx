@@ -10,6 +10,7 @@ import { banUserApi, getUsersApi, unbanUserApi, type AdminUser } from '../../../
 import { ADMIN_LIST_LIMIT } from '../../../models/Pagination'
 import { getApiErrorMessage } from '../../../utils/apiError'
 import cn from '../../../utils/cn'
+import { useConfirm } from '../../../components/ui/ConfirmDialog'
 
 const VERIFY_LABELS: Record<number, { label: string; tone: string }> = {
   0: { label: 'Chưa xác thực', tone: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -19,10 +20,10 @@ const VERIFY_LABELS: Record<number, { label: string; tone: string }> = {
 
 function SkeletonRow() {
   return (
-    <tr className='border-b border-slate-100'>
+    <tr className='border-b border-ink-100'>
       {[40, 55, 45, 30, 25].map((width, index) => (
         <td key={index} className='p-4'>
-          <div className='h-4 animate-pulse rounded-md bg-slate-100' style={{ width: `${width}%` }} />
+          <div className='h-4 animate-pulse rounded-md bg-ink-100' style={{ width: `${width}%` }} />
         </td>
       ))}
     </tr>
@@ -30,6 +31,7 @@ function SkeletonRow() {
 }
 
 export default function AdminUsersPage() {
+  const confirm = useConfirm()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -64,7 +66,7 @@ export default function AdminUsersPage() {
   const handleBanToggle = async (user: AdminUser) => {
     const isBanned = user.verify_status === 2
     const action = isBanned ? 'mở khóa' : 'khóa'
-    if (!window.confirm(`${isBanned ? 'Mở khóa' : 'Khóa'} tài khoản ${user.email}?`)) return
+    if (!(await confirm(`${isBanned ? 'Mở khóa' : 'Khóa'} tài khoản ${user.email}?`))) return
 
     try {
       setActionId(user._id)
@@ -96,11 +98,11 @@ export default function AdminUsersPage() {
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className='surface-card rounded-3xl p-4'>
             <div className='flex items-center gap-3'>
-              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 text-ink-950'>
+              <span className='grid h-10 w-10 place-items-center rounded-2xl bg-ink-100 text-ink-950'>
                 <Icon size={18} />
               </span>
               <div>
-                <div className='text-xs font-bold uppercase tracking-wider text-slate-400'>{label}</div>
+                <div className='text-xs font-bold uppercase tracking-wider text-ink-400'>{label}</div>
                 <div className='text-xl font-black text-ink-950'>{value}</div>
               </div>
             </div>
@@ -110,7 +112,7 @@ export default function AdminUsersPage() {
 
       <div className='mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <div className='relative max-w-md flex-1'>
-          <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400' size={17} />
+          <Search className='pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-400' size={17} />
           <input
             value={search}
             onChange={(e) => {
@@ -118,7 +120,7 @@ export default function AdminUsersPage() {
               setPage(1)
             }}
             placeholder='Tìm theo tên, email, username...'
-            className='h-11 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
+            className='h-11 w-full rounded-2xl border border-ink-200 bg-white pl-11 pr-4 text-sm font-semibold outline-none transition focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10'
           />
         </div>
         <Button variant='secondary' onClick={() => refetch()} disabled={isFetching}>
@@ -132,9 +134,9 @@ export default function AdminUsersPage() {
           {error}
         </div>
       ) : (
-        <div className='overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm'>
+        <div className='overflow-x-auto rounded-3xl border border-ink-200 bg-white shadow-sm'>
           <table className='min-w-full text-left text-sm'>
-            <thead className='border-b border-slate-100 bg-slate-50/80 text-xs font-black uppercase tracking-wider text-slate-500'>
+            <thead className='border-b border-ink-100 bg-ink-50/80 text-xs font-black uppercase tracking-wider text-ink-500'>
               <tr>
                 <th className='p-4'>Khách hàng</th>
                 <th className='p-4'>Email</th>
@@ -149,7 +151,7 @@ export default function AdminUsersPage() {
                 : users.length === 0
                   ? (
                     <tr>
-                      <td colSpan={5} className='p-10 text-center text-sm font-semibold text-slate-500'>
+                      <td colSpan={5} className='p-10 text-center text-sm font-semibold text-ink-500'>
                         Không tìm thấy người dùng nào.
                       </td>
                     </tr>
@@ -158,7 +160,7 @@ export default function AdminUsersPage() {
                       const verify = VERIFY_LABELS[user.verify_status ?? 0] ?? VERIFY_LABELS[0]
                       const isBanned = user.verify_status === 2
                       return (
-                        <tr key={user._id} className='border-b border-slate-100 last:border-0'>
+                        <tr key={user._id} className='border-b border-ink-100 last:border-0'>
                           <td className='p-4'>
                             <div className='flex items-center gap-3'>
                               <span className='grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-brand-50 text-brand-700'>
@@ -170,17 +172,17 @@ export default function AdminUsersPage() {
                               </span>
                               <div>
                                 <div className='font-black text-ink-950'>{user.name}</div>
-                                <div className='text-xs text-slate-500'>@{user.username || '—'}</div>
+                                <div className='text-xs text-ink-500'>@{user.username || '—'}</div>
                               </div>
                             </div>
                           </td>
-                          <td className='p-4 font-semibold text-slate-600'>{user.email}</td>
+                          <td className='p-4 font-semibold text-ink-600'>{user.email}</td>
                           <td className='p-4'>
                             <span className={cn('inline-flex rounded-full border px-3 py-1 text-xs font-bold', verify.tone)}>
                               {verify.label}
                             </span>
                           </td>
-                          <td className='p-4 text-slate-500'>
+                          <td className='p-4 text-ink-500'>
                             {user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : '—'}
                           </td>
                           <td className='p-4 text-right'>

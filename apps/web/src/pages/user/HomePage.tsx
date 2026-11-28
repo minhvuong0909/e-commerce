@@ -1,416 +1,555 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useQuery } from '@tanstack/react-query'
+import { m } from 'framer-motion'
 import {
+  ArrowLeft,
   ArrowRight,
-  Clock,
-  Droplets,
-  Flower2,
-  Heart,
-  Leaf,
-  MapPin,
-  RefreshCw,
-  ShieldCheck,
+  Droplet,
+  PackageSearch,
+  SearchX,
+  SlidersHorizontal,
+  Sparkles,
   Sun,
-  Zap
+  Waves,
+  X
 } from 'lucide-react'
-import ProductCard from '../../components/ui/ProductCard'
+import ProductCard, { CARD_TINTS } from '../../components/ui/ProductCard'
 import ProductCardSkeleton from '../../components/ui/ProductCardSkeleton'
 import HomeHero from '../../components/ui/HomeHero'
 import SectionHeader from '../../components/ui/SectionHeader'
 import PaginationBar from '../../components/ui/PaginationBar'
+import EmptyState from '../../components/ui/EmptyState'
+import Button from '../../components/ui/Button'
+import Reveal from '../../components/ui/Reveal'
 import { fadeUpItem, staggerContainer } from '../../constants/motion'
 import { useProducts } from '../../hooks/useProducts'
+import { useStorefrontCategories } from '../../hooks/useStorefrontCategories'
+import { getBrandsApi } from '../../services/brands.services'
+import money from '../../utils/money'
 import type { ProductFilters } from '../../services/products.services'
-import { getCategoriesApi } from '../../services/categories.services'
 import { getToken } from '../../utils/authSession'
+import { ROUTE_PATHS } from '../../routes/route.paths'
 import cn from '../../utils/cn'
 
-const GRID_LIMIT = 8
-const SEARCH_LIMIT = 12
+const GRID_LIMIT = 12
+type Sort = NonNullable<ProductFilters['sort']>
 
-type FilterOption = { id: string; slug: string; name: string }
-
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[đĐ]/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
-}
-
-const COSMETIC_CHIP_HINTS = [
-  'Skincare',
-  'Makeup',
-  'Cleansing',
-  'Sunscreen',
-  'Serum',
-  'Lip Care',
-  'Body Care'
+const SORTS: Array<{ value: Sort; label: string }> = [
+  { value: 'newest', label: 'Mới nhất' },
+  { value: 'best_selling', label: 'Bán chạy' },
+  { value: 'price_asc', label: 'Giá thấp → cao' },
+  { value: 'price_desc', label: 'Giá cao → thấp' }
 ]
 
-function extractCategories(res: { data?: unknown }): FilterOption[] {
-  const findArray = (value: unknown): unknown[] => {
-    if (Array.isArray(value)) return value
-    if (!value || typeof value !== 'object') return []
-    const obj = value as Record<string, unknown>
-    for (const key of ['data', 'result', 'items', 'categories']) {
-      const nested = obj[key]
-      if (Array.isArray(nested)) return nested
-      if (nested && typeof nested === 'object') {
-        const inner = findArray(nested)
-        if (inner.length) return inner
-      }
-    }
-    return []
-  }
+type PriceRange = { min?: number; max?: number }
 
-  return findArray(res.data)
-    .map((item) => {
-      const row = item as { _id?: string; id?: string; slug?: string; name?: string; title?: string }
-      const id = row._id || row.id
-      const name = row.name || row.title
-      if (!id || !name) return null
-      const slug = row.slug || toSlug(name)
-      return { id, slug, name }
-    })
-    .filter((item): item is FilterOption => Boolean(item))
+const PRICE_PRESETS: Array<{ id: string; label: string } & PriceRange> = [
+  { id: 'lt200', label: 'Dưới 200.000đ', max: 200_000 },
+  { id: '200-500', label: '200.000đ – 500.000đ', min: 200_000, max: 500_000 },
+  { id: '500-1m', label: '500.000đ – 1.000.000đ', min: 500_000, max: 1_000_000 },
+  { id: 'gt1m', label: 'Trên 1.000.000đ', min: 1_000_000 }
+]
+
+/** Non-negative whole VND from the URL; anything else is ignored. */
+const readPrice = (raw: string | null) => {
+  if (!raw) return undefined
+  const n = Number(raw)
+  return Number.isSafeInteger(n) && n >= 0 ? n : undefined
 }
 
-function orderCategoriesForChips(categories: FilterOption[]): FilterOption[] {
-  if (categories.length === 0) return []
+const priceLabel = ({ min, max }: PriceRange) =>
+  PRICE_PRESETS.find((p) => p.min === min && p.max === max)?.label ??
+  (min !== undefined && max !== undefined
+    ? `${money(min)} – ${money(max)}`
+    : min !== undefined
+      ? `Từ ${money(min)}`
+      : `Đến ${money(max ?? 0)}`)
 
-  const ranked = [...categories].sort((a, b) => {
-    const ai = COSMETIC_CHIP_HINTS.findIndex((hint) => a.name.toLowerCase().includes(hint.toLowerCase()))
-    const bi = COSMETIC_CHIP_HINTS.findIndex((hint) => b.name.toLowerCase().includes(hint.toLowerCase()))
-    const aRank = ai === -1 ? 99 : ai
-    const bRank = bi === -1 ? 99 : bi
-    return aRank - bRank
-  })
-
-  return ranked.slice(0, 8)
-}
-
-function ProductGridSkeleton() {
-  return (
-    <div className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4'>
-      {Array.from({ length: 8 }).map((_, index) => (
-        <ProductCardSkeleton key={index} />
-      ))}
-    </div>
-  )
-}
+const searchHref = (q: string) => `${ROUTE_PATHS.USER_HOME}?search=${encodeURIComponent(q)}#shop`
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const urlSearch = searchParams.get('search') ?? ''
+  const search = searchParams.get('search') ?? ''
   const categoryId = searchParams.get('category') ?? ''
-  const [categories, setCategories] = useState<FilterOption[]>([])
+  const sortParam = searchParams.get('sort') as Sort | null
+  const sort: Sort = SORTS.some((s) => s.value === sortParam) ? (sortParam as Sort) : 'newest'
+  const brandId = searchParams.get('brand') ?? ''
+  let minPrice = readPrice(searchParams.get('min'))
+  let maxPrice = readPrice(searchParams.get('max'))
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) [minPrice, maxPrice] = [maxPrice, minPrice]
 
-  const setCategoryId = (id: string) => {
+  const updateParams = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(searchParams)
-    if (id) next.set('category', id)
-    else next.delete('category')
-    setSearchParams(next, { replace: true })
+    Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)))
+    setSearchParams(next, { replace: true, preventScrollReset: true })
   }
 
-  useEffect(() => {
-    getCategoriesApi(1, 100)
-      .then((res) => setCategories(orderCategoriesForChips(extractCategories(res))))
-      .catch(() => setCategories([]))
-  }, [])
-
   return (
-    <div className='home-cosmetics bg-[#FAF7F2] text-[#1C1917] min-h-screen'>
+    <div>
       <HomeHero />
-
-      {/* Maison Partner Marquee Banner */}
-      <section className='border-y border-[#E7E0D8] bg-[#FFFFFF] py-4 px-4 overflow-hidden'>
-        <div className='mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-6 text-center opacity-80'>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Apex Beauty</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Luminary Skincare</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Obsidian Botanicals</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Veloce Paris</span>
-          <span className='font-display font-bold text-xs uppercase tracking-[0.25em] text-[#786C60]'>Nectar Organics</span>
-        </div>
-      </section>
-
-      {/* Flash Drops Banner */}
-      <FlashDropsBanner />
-
-      {/* Category Filter Chips */}
-      <CategoryChips categories={categories} selectedId={categoryId} onSelect={setCategoryId} />
-
-      {/* Search Results Section if Search Query Active */}
-      {urlSearch ? (
-        <SearchResultsSection key={`${urlSearch}-${categoryId}`} initialSearch={urlSearch} categoryId={categoryId} />
-      ) : null}
-
-      {/* Main New Arrivals Showcase Grid */}
-      <ProductShowcase
-        key={categoryId || 'all'}
-        id='new-arrivals'
-        eyebrow='Bảo Chứng Chất Lượng'
-        title='Bộ Sưu Tập Mới Nhất'
-        desc='Công thức dưỡng da cải tiến, texture mỏng nhẹ tự nhiên — cập nhật routine của bạn.'
-        sort='newest'
+      
+      <Reveal><BestSellerRail /></Reveal>
+      <Reveal><RoutineSection /></Reveal>
+      <ShopSection
+        search={search}
         categoryId={categoryId}
+        sort={sort}
+        onCategory={(id) => updateParams({ category: id || null })}
+        onSort={(s) => updateParams({ sort: s === 'newest' ? null : s })}
+        onClearSearch={() => updateParams({ search: null })}
+        brandId={brandId}
+        price={{ min: minPrice, max: maxPrice }}
+        onBrand={(id) => updateParams({ brand: id || null })}
+        onPrice={({ min, max }) =>
+          updateParams({ min: min !== undefined ? String(min) : null, max: max !== undefined ? String(max) : null })
+        }
+        onClearAll={() => updateParams({ search: null, category: null, brand: null, min: null, max: null })}
       />
-
-      <BrandStory />
-      <PromoStrip />
+      <Reveal><JoinBand /></Reveal>
     </div>
   )
 }
 
-function FlashDropsBanner() {
-  return (
-    <section className='px-4 py-8 md:px-6'>
-      <div className='mx-auto max-w-7xl rounded-3xl border border-[#E7E0D8] bg-[#FFFFFF] p-6 shadow-soft md:p-8 flex flex-col md:flex-row items-center justify-between gap-6'>
-        <div className='flex items-center gap-4'>
-          <span className='grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#1C1917] text-[#FAF7F2] shadow-xs'>
-            <Zap size={24} className='text-[#A16207]' />
-          </span>
-          <div>
-            <div className='flex items-center gap-2'>
-              <span className='rounded-full bg-[#A16207] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white'>Flash Sale 24H</span>
-              <span className='text-xs font-semibold text-[#786C60] inline-flex items-center gap-1'><Clock size={13} /> Giờ Vàng Giá Sốc</span>
-            </div>
-            <h3 className='mt-1 font-display text-xl font-bold text-[#1C1917] md:text-2xl'>
-              Ưu đãi độc quyền lên tới 40% cho dòng Serum Tế Bào Gốc
-            </h3>
-          </div>
-        </div>
+/* ───────── Horizontal best-seller rail ───────── */
+function BestSellerRail() {
+  const { data, isLoading } = useProducts(1, 10, { sort: 'best_selling' })
+  const products = data?.products ?? []
+  const railRef = useRef<HTMLDivElement>(null)
 
-        <a
-          href='#new-arrivals'
-          className='shrink-0 rounded-full bg-[#1C1917] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#A16207] transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-        >
-          Xem Sản Phẩm Sốc
-        </a>
-      </div>
-    </section>
-  )
-}
+  const scroll = (dir: 1 | -1) => {
+    const el = railRef.current
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.8, behavior: 'smooth' })
+  }
 
-function CategoryChips({
-  categories,
-  selectedId,
-  onSelect
-}: {
-  categories: FilterOption[]
-  selectedId: string
-  onSelect: (val: string) => void
-}) {
-  const chips =
-    categories.length > 0
-      ? categories
-      : COSMETIC_CHIP_HINTS.map((name) => ({ id: '', slug: toSlug(name), name }))
+  if (!isLoading && products.length === 0) return null
 
   return (
-    <section className='bg-[#FAF7F2] px-4 pt-4 md:px-6' aria-label='Danh mục mỹ phẩm'>
-      <div className='mx-auto max-w-7xl'>
-        <div className='flex items-center justify-between gap-3'>
-          <h2 className='font-display text-lg font-bold text-[#1C1917]'>Danh Mục Nổi Bật</h2>
-          {selectedId ? (
-            <button
-              type='button'
-              onClick={() => onSelect('')}
-              className='text-xs font-bold text-[#A16207] hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207] rounded'
-            >
-              Xóa bộ lọc danh mục
-            </button>
-          ) : null}
-        </div>
-        <div className='mt-3 flex gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-          <button
-            type='button'
-            onClick={() => onSelect('')}
-            className={cn(
-              'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-              !selectedId
-                ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF7F2] shadow-xs'
-                : 'border-[#E7E0D8] bg-white text-[#594D42] hover:border-[#A16207]'
-            )}
-          >
-            Tất cả
-          </button>
-          {chips.map((chip) => {
-            const targetValue = chip.id
-            const isActive = Boolean(selectedId) && (selectedId === chip.slug || selectedId === chip.id)
-            const isStatic = !targetValue
-            return (
+    <section className='pt-14 md:pt-20' aria-label='Sản phẩm bán chạy'>
+      <div className='mx-auto max-w-[1320px] px-4 md:px-6'>
+        <SectionHeader
+          eyebrow='Bán chạy'
+          title='Được chọn nhiều nhất'
+          desc='Những sản phẩm khách hàng Vibrant Mart mua nhiều nhất thời gian gần đây.'
+          action={
+            <div className='hidden gap-2 md:flex'>
               <button
-                key={chip.slug || chip.id || chip.name}
                 type='button'
-                disabled={isStatic}
-                onClick={() => targetValue && onSelect(isActive ? '' : targetValue)}
-                className={cn(
-                  'shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]',
-                  isActive
-                    ? 'border-[#1C1917] bg-[#1C1917] text-[#FAF7F2] shadow-xs'
-                    : 'border-[#E7E0D8] bg-white text-[#594D42]',
-                  isStatic ? 'cursor-default opacity-60' : 'hover:border-[#A16207]'
-                )}
+                onClick={() => scroll(-1)}
+                aria-label='Cuộn trái'
+                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full border border-ink-200 bg-white transition hover:border-berry-300'
               >
-                {chip.name}
+                <ArrowLeft size={18} />
               </button>
-            )
-          })}
+              <button
+                type='button'
+                onClick={() => scroll(1)}
+                aria-label='Cuộn phải'
+                className='grid h-12 w-12 cursor-pointer place-items-center rounded-full bg-berry-600 text-white transition hover:bg-berry-700'
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          }
+        />
+      </div>
+      <div
+        ref={railRef}
+        className='no-scrollbar mt-8 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 md:scroll-px-6 md:px-6 xl:px-[max(1.5rem,calc((100vw-1320px)/2+1.5rem))]'
+      >
+        {(isLoading ? Array.from({ length: 5 }) : products).map((p, i) => (
+          <div key={p ? (p as { _id: string })._id : i} className='w-[70%] shrink-0 snap-start sm:w-[42%] md:w-[30%] lg:w-[23%]'>
+            {p ? <ProductCard product={p as (typeof products)[number]} tint={CARD_TINTS[i % CARD_TINTS.length]} /> : <ProductCardSkeleton />}
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* ───────── Routine education ───────── */
+function RoutineSection() {
+  const steps = [
+    { n: '01', title: 'Làm sạch', desc: 'Tẩy trang & sữa rửa mặt, gỡ bụi bẩn và dầu thừa.', q: 'sữa rửa mặt', icon: Waves, bg: 'bg-ink-100' },
+    { n: '02', title: 'Serum', desc: 'Hoạt chất tập trung cho mối quan tâm riêng của da.', q: 'serum', icon: Droplet, bg: 'bg-ink-100' },
+    { n: '03', title: 'Dưỡng ẩm', desc: 'Khóa ẩm, giữ hàng rào da khỏe và mềm mịn.', q: 'kem dưỡng', icon: Sparkles, bg: 'bg-ink-100' },
+    { n: '04', title: 'Chống nắng', desc: 'Bước cuối cùng của buổi sáng, không nên bỏ qua.', q: 'chống nắng', icon: Sun, bg: 'bg-ink-100' }
+  ]
+
+  return (
+    <section id='routine' className='scroll-mt-32 px-4 pt-14 md:px-6 md:pt-20'>
+      <div className='mx-auto max-w-[1320px] overflow-hidden rounded-4xl bg-white p-6 ring-1 ring-ink-200 sm:p-10 lg:p-12'>
+        <div className='grid gap-10 lg:grid-cols-[0.9fr_1.6fr] lg:gap-14'>
+          <div>
+            <p className='eyebrow'>
+              Routine cơ bản
+            </p>
+            <h2 className='mt-3 font-display text-3xl font-semibold leading-tight md:text-4xl'>
+              4 bước cho làn da khỏe và sáng
+            </h2>
+            <p className='mt-4 text-[15px] leading-relaxed text-ink-600'>
+              Không cần 10 bước. Bắt đầu từ nền tảng đúng, rồi thêm sản phẩm theo nhu cầu. Chọn một bước để xem sản phẩm phù hợp.
+            </p>
+            <img
+              src='/images/login_skincare_lifestyle.jpg'
+              alt='Sản phẩm skincare trên bàn trang điểm'
+              loading='lazy'
+              className='mt-8 hidden aspect-[4/3] w-full rounded-2xl object-cover lg:block'
+            />
+          </div>
+          <ol className='grid gap-3 sm:grid-cols-2'>
+            {steps.map(({ n, title, desc, q, icon: Icon, bg }) => (
+              <li key={n}>
+                <a
+                  href={searchHref(q)}
+                  className={cn('group flex h-full min-h-[13rem] flex-col rounded-2xl p-6 transition hover:bg-ink-200', bg)}
+                >
+                  <div className='flex items-start justify-between'>
+                    <span className='font-display text-3xl font-semibold text-ink-400'>{n}</span>
+                    <span className='grid h-11 w-11 place-items-center rounded-xl bg-white text-ink-950'>
+                      <Icon size={22} aria-hidden />
+                    </span>
+                  </div>
+                  <h3 className='mt-auto font-display text-xl font-semibold text-ink-950'>{title}</h3>
+                  <p className='mt-1.5 text-sm leading-relaxed text-ink-700'>{desc}</p>
+                  <span className='mt-4 inline-flex items-center gap-1 text-sm font-semibold text-ink-950'>
+                    Xem sản phẩm <ArrowRight size={15} className='transition group-hover:translate-x-1' aria-hidden />
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
         </div>
       </div>
     </section>
   )
 }
 
-function ProductShowcase({
-  id,
-  eyebrow,
-  title,
-  desc,
+/* ───────── Shop grid: search + category + sort, all in the URL ───────── */
+function ShopSection({
+  search,
+  categoryId,
   sort,
-  categoryId
+  onCategory,
+  onSort,
+  onClearSearch,
+  brandId,
+  price,
+  onBrand,
+  onPrice,
+  onClearAll
 }: {
-  id: string
-  eyebrow: string
-  title: string
-  desc: string
-  sort: NonNullable<ProductFilters['sort']>
+  search: string
   categoryId: string
+  sort: Sort
+  onCategory: (id: string) => void
+  onSort: (s: Sort) => void
+  onClearSearch: () => void
+  brandId: string
+  price: PriceRange
+  onBrand: (id: string) => void
+  onPrice: (range: PriceRange) => void
+  onClearAll: () => void
 }) {
+  const key = `${search}|${categoryId}|${sort}|${brandId}|${price.min ?? ''}|${price.max ?? ''}`
   const [page, setPage] = useState(1)
-  const [prevCategoryId, setPrevCategoryId] = useState(categoryId)
-
-  if (prevCategoryId !== categoryId) {
-    setPrevCategoryId(categoryId)
+  const [prevKey, setPrevKey] = useState(key)
+  if (prevKey !== key) {
+    setPrevKey(key)
     setPage(1)
   }
 
+  const { data: categories = [] } = useStorefrontCategories(12)
+  const { data: brands = [] } = useQuery({
+    queryKey: ['storefront-brands'],
+    staleTime: 5 * 60_000,
+    queryFn: async () =>
+      ((await getBrandsApi(1, 100)).data.data ?? [])
+        .map((b) => ({ id: b._id, name: b.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
+  })
   const filters = useMemo<ProductFilters>(
     () => ({
       sort,
-      category_id: categoryId || undefined
+      search: search || undefined,
+      category_id: categoryId || undefined,
+      brand_id: brandId || undefined,
+      minPrice: price.min,
+      maxPrice: price.max
     }),
-    [sort, categoryId]
+    [sort, search, categoryId, brandId, price.min, price.max]
   )
-
-  const { data, isLoading, isError, refetch } = useProducts(page, GRID_LIMIT, filters)
+  const activeBrand = brands.find((b) => b.id === brandId)
+  const hasPrice = price.min !== undefined || price.max !== undefined
+  const presetId =
+    PRICE_PRESETS.find((p) => p.min === price.min && p.max === price.max)?.id ?? (hasPrice ? 'custom' : '')
+  const [customOpen, setCustomOpen] = useState(false)
+  const [customMin, setCustomMin] = useState('')
+  const [customMax, setCustomMax] = useState('')
+  const anyFilter = Boolean(search || categoryId || brandId || hasPrice)
+  const selectCls = (active: boolean) =>
+    cn(
+      'h-10 w-full min-w-0 cursor-pointer appearance-none truncate rounded-full border bg-white pl-4 pr-9 text-sm font-semibold outline-none transition hover:border-berry-300 focus:border-berry-500 sm:w-auto',
+      active ? 'border-berry-200 text-berry-700' : 'border-ink-200 text-ink-700'
+    )
+  const applyCustom = () => {
+    const parse = (v: string) => (v.trim() ? Math.max(0, Math.round(Number(v))) : undefined)
+    const min = parse(customMin)
+    const max = parse(customMax)
+    if ((min !== undefined && Number.isNaN(min)) || (max !== undefined && Number.isNaN(max))) return
+    onPrice(min !== undefined && max !== undefined && min > max ? { min: max, max: min } : { min, max })
+    setCustomOpen(false)
+  }
+  const { data, isLoading, isError, refetch, isFetching } = useProducts(page, GRID_LIMIT, filters)
   const products = data?.products ?? []
   const pagination = data?.pagination
+  const activeCategory = categories.find((c) => c.id === categoryId)
 
-  return (
-    <section id={id} className='scroll-mt-28 bg-[#FAF7F2] px-4 py-10 md:px-6'>
-      <div className='mx-auto max-w-7xl'>
-        <SectionHeader eyebrow={eyebrow} title={title} desc={desc} />
-        <div className='mt-8'>
-          {isLoading ? (
-            <ProductGridSkeleton />
-          ) : isError ? (
-            <div className='rounded-2xl border border-[#EFECE6] bg-white p-8 text-center text-sm text-[#8C7D70] shadow-soft'>
-              <p>Chưa thể tải sản phẩm từ máy chủ. Vui lòng thử lại.</p>
-              <button type='button' onClick={() => void refetch()} className='mt-4 rounded-full bg-[#2B2118] px-6 py-2 text-xs font-bold text-white'>Tải lại</button>
-            </div>
-          ) : products.length === 0 ? (
-            <div className='rounded-2xl border border-dashed border-[#EFECE6] bg-white p-12 text-center text-sm font-medium text-[#8C7D70] shadow-xs'>
-              Chưa tìm thấy sản phẩm trong danh mục lựa chọn.
-            </div>
-          ) : (
-            <>
-              <motion.div
-                variants={staggerContainer}
-                initial='hidden'
-                animate='show'
-                className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4'
-              >
-                {products.map((product) => (
-                  <motion.div key={product._id} variants={fadeUpItem}>
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))}
-              </motion.div>
-              {pagination && pagination.totalPages > 1 ? (
-                <div className='mt-10'>
-                  <PaginationBar
-                    pagination={pagination}
-                    page={page}
-                    onPageChange={setPage}
-                    isLoading={isLoading}
-                    itemLabel='sản phẩm'
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: string; categoryId: string }) {
-  const [page, setPage] = useState(1)
-  const currentKey = `${initialSearch}:${categoryId}`
-  const [prevKey, setPrevKey] = useState(currentKey)
-
-  if (prevKey !== currentKey) {
-    setPrevKey(currentKey)
-    setPage(1)
+  const goPage = (p: number) => {
+    setPage(p)
+    document.getElementById('shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const filters = useMemo<ProductFilters>(
-    () => ({
-      search: initialSearch || undefined,
-      sort: 'newest',
-      category_id: categoryId || undefined
-    }),
-    [initialSearch, categoryId]
-  )
-
-  const { data, isLoading } = useProducts(page, SEARCH_LIMIT, filters)
-  const products = data?.products ?? []
-  const pagination = data?.pagination
+  const chip = (active: boolean) =>
+    cn(
+      'chip h-10 cursor-pointer border px-4 transition',
+      active ? 'border-berry-200 bg-berry-50 text-berry-700' : 'border-ink-200 bg-white text-ink-700 hover:border-berry-300'
+    )
 
   return (
-    <section id='featured-products' className='scroll-mt-28 bg-[#FAF7F2] px-4 py-8 md:px-6'>
-      <div className='mx-auto max-w-7xl'>
+    <section id='shop' className='scroll-mt-32 px-4 pt-14 md:px-6 md:pt-20'>
+      <div className='mx-auto max-w-[1320px]'>
         <SectionHeader
-          eyebrow='Kết Quả Tìm Kiếm'
-          title={`Sản phẩm cho "${initialSearch}"`}
-          desc='Bạn có thể kết hợp thêm danh mục phía trên để thu hẹp tìm kiếm.'
+          eyebrow={search ? 'Kết quả tìm kiếm' : 'Cửa hàng'}
+          title={search ? `“${search}”` : activeCategory ? activeCategory.name : 'Tất cả sản phẩm'}
+          desc={
+            pagination
+              ? `${pagination.totalItems} sản phẩm${activeCategory && search ? ` trong ${activeCategory.name}` : ''}`
+              : undefined
+          }
         />
-        <div className='mt-8'>
-          {isLoading ? (
-            <ProductGridSkeleton />
-          ) : products.length === 0 ? (
-            <div className='rounded-2xl border border-dashed border-[#EFECE6] bg-white p-12 text-center text-sm font-medium text-[#8C7D70] shadow-xs'>
-              Không tìm thấy sản phẩm nào khớp từ khóa "{initialSearch}".
+
+        {/* filter bar */}
+        <div className='mt-6'>
+          <div className='flex flex-col gap-3 md:flex-row md:items-center'>
+            <div className='no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto'>
+              {search ? (
+                <button type='button' onClick={onClearSearch} className='chip h-10 shrink-0 cursor-pointer bg-berry-100 px-4 text-berry-700 hover:bg-berry-200'>
+                  Từ khóa: {search} <X size={14} aria-hidden />
+                  <span className='sr-only'>Xóa từ khóa</span>
+                </button>
+              ) : null}
+              <button type='button' aria-pressed={!categoryId} onClick={() => onCategory('')} className={chip(!categoryId)}>
+                Tất cả
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type='button'
+                  aria-pressed={categoryId === c.id}
+                  onClick={() => onCategory(categoryId === c.id ? '' : c.id)}
+                  className={chip(categoryId === c.id)}
+                >
+                  {c.name}
+                </button>
+              ))}
             </div>
+            <label className='relative inline-flex shrink-0 items-center'>
+              <SlidersHorizontal size={16} className='pointer-events-none absolute left-4 text-ink-500' aria-hidden />
+              <span className='sr-only'>Sắp xếp</span>
+              <select
+                value={sort}
+                onChange={(e) => onSort(e.target.value as Sort)}
+                className='h-10 w-full cursor-pointer appearance-none rounded-full border border-ink-200 bg-white pl-10 pr-9 text-sm font-semibold text-ink-950 outline-none transition hover:border-berry-300 focus:border-berry-500 md:w-auto'
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden className='pointer-events-none absolute right-4 text-xs text-ink-500'>
+                ▾
+              </span>
+            </label>
+          </div>
+
+          <div className='mt-3 grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap'>
+            <label className='relative flex w-full items-center sm:inline-flex sm:w-auto'>
+              <span className='sr-only'>Thương hiệu</span>
+              <select value={brandId} onChange={(e) => onBrand(e.target.value)} className={selectCls(Boolean(brandId))}>
+                <option value=''>Tất cả thương hiệu</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden className='pointer-events-none absolute right-4 text-xs text-ink-500'>
+                ▾
+              </span>
+            </label>
+            <label className='relative flex w-full items-center sm:inline-flex sm:w-auto'>
+              <span className='sr-only'>Khoảng giá</span>
+              <select
+                value={customOpen ? 'custom' : presetId}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (v === 'custom') {
+                    setCustomMin(price.min !== undefined ? String(price.min) : '')
+                    setCustomMax(price.max !== undefined ? String(price.max) : '')
+                    setCustomOpen(true)
+                    return
+                  }
+                  setCustomOpen(false)
+                  const preset = PRICE_PRESETS.find((p) => p.id === v)
+                  onPrice(preset ? { min: preset.min, max: preset.max } : {})
+                }}
+                className={selectCls(hasPrice)}
+              >
+                <option value=''>Mọi mức giá</option>
+                {PRICE_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+                <option value='custom'>{presetId === 'custom' && !customOpen ? priceLabel(price) : 'Khoảng giá khác…'}</option>
+              </select>
+              <span aria-hidden className='pointer-events-none absolute right-4 text-xs text-ink-500'>
+                ▾
+              </span>
+            </label>
+
+            {customOpen ? (
+              <form
+                className='col-span-2 flex flex-wrap items-center gap-2'
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  applyCustom()
+                }}
+              >
+                <input
+                  type='number'
+                  inputMode='numeric'
+                  min={0}
+                  step={10000}
+                  value={customMin}
+                  onChange={(e) => setCustomMin(e.target.value)}
+                  placeholder='Từ (đ)'
+                  aria-label='Giá từ'
+                  className='h-10 w-32 rounded-full border border-ink-200 bg-white px-4 text-sm outline-none focus:border-berry-500'
+                />
+                <span aria-hidden className='text-ink-400'>
+                  –
+                </span>
+                <input
+                  type='number'
+                  inputMode='numeric'
+                  min={0}
+                  step={10000}
+                  value={customMax}
+                  onChange={(e) => setCustomMax(e.target.value)}
+                  placeholder='Đến (đ)'
+                  aria-label='Giá đến'
+                  className='h-10 w-32 rounded-full border border-ink-200 bg-white px-4 text-sm outline-none focus:border-berry-500'
+                />
+                <Button type='submit' size='sm' className='h-10'>
+                  Áp dụng
+                </Button>
+                <button
+                  type='button'
+                  onClick={() => setCustomOpen(false)}
+                  className='h-10 px-2 text-sm font-semibold text-ink-500 hover:text-ink-950'
+                >
+                  Hủy
+                </button>
+              </form>
+            ) : null}
+
+            {activeBrand ? (
+              <button
+                type='button'
+                onClick={() => onBrand('')}
+                className='chip hidden h-10 cursor-pointer bg-berry-50 px-4 text-berry-700 hover:bg-berry-100 sm:inline-flex'
+              >
+                {activeBrand.name} <X size={14} aria-hidden />
+                <span className='sr-only'>Bỏ lọc thương hiệu</span>
+              </button>
+            ) : null}
+            {hasPrice && !customOpen ? (
+              <button
+                type='button'
+                onClick={() => onPrice({})}
+                className='chip hidden h-10 cursor-pointer bg-berry-50 px-4 text-berry-700 hover:bg-berry-100 sm:inline-flex'
+              >
+                {priceLabel(price)} <X size={14} aria-hidden />
+                <span className='sr-only'>Bỏ lọc giá</span>
+              </button>
+            ) : null}
+            {anyFilter ? (
+              <button
+                type='button'
+                onClick={onClearAll}
+                className='col-span-2 h-10 justify-self-start px-2 text-sm font-semibold text-ink-500 underline-offset-4 hover:text-ink-950 hover:underline'
+              >
+                Xóa tất cả
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className={cn('mt-6 transition-opacity', isFetching && !isLoading && 'opacity-60')} aria-busy={isFetching}>
+          {isLoading ? (
+            <div className='grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-5 lg:grid-cols-4'>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : isError ? (
+            <EmptyState
+              icon={<PackageSearch size={28} />}
+              title='Không tải được sản phẩm'
+              desc='Kết nối tới máy chủ đang gặp sự cố. Thử lại sau giây lát nhé.'
+              action={
+                <Button variant='primary' onClick={() => void refetch()}>
+                  Thử lại
+                </Button>
+              }
+            />
+          ) : products.length === 0 ? (
+            <EmptyState
+              icon={<SearchX size={28} />}
+              title='Chưa có sản phẩm phù hợp'
+              desc={
+                search
+                  ? `Không tìm thấy sản phẩm cho “${search}”. Thử từ khóa khác hoặc bỏ bớt bộ lọc.`
+                  : brandId || hasPrice
+                    ? 'Không có sản phẩm khớp thương hiệu hoặc khoảng giá đã chọn.'
+                    : 'Danh mục này đang được cập nhật.'
+              }
+              action={
+                <Button variant='secondary' onClick={onClearAll}>
+                  Xóa bộ lọc
+                </Button>
+              }
+            />
           ) : (
             <>
-              <motion.div
+              <m.div
+                key={`${key}-${page}`}
                 variants={staggerContainer}
                 initial='hidden'
                 animate='show'
-                className='grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5 lg:grid-cols-4'
+                className='grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-5 md:gap-y-10 lg:grid-cols-4'
               >
-                {products.map((product) => (
-                  <motion.div key={product._id} variants={fadeUpItem}>
-                    <ProductCard product={product} />
-                  </motion.div>
+                {products.map((product, i) => (
+                  <m.div key={product._id} variants={fadeUpItem}>
+                    <ProductCard product={product} tint={CARD_TINTS[i % CARD_TINTS.length]} />
+                  </m.div>
                 ))}
-              </motion.div>
-              {pagination && pagination.totalPages > 1 ? (
-                <div className='mt-10'>
-                  <PaginationBar
-                    pagination={pagination}
-                    page={page}
-                    onPageChange={setPage}
-                    isLoading={isLoading}
-                    itemLabel='sản phẩm'
-                  />
-                </div>
+              </m.div>
+              {pagination ? (
+                <PaginationBar pagination={pagination} page={page} onPageChange={goPage} isLoading={isFetching} itemLabel='sản phẩm' />
               ) : null}
             </>
           )}
@@ -420,115 +559,26 @@ function SearchResultsSection({ initialSearch, categoryId }: { initialSearch: st
   )
 }
 
-function BrandStory() {
-  const pillars = [
-    {
-      icon: Leaf,
-      title: 'Thành phần hữu cơ tinh khiết',
-      desc: 'Ưu tiên chiết xuất thực vật lành tính, không chứa Paraben hay Cồn công nghiệp.'
-    },
-    {
-      icon: Heart,
-      title: 'Cruelty-Free 100%',
-      desc: 'Cam kết 100% sản phẩm không thử nghiệm trên động vật — làm đẹp văn minh.'
-    },
-    {
-      icon: Droplets,
-      title: 'Công thức thẩm thấu sâu',
-      desc: 'Texture mỏng nhẹ dịu mát, nuôi dưỡng da khỏe mạnh từ sâu bên trong.'
-    }
-  ]
-
-  return (
-    <section className='px-4 py-12 md:px-6'>
-      <div className='mx-auto max-w-7xl overflow-hidden rounded-[2.5rem] border border-[#E7E0D8] bg-white shadow-soft'>
-        <div className='grid gap-8 p-8 md:grid-cols-2 md:p-12 lg:p-16'>
-          <div>
-            <p className='text-xs font-bold uppercase tracking-[0.2em] text-[#A16207]'>Maison Story</p>
-            <h2 className='mt-3 font-display text-3xl font-extrabold tracking-tight text-[#1C1917] md:text-4xl'>
-              Vibrant Mart — Khởi nguồn từ làn da khỏe thuần khiết
-            </h2>
-            <p className='mt-5 text-sm leading-relaxed text-[#594D42] md:text-base'>
-              Chúng tôi tuyển chọn các dòng mỹ phẩm dưỡng da và trang điểm cao cấp, dung hòa giữa bí quyết thiên nhiên và khoa học làn da hiện đại. Mỗi liệu trình đều giúp bạn cảm nhận sự dễ chịu và vẻ đẹp tự nhiên nhất.
-            </p>
-            <Link
-              to='/user/home#new-arrivals'
-              className='mt-8 inline-flex items-center gap-2 rounded-full bg-[#1C1917] px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] hover:bg-[#A16207] transition-colors shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
-            >
-              Khám phá bộ sưu tập <ArrowRight size={15} />
-            </Link>
-          </div>
-          <div className='space-y-4'>
-            {pillars.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className='flex gap-4 rounded-2xl border border-[#E7E0D8] bg-[#FAF7F2] p-5 shadow-xs transition-all hover:bg-white hover:shadow-soft'>
-                <span className='grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white text-[#A16207] border border-[#E7E0D8] shadow-xs'>
-                  <Icon size={20} />
-                </span>
-                <div>
-                  <h3 className='font-display text-base font-bold text-[#1C1917]'>{title}</h3>
-                  <p className='mt-1 text-xs leading-relaxed text-[#594D42]'>{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-function PromoStrip() {
+function JoinBand() {
   const hasToken = Boolean(getToken())
-  const items = [
-    { icon: MapPin, title: 'Vận chuyển Toàn quốc', desc: 'Cước phí minh bạch, giao hàng nhanh chóng.' },
-    { icon: ShieldCheck, title: 'Chính hãng 100%', desc: 'Kiểm soát chất lượng nghiêm ngặt.' },
-    { icon: RefreshCw, title: 'Đổi trả miễn phí 7 ngày', desc: 'Chính sách hậu mãi chu đáo & tin cậy.' },
-    { icon: Flower2, title: 'Hỗ trợ chu đáo', desc: 'Đội ngũ tư vấn nhiệt tình, tận tâm.' }
-  ]
-
+  if (hasToken) return null
   return (
-    <section className='px-4 pb-12 md:px-6' aria-label='Cam kết dịch vụ'>
-      <div className='mx-auto max-w-7xl'>
-        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-4'>
-          {items.map(({ icon: Icon, title, desc }) => (
-            <div
-              key={title}
-              className='flex gap-3.5 rounded-2xl border border-[#E7E0D8] bg-white p-5 shadow-xs transition-all hover:shadow-soft'
-            >
-              <span className='grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8]'>
-                <Icon size={19} />
-              </span>
-              <div>
-                <h3 className='font-display text-sm font-bold text-[#1C1917]'>{title}</h3>
-                <p className='mt-1 text-xs leading-relaxed text-[#786C60]'>{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className='mt-8 flex flex-col items-start justify-between gap-4 rounded-3xl border border-[#E7E0D8] bg-white p-6 shadow-soft md:flex-row md:items-center'>
-          <div className='flex items-start gap-4'>
-            <span className='grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#FAF7F2] text-[#A16207] border border-[#E7E0D8] shadow-xs'>
-              <Sun size={20} />
-            </span>
-            <div>
-              <p className='font-display text-base font-bold text-[#1C1917]'>
-                {hasToken
-                  ? 'Chào mừng bạn quay lại Vibrant Mart!'
-                  : 'Đăng nhập để lưu Routine & Theo dõi Đơn hàng'}
-              </p>
-              <p className='mt-1 text-xs text-[#786C60]'>
-                {hasToken
-                  ? 'Kiểm tra trạng thái vận chuyển và quản lý thông tin tài khoản.'
-                  : 'Đặc quyền tích điểm và ưu đãi hấp dẫn dành riêng cho hội viên.'}
-              </p>
-            </div>
+    <section className='px-4 pt-14 md:px-6 md:pt-20'>
+      <div className='relative mx-auto max-w-[1320px] overflow-hidden rounded-4xl border border-berry-100 bg-berry-50 px-6 py-12 text-ink-950 sm:px-12 md:py-16'>
+        <div className='relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between'>
+          <div className='max-w-xl'>
+            <h2 className='font-display text-3xl font-semibold leading-tight md:text-4xl'>
+              Tạo tài khoản, mua nhanh hơn lần sau.
+            </h2>
+            <p className='mt-4 text-ink-600'>
+              Lưu địa chỉ, thanh toán online và theo dõi mọi đơn hàng trong một tài khoản.
+            </p>
           </div>
           <Link
-            to={hasToken ? '/user/orders' : '/auth/login'}
-            className='inline-flex h-11 items-center rounded-full bg-[#1C1917] px-7 text-xs font-bold uppercase tracking-widest text-[#FAF7F2] transition hover:bg-[#A16207] shadow-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A16207]'
+            to={ROUTE_PATHS.AUTH_REGISTER}
+            className='inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-lg bg-berry-600 px-7 font-semibold text-white transition hover:bg-berry-700 md:self-auto'
           >
-            {hasToken ? 'Đơn hàng của tôi' : 'Đăng nhập ngay'}
+            Đăng ký miễn phí <ArrowRight size={18} aria-hidden />
           </Link>
         </div>
       </div>

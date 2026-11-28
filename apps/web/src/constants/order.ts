@@ -98,16 +98,19 @@ export function mapPaymentMethod(method: string): string {
       return 'PayPal'
     case 'MOMO':
       return 'MoMo'
+    case 'PAYOS':
+      return 'PayOS'
     default:
       return method ? String(method).replaceAll('_', ' ') : '—'
   }
 }
 
+/** StatusBadge already carries the palette; kept as an extension point for per-tone overrides. */
 export const ORDER_BADGE_CLASS: Record<OrderBadgeTone, string> = {
-  processing: '!border-amber-200/90 !bg-amber-50 !text-amber-900',
-  shipping: '!border-violet-200/90 !bg-violet-50 !text-violet-900',
-  done: '!border-emerald-200/90 !bg-emerald-50 !text-emerald-800',
-  cancel: '!border-rose-200/90 !bg-rose-50 !text-rose-800'
+  processing: '',
+  shipping: '',
+  done: '',
+  cancel: ''
 }
 
 export { TABS, VALID_STATUS }

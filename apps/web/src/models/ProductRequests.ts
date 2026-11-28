@@ -7,6 +7,8 @@ export interface Product {
   rating_number: number
   thumbnail?: string
   medias: Array<string | { url: string; type?: number }>
+  /** url video giới thiệu (backend tách khỏi medias, nên medias chỉ còn ảnh) */
+  video?: string | null
   origin: string
   volume?: number
   weight?: number
