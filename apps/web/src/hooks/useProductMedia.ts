@@ -4,7 +4,7 @@ import type { Product } from '../models/ProductRequests'
 
 /** Khớp enum MediaType ở backend. */
 export const MEDIA_TYPE = { IMAGE: 0, VIDEO: 1 } as const
-export const IMAGE_MAX_BYTES = 300 * 1024 // giới hạn của /medias/upload-image
+export const IMAGE_MAX_BYTES = 8 * 1024 * 1024 // giới hạn của /medias/upload-image (server tự nén về WebP ≤1200px)
 export const VIDEO_MAX_BYTES = 50 * 1024 * 1024 // giới hạn của /medias/upload-video
 export const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime'
 const VIDEO_TYPES = VIDEO_ACCEPT.split(',')

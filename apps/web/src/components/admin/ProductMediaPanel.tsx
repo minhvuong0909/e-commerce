@@ -54,7 +54,7 @@ export default function ProductMediaPanel({
             {media.imageCount}/{MAX_IMAGES}
           </span>
         </div>
-        <p className='mt-1 text-xs text-ink-500'>Ảnh đầu tiên làm ảnh bìa · tối đa {formatBytes(IMAGE_MAX_BYTES)} mỗi ảnh.</p>
+        <p className='mt-1 text-xs text-ink-500'>Ảnh đầu tiên làm ảnh bìa · tối đa {formatBytes(IMAGE_MAX_BYTES)} mỗi ảnh, hệ thống tự nén khi tải lên.</p>
 
         <div className='mt-3 grid grid-cols-3 gap-2'>
           {tiles.map((t, i) => (
