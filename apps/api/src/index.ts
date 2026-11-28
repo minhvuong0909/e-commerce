@@ -1,3 +1,4 @@
+import { compressJson } from './middlewares/compress.middlewares'
 import express from 'express'
 import dotenv from 'dotenv'
 import cors from 'cors'
@@ -69,6 +70,7 @@ app.use(
 )
 
 app.use(express.json())
+app.use(compressJson) // gzip/brotli cho JSON ≥ 1KB
 app.use('/users', userRouter)
 
 app.use('/products', productRouter)
