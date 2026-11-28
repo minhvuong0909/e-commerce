@@ -15,6 +15,8 @@ import {
   ProductQueryParams
 } from '~/utils/productQuery'
 
+const LIST_DESCRIPTION_CHARS = 280
+
 class ProductServices {
   // create
   async createProduct(payload: CreateProductBody) {
@@ -147,7 +149,9 @@ class ProductServices {
           { $sort: sortStage },
           { $skip: skip },
           { $limit: limit },
-          ...productMediaStages()
+          ...productMediaStages(),
+          // danh sách chỉ hiện 3–4 dòng mô tả (QuickView); bản đầy đủ lấy ở GET /products/:id
+          { $set: { description: { $substrCP: [{ $ifNull: ['$description', ''] }, 0, LIST_DESCRIPTION_CHARS] } } }
         ])
         .toArray(),
       databaseService.products.countDocuments(match)
