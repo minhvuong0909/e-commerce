@@ -36,9 +36,19 @@ jobs:
               cd /home/${{ secrets.VPS_USER }}/e-commerce
             fi
 
+            # Media do admin upload nằm trong apps/api/uploads (volume của container), không thuộc git.
+            # Giữ lại qua reset/clean: lần đầu sau khi bỏ uploads khỏi git, reset --hard sẽ xóa các file
+            # từng được commit; về sau .gitignore đã bảo vệ, bước này chỉ là lưới an toàn.
+            UPLOADS_KEEP="$(mktemp -d)"
+            if [ -d apps/api/uploads ]; then cp -a apps/api/uploads/. "$UPLOADS_KEEP/"; fi
+
             git fetch origin main
             git reset --hard origin/main
             git clean -fd
+
+            mkdir -p apps/api/uploads
+            cp -an "$UPLOADS_KEEP/." apps/api/uploads/
+            rm -rf "$UPLOADS_KEEP"
 
             cat > .env << 'ENVEOF'
             VITE_BASE_URL_API=${{ secrets.VITE_BASE_URL_API }}
