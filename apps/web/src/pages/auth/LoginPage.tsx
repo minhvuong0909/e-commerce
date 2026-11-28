@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { Lock, Mail, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -118,7 +118,7 @@ export default function LoginPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <div className='mb-4 inline-flex items-center gap-2 rounded-full border border-ink-200 bg-ink-50 px-3.5 py-1 text-xs font-bold text-berry-600'>
           <ShieldCheck size={14} />
@@ -213,7 +213,7 @@ export default function LoginPage() {
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }
 

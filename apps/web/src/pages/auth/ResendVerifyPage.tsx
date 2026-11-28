@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { MailCheck, MailWarning } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -38,7 +38,7 @@ export default function ResendVerifyEmailPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='flex flex-col items-center text-center'>
         <span className='grid h-16 w-16 place-items-center rounded-3xl bg-brand-50 text-brand-600'>
           {sentOnce ? <MailCheck size={30} /> : <MailWarning size={30} />}
@@ -83,6 +83,6 @@ export default function ResendVerifyEmailPage() {
           </p>
         </div>
       )}
-    </motion.div>
+    </m.div>
   )
 }

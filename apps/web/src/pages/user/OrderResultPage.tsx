@@ -1,5 +1,5 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'framer-motion'
 import { ArrowLeft, CheckCircle2, Clock, PackageCheck, RefreshCw, ShoppingBag, XCircle } from 'lucide-react'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 import money from '../../utils/money'
@@ -101,21 +101,21 @@ export default function OrderResultPage() {
 
   return (
     <div className='mx-auto max-w-xl px-4 py-10 md:py-16'>
-      <motion.div
+      <m.div
         initial={reduce ? false : { opacity: 0, y: 20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         className='overflow-hidden rounded-4xl bg-white ring-1 ring-ink-100'
       >
         <div className={cn('relative flex flex-col items-center px-6 pb-10 pt-12 text-center', config.band)}>
-          <motion.span
+          <m.span
             initial={reduce ? false : { scale: 0, rotate: -20 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.15 }}
             className={cn('grid h-20 w-20 place-items-center rounded-[1.75rem] shadow-soft', config.tone)}
           >
             <Icon size={38} strokeWidth={2} aria-hidden />
-          </motion.span>
+          </m.span>
           <h1 className='mt-6 font-display text-3xl font-bold md:text-4xl'>{config.title}</h1>
           <p className='mt-2 max-w-sm text-ink-700'>{config.desc}</p>
         </div>
@@ -203,7 +203,7 @@ export default function OrderResultPage() {
             </Link>
           </div>
         </div>
-      </motion.div>
+      </m.div>
     </div>
   )
 }

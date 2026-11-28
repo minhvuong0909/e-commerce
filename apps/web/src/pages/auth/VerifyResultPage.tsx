@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import Alert from '../../components/ui/Alert'
 import { ROUTE_PATHS } from '../../routes/route.paths'
 
@@ -11,7 +11,7 @@ export default function VerifyResultPage() {
   const isFailed = status === 'failed' || !status
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Xác minh email</h2>
         <p className='mt-2 text-sm leading-6 text-ink-500'>Kết quả xác minh email của bạn.</p>
@@ -57,6 +57,6 @@ export default function VerifyResultPage() {
           Đăng nhập
         </Link>
       </div>
-    </motion.div>
+    </m.div>
   )
 }

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -45,7 +45,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-5'>
         <h2 className='font-display text-4xl font-bold text-ink-950'>Tạo tài khoản</h2>
         <p className='mt-2 text-[15px] leading-relaxed text-ink-600'>Lưu giỏ hàng, địa chỉ giao hàng và theo dõi mọi đơn của bạn.</p>
@@ -94,6 +94,6 @@ export default function RegisterPage() {
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }

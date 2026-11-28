@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, BrowserRouter, useLocation } from 'react-router-dom'
 import { Toaster } from 'sonner'
+import { LazyMotion, domAnimation } from 'framer-motion'
 import { ConfirmProvider } from './components/ui/ConfirmDialog'
 import AuthLayout from './layouts/AuthLayout'
 import UserLayout from './layouts/UserLayout'
@@ -103,6 +104,8 @@ function PageLoadingFallback() {
 export default function App() {
   return (
     <BrowserRouter>
+    {/* chỉ nạp phần animation thực sự dùng (fade/slide/whileInView); strict: cấm <motion.*> nạp full bundle */}
+    <LazyMotion features={domAnimation} strict>
     <ConfirmProvider>
       <ScrollToTop />
       <AuthBootstrap />
@@ -299,6 +302,7 @@ export default function App() {
         </Routes>
       </Suspense>
     </ConfirmProvider>
+    </LazyMotion>
     </BrowserRouter>
   )
 }

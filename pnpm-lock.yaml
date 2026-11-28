@@ -199,12 +199,12 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.76.0(react@19.2.6))
+      '@rc-component/qrcode':
+        specifier: 1.1.1
+        version: 1.1.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@tanstack/react-query':
         specifier: ^5.100.13
         version: 5.100.13(react@19.2.6)
-      antd:
-        specifier: ^6.1.1
-        version: 6.4.3(date-fns@4.2.1)(moment@2.30.1)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       axios:
         specifier: ^1.11.0
         version: 1.16.1

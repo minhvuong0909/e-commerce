@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
@@ -535,7 +535,7 @@ function ShopSection({
             />
           ) : (
             <>
-              <motion.div
+              <m.div
                 key={`${key}-${page}`}
                 variants={staggerContainer}
                 initial='hidden'
@@ -543,11 +543,11 @@ function ShopSection({
                 className='grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-5 md:gap-y-10 lg:grid-cols-4'
               >
                 {products.map((product, i) => (
-                  <motion.div key={product._id} variants={fadeUpItem}>
+                  <m.div key={product._id} variants={fadeUpItem}>
                     <ProductCard product={product} tint={CARD_TINTS[i % CARD_TINTS.length]} />
-                  </motion.div>
+                  </m.div>
                 ))}
-              </motion.div>
+              </m.div>
               {pagination ? (
                 <PaginationBar pagination={pagination} page={page} onPageChange={goPage} isLoading={isFetching} itemLabel='sản phẩm' />
               ) : null}

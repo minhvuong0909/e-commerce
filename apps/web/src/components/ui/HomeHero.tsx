@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { motion, useReducedMotion } from 'framer-motion'
+import { m, useReducedMotion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { useProducts } from '../../hooks/useProducts'
 import { ROUTE_PATHS } from '../../routes/route.paths'
@@ -33,22 +33,22 @@ export default function HomeHero() {
     <section className='px-4 pt-4 md:px-6 md:pt-6'>
       <div className='mx-auto grid max-w-[1320px] overflow-hidden rounded-4xl bg-ink-100 lg:grid-cols-2'>
         <div className='flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 lg:py-20'>
-          <motion.p {...rise(0)} className='eyebrow'>
+          <m.p {...rise(0)} className='eyebrow'>
             Skincare · Makeup · Body
-          </motion.p>
-          <motion.h1
+          </m.p>
+          <m.h1
             {...rise(0.08)}
             className='mt-4 font-display text-4xl font-semibold leading-[1.1] text-ink-950 sm:text-5xl lg:text-[3.5rem]'
           >
             Chăm da đúng cách,
             <br />
             từng bước một.
-          </motion.h1>
-          <motion.p {...rise(0.16)} className='mt-5 max-w-md text-base leading-relaxed text-ink-600'>
+          </m.h1>
+          <m.p {...rise(0.16)} className='mt-5 max-w-md text-base leading-relaxed text-ink-600'>
             Chọn sản phẩm theo từng bước routine, từ làm sạch, serum đến chống nắng. Giao hàng tận nơi, theo dõi đơn dễ
             dàng.
-          </motion.p>
-          <motion.div {...rise(0.24)} className='mt-8 flex flex-wrap gap-3'>
+          </m.p>
+          <m.div {...rise(0.24)} className='mt-8 flex flex-wrap gap-3'>
             <a
               href='#shop'
               className='inline-flex h-12 items-center gap-2 rounded-lg bg-berry-600 px-6 text-sm font-semibold text-white transition hover:bg-berry-700'
@@ -61,11 +61,11 @@ export default function HomeHero() {
             >
               Routine 4 bước
             </a>
-          </motion.div>
+          </m.div>
         </div>
 
         <div className='relative min-h-[20rem] overflow-hidden lg:min-h-[32rem]'>
-          <motion.img
+          <m.img
             src='/images/hero_slide_routine.jpg'
             alt='Routine chăm sóc da buổi sáng'
             className='absolute inset-0 h-full w-full object-cover'
@@ -75,7 +75,7 @@ export default function HomeHero() {
             transition={{ duration: 1.6, ease: easeOut }}
           />
           {star ? (
-            <motion.div
+            <m.div
               className='absolute inset-x-4 bottom-4 sm:inset-x-auto sm:left-5 sm:bottom-5 sm:w-80'
               {...(reduce
                 ? {}
@@ -102,7 +102,7 @@ export default function HomeHero() {
                   <span className='text-sm font-semibold text-ink-950'>{money(star.price)}</span>
                 </span>
               </Link>
-            </motion.div>
+            </m.div>
           ) : null}
         </div>
       </div>

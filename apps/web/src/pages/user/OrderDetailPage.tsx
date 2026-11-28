@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { QRCode } from 'antd'
+import { QRCodeSVG } from '@rc-component/qrcode'
 import { ArrowLeft, Check, ClipboardCheck, MapPin, Package, PackageCheck, ShoppingBag, Smartphone, Truck, Wallet, X } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -497,7 +497,7 @@ export default function OrderDetailPage() {
                 <p className='text-sm font-semibold text-[#A50064]'>Quét mã bằng ứng dụng MoMo</p>
                 <p className='mt-1 font-display text-2xl font-bold'>{money(order.total)}</p>
                 <div className='mx-auto mt-3 inline-flex rounded-2xl p-2 ring-1 ring-ink-100'>
-                  <QRCode value={momoPayment.qrCodeUrl} size={180} bordered={false} />
+                  <QRCodeSVG value={momoPayment.qrCodeUrl} size={180} level='M' title='Mã QR thanh toán MoMo' />
                 </div>
                 {momoPayment.deeplink ? (
                   <a

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { MailCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+      <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
         <div className='flex flex-col items-center text-center'>
           <span className='grid h-16 w-16 place-items-center rounded-3xl bg-emerald-50 text-emerald-600'>
             <MailCheck size={30} />
@@ -73,12 +73,12 @@ export default function ForgotPasswordPage() {
             Quay lại đăng nhập
           </Link>
         </div>
-      </motion.div>
+      </m.div>
     )
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
+    <m.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
       <div className='mb-6'>
         <h2 className='text-2xl font-black tracking-tight text-ink-950'>Quên mật khẩu</h2>
         <p className='mt-2 text-sm leading-6 text-ink-500'>Nhập email để nhận link đặt lại mật khẩu.</p>
@@ -113,6 +113,6 @@ export default function ForgotPasswordPage() {
           </Link>
         </p>
       </form>
-    </motion.div>
+    </m.div>
   )
 }

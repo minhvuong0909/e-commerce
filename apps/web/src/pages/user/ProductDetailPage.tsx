@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { m } from 'framer-motion'
 import { ChevronRight, Heart, MessageSquareText, Minus, Package, Play, Plus, ShoppingBag, Star, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import Alert from '../../components/ui/Alert'
@@ -180,7 +180,7 @@ export default function ProductDetailPage() {
 
       <div className='mt-6 grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14'>
         {/* gallery */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: easeOut }}
@@ -252,10 +252,10 @@ export default function ProductDetailPage() {
               <span className='chip absolute left-4 top-4 bg-berry-600 text-white'>Bán chạy</span>
             ) : null}
           </div>
-        </motion.div>
+        </m.div>
 
         {/* info */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.06, ease: easeOut }}
@@ -343,7 +343,7 @@ export default function ProductDetailPage() {
             <Package size={20} className='shrink-0 text-lilac-700' aria-hidden />
             Phí vận chuyển được tính chính xác theo địa chỉ ở bước thanh toán.
           </div>
-        </motion.div>
+        </m.div>
       </div>
 
       {/* description */}
