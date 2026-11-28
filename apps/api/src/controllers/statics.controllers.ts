@@ -12,8 +12,10 @@ import { getParam } from '~/utils/params'
 export const serveImageController = (req: Request, res: Response, next: NextFunction) => {
   // lấy ra filename từ req params
   // vd: http://localhost:3000/static/:filename
-  const filename = getParam(req, 'filename')
-  res.sendFile(path.resolve(UPLOAD_IMAGE_DIR, filename), (error) => {
+  // basename + root: tên như "..%2F..%2F.env" không thể thoát khỏi thư mục ảnh
+  const filename = path.basename(getParam(req, 'filename'))
+  // tên file sinh ngẫu nhiên và không bao giờ bị ghi đè → cache dài hạn được
+  res.sendFile(filename, { root: UPLOAD_IMAGE_DIR, maxAge: '365d', immutable: true, dotfiles: 'deny' }, (error) => {
     if (error) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({
         message: 'File not found'

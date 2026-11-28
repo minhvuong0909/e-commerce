@@ -6,54 +6,54 @@ import formidable, { File } from 'formidable'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { ErrorWithStatus } from '~/models/Errors'
 
-// nếu có thì xử lý và tạo giúp mình
+export const uploadError = (message: string, status: number = HTTP_STATUS.BAD_REQUEST) => new ErrorWithStatus({ message, status })
+export const removeQuietly = (filepath: string) => fs.promises.unlink(filepath).catch(() => undefined)
+
+// tạo sẵn các thư mục upload khi khởi động
 export const initFolder = () => {
-  ;[UPLOAD_IMAGE_DIR, UPLOAD_VIDEO_DIR].forEach((dir) => {
-    // check nếu mà url kh dẫn đến thư mục thì mình tạo mới
-    if (!fs.existsSync(UPLOAD_IMAGE_TEMP_DIR)) {
-      fs.mkdirSync(UPLOAD_IMAGE_TEMP_DIR, {
-        recursive: true // đệ quy
-      }) // đợi nó tạo xong ròi xử lý tiếp
-    }
+  ;[UPLOAD_IMAGE_DIR, UPLOAD_IMAGE_TEMP_DIR, UPLOAD_VIDEO_DIR].forEach((dir) => {
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
   })
 }
 
-// handleUploadImage: hàm nhận vào req
-// sau đó ép req đi qua formidable và return ra file ảnh
-// sharp xử lý và nhận đc các file ảnh
+// Ảnh gốc từ điện thoại thường 2–8MB: nhận rồi server tự nén (xem utils/imageOptimize.ts)
+export const IMAGE_MAX_BYTES = 8 * 1024 * 1024
+export const IMAGE_MAX_FILES = 4
+
+// handleUploadImage: nhận tối đa 4 ảnh ở field "image" vào thư mục tạm để sharp xử lý
 export const handleUploadImage = async (req: Request) => {
-  // check form có truyền lên hợp lệ ?
+  await fs.promises.mkdir(UPLOAD_IMAGE_TEMP_DIR, { recursive: true })
+  let rejectedType = false
   const form = formidable({
     uploadDir: UPLOAD_IMAGE_TEMP_DIR,
-    maxFields: 4, // tối đa 1 file
-    maxFiles: 4,
-    maxFileSize: 300 * 1024, // 300KB
-    maxTotalFileSize: 1200 * 1024, // 1,2MB
-    keepExtensions: true, // giữ lại đuôi file khi req upload
-    filter: ({
-      name,
-      originalFilename,
-      mimetype
-      // name là tên chứa field của file trong form input (html)
-      // originalFilename: tên gốc của file
-      // mimeType: kiểu của file 'video/mp4' || 'image/jpeg'
-    }) => {
-      const valid = name === 'image' && Boolean(mimetype?.includes('image')) // check mimetype có phải là image không
-      if (!valid) {
-        form.emit('error' as any, new Error('File Type Invalid') as any) // hiển thị sự kiện trên form
-      }
+    maxFields: 4,
+    maxFiles: IMAGE_MAX_FILES,
+    maxFileSize: IMAGE_MAX_BYTES,
+    maxTotalFileSize: IMAGE_MAX_BYTES * IMAGE_MAX_FILES,
+    keepExtensions: false, // tên file trên đĩa không phụ thuộc tên client gửi
+    filter: ({ name, mimetype }) => {
+      const valid = name === 'image' && Boolean(mimetype?.startsWith('image/'))
+      if (!valid) rejectedType = true
       return valid
     }
   })
 
-  // parse form, file
   return new Promise<File[]>((resolve, reject) => {
-    form.parse(req, (err, fields, files) => {
-      if (err) return reject(err)
-      if (!files.image) {
-        return reject(new Error('Image is empty'))
+    form.parse(req, (err, _fields, files) => {
+      const received = (files?.image as File[] | undefined) ?? []
+      if (err) {
+        received.forEach((f) => removeQuietly(f.filepath))
+        const tooBig = (err as { httpCode?: number }).httpCode === 413 || /maxFileSize|maxTotalFileSize/i.test(String(err.message))
+        return reject(
+          tooBig
+            ? uploadError(`Ảnh tối đa ${IMAGE_MAX_BYTES / 1024 / 1024}MB mỗi file.`, 413)
+            : /maxFiles/i.test(String(err.message))
+              ? uploadError(`Tối đa ${IMAGE_MAX_FILES} ảnh mỗi lần tải.`)
+              : uploadError('Không đọc được file ảnh.')
+        )
       }
-      return resolve(files.image as File[])
+      if (!received.length) return reject(uploadError(rejectedType ? 'Chỉ chọn file ảnh.' : 'Chưa chọn ảnh.'))
+      resolve(received)
     })
   })
 }
@@ -77,8 +77,6 @@ export function detectVideoExt(head: Buffer): 'mp4' | 'webm' | 'mov' | null {
   return null
 }
 
-const uploadError = (message: string, status: number = HTTP_STATUS.BAD_REQUEST) => new ErrorWithStatus({ message, status })
-const removeQuietly = (filepath: string) => fs.promises.unlink(filepath).catch(() => undefined)
 
 // hàm upload video: 1 file, field "video", tối đa 50MB, chỉ mp4/webm/mov
 export const handleUploadVideo = async (req: Request) => {
