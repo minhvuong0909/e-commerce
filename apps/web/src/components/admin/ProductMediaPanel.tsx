@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Film, ImagePlus, RefreshCw, Trash2 } from 'lucide-react'
 import {
   formatBytes,
@@ -9,6 +9,7 @@ import {
   type ProductMediaState
 } from '../../hooks/useProductMedia'
 import { formatImageUrl } from '../../utils/formatImageUrl'
+import { videoSources } from '../../utils/videoDelivery'
 
 const removeBtn =
   'absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-white/95 text-rose-600 shadow-sm transition sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100'
@@ -24,6 +25,9 @@ export default function ProductMediaPanel({
   disabled?: boolean
 }) {
   const imageInput = useRef<HTMLInputElement>(null)
+  // video (theo key) mà trình duyệt không giải mã được — để cảnh báo admin
+  const [unplayable, setUnplayableKey] = useState<string | null>(null)
+  const setUnplayable = (key: string, bad: boolean) => setUnplayableKey((prev) => (bad ? key : prev === key ? null : prev))
   const videoInput = useRef<HTMLInputElement>(null)
 
   const pickImages = (e: ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +46,8 @@ export default function ProductMediaPanel({
     ...media.pending.map((p) => ({ key: p.id, src: p.preview, remove: () => media.removePending(p.id), isNew: true }))
   ]
   const video = media.video
+  const saved = video?.kind === 'existing' ? videoSources(video.url) : null
+  const videoKey = video ? (video.kind === 'new' ? video.preview : video.url) : ''
   const uploading = media.videoProgress !== null
 
   return (
@@ -90,13 +96,24 @@ export default function ProductMediaPanel({
         {video ? (
           <div className='mt-3 overflow-hidden rounded-2xl border border-ink-200 bg-white'>
             <video
-              key={video.kind === 'new' ? video.preview : video.url}
-              src={video.kind === 'new' ? video.preview : formatImageUrl(video.url)}
+              key={videoKey}
+              src={video.kind === 'new' ? video.preview : saved?.src}
+              poster={video.kind === 'existing' ? saved?.poster ?? undefined : undefined}
               controls
               preload='metadata'
               playsInline
+              onLoadedMetadata={(e) => setUnplayable(videoKey, e.currentTarget.videoWidth === 0)}
+              onError={() => setUnplayable(videoKey, true)}
               className='aspect-video w-full bg-ink-950 object-contain'
             />
+            {unplayable === videoKey ? (
+              <p className='border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800' role='alert'>
+                Trình duyệt không phát được video này (thường gặp với MOV/HEVC quay từ iPhone).
+                {saved?.transcoded
+                  ? ' Video đã được chuyển mã trên Cloudinary — thử tải lại trang sau ít phút.'
+                  : ' Nếu shop dùng Cloudinary, video sẽ tự chuyển mã khi lưu; nếu không, hãy xuất lại sang MP4 (H.264) trước khi tải lên.'}
+              </p>
+            ) : null}
             <div className='flex flex-wrap items-center justify-between gap-2 p-3'>
               <span className='min-w-0 truncate text-xs font-semibold text-ink-600'>
                 {video.kind === 'new' ? `${video.file.name} · ${formatBytes(video.file.size)} · chưa lưu` : 'Video hiện tại'}

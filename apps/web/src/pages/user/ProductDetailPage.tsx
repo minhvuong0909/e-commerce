@@ -13,6 +13,7 @@ import { useWishlist } from '../../hooks/useWishlist'
 import cn from '../../utils/cn'
 import money from '../../utils/money'
 import { formatImageUrl } from '../../utils/formatImageUrl'
+import { videoSources } from '../../utils/videoDelivery'
 import { createProductReviewApi, getProductReviewsApi, type ProductReview } from '../../services/reviews.services'
 import { getApiErrorMessage } from '../../utils/apiError'
 import { getToken } from '../../utils/authSession'
@@ -69,9 +70,10 @@ export default function ProductDetailPage() {
   }, [product])
 
   // video (nếu có) là ô cuối của thư viện
-  const videoUrl = product?.video ? formatImageUrl(product.video) : ''
-  const galleryCount = images.length + (videoUrl ? 1 : 0)
-  const showVideo = Boolean(videoUrl) && activeImageIndex === images.length
+  // Cloudinary: chuyển mã MP4 H.264 nhẹ + ảnh bìa; video lưu trên server: phát file gốc
+  const video = useMemo(() => videoSources(product?.video), [product?.video])
+  const galleryCount = images.length + (video ? 1 : 0)
+  const showVideo = Boolean(video) && activeImageIndex === images.length
   const activeImage = images[activeImageIndex] ?? images[0]
   const isOutOfStock = !product || product.quantity <= 0
   const isOverStock = Boolean(product && product.quantity > 0 && qty > product.quantity)
@@ -203,7 +205,7 @@ export default function ProductDetailPage() {
                   <img src={url} alt='' referrerPolicy='no-referrer' className='h-full w-full object-cover mix-blend-multiply' loading='lazy' />
                 </button>
               ))}
-              {videoUrl ? (
+              {video ? (
                 <button
                   type='button'
                   onClick={() => setActiveImageIndex(images.length)}
@@ -214,7 +216,12 @@ export default function ProductDetailPage() {
                     showVideo ? 'ring-berry-500' : 'ring-transparent opacity-70 hover:opacity-100'
                   )}
                 >
-                  <video src={`${videoUrl}#t=0.5`} preload='metadata' muted playsInline className='absolute inset-0 h-full w-full object-cover opacity-70' />
+                  {video.poster ? (
+                    // ảnh bìa ~20KB thay vì tải đầu video chỉ để làm thumbnail
+                    <img src={video.poster} alt='' loading='lazy' className='absolute inset-0 h-full w-full object-cover opacity-80' />
+                  ) : (
+                    <video src={`${video.src}#t=0.5`} preload='metadata' muted playsInline className='absolute inset-0 h-full w-full object-cover opacity-70' />
+                  )}
                   <span className='relative grid h-8 w-8 place-items-center rounded-full bg-white/95 text-ink-950'>
                     <Play size={14} className='translate-x-px fill-current' aria-hidden />
                   </span>
@@ -224,10 +231,11 @@ export default function ProductDetailPage() {
           ) : null}
           <div className='relative flex-1 overflow-hidden rounded-4xl bg-berry-50'>
             <div className='aspect-square'>
-              {showVideo ? (
+              {showVideo && video ? (
                 <video
-                  key={videoUrl}
-                  src={videoUrl}
+                  key={video.src}
+                  src={video.src}
+                  poster={video.poster ?? undefined}
                   controls
                   autoPlay
                   muted
